@@ -3,7 +3,12 @@
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
 import tkinter as tk
+import sys
+import os
 from tkinter import messagebox, ttk
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
+import database_functions as db
 
 # +++++++++++++++++  Variables  +++++++++++++++++ #
 
@@ -52,6 +57,7 @@ def login():
     password = login_password.get()
     # TODO: get information from database
     if username and password:
+        db.db_create_new_user(username, password)
         login_frame.pack_forget()
         main_frame.pack(fill='both', expand=True)
     else:
