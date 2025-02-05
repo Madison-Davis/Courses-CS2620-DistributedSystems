@@ -222,7 +222,9 @@ def load_main_frame_user_info(user_info):
     for i, sender in enumerate(unread_messages): 
         i = i + start_row_messages
         msg_formatted = sender + ": " + read_messages[sender]
-        tk.Button(main_frame, text="Delete", command=lambda btn=tk.Button: clicked_delete_msg(btn, cols)).grid(row=i+1, column=col_incoming_delete)
+        btn = tk.Button(main_frame, text="Delete")
+        btn.grid(row=i+1, column=col_incoming_delete)
+        btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     # Part 2: read messages
     read_title_row = start_row_messages + len(unread_messages) + 1
@@ -230,7 +232,9 @@ def load_main_frame_user_info(user_info):
     for i, sender in enumerate(read_messages): 
         i = i + read_title_row
         msg_formatted = sender + ": " + read_messages[sender]
-        tk.Button(main_frame, text="Delete", command=lambda btn=tk.Button: clicked_delete_msg(btn, cols)).grid(row=i+1, column=col_incoming_delete)
+        btn = tk.Button(main_frame, text="Delete")
+        btn.grid(row=i+1, column=col_incoming_delete)
+        btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
 
