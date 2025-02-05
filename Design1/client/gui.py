@@ -49,15 +49,19 @@ start_row_messages      = 4
 start_row_drafts        = 4
 
 
-# ++++++++++++++ Helper Functions ++++++++++++++ #
+
+# ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
 def login():
     """ Determine if good login, and if so, load main frame. """
     username = login_username.get()
     password = login_password.get()
-    # TODO: get information from database
+    # TODO: verify the username and password are valid
     if username and password:
-        db.db_create_new_user(username, password)
+        # Create new user if this is a new user
+        if db.db_get_user_data(username) is None:
+            db.db_create_new_user(username, password)
+        # Load new screen
         login_frame.pack_forget()
         main_frame.pack(fill='both', expand=True)
     else:
@@ -69,9 +73,6 @@ def logout():
     main_frame.pack_forget()
     login_frame.pack(fill='both', expand=True)
 
-def get_user_info():
-    """ TODO """
-
 def send_message(row):
     """ TODO """
 
@@ -81,6 +82,10 @@ def filter_recipients(event, row):
     filtered_users = [user for user in accounts if typed_text in user.lower()]
     drafts_recipients[row]['values'] = filtered_users  # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')  # Open dropdown after filtering
+
+
+
+# ++++++++++ Helper Functions: Main Page Buttons ++++++++++ #
 
 def clicked_edit(row):
     """ When we click 'Edit' button, draft is editable. """
@@ -102,24 +107,6 @@ def clicked_new_button():
     """ When we click 'New' button, create a new draft """
     global num_drafts 
     num_drafts = create_new_draft(num_drafts)
-
-def clicked_delete_msg(widget, cols):
-    """ When we click 'Delete' button, removes row and moves other rows up. """
-    # Delete specified cells that correspond to the message we want to delete
-    row = widget.grid_info()["row"]
-    for w in main_frame.grid_slaves():
-        if w.grid_info()["row"] == row and w.grid_info()["column"] in cols:
-            w.destroy()
-    # Shift up all rows below the deleted row up by 1
-    next_row = row + 1
-    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
-    while widgets_below:
-        for widget in widgets_below:
-            grid_info = widget.grid_info()
-            if int(grid_info["column"]) in cols:
-                widget.grid(row=grid_info["row"] - 1)   
-        next_row += 1
-        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
 
 def create_new_draft(num_drafts):
     """ Creates a new draft
@@ -146,6 +133,27 @@ def create_new_draft(num_drafts):
     recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
     # update the number of drafts we currently have
     return num_drafts + 1
+
+def clicked_delete_msg(widget, cols):
+    """ When we click 'Delete' button, removes row and moves other rows up. """
+    # Delete specified cells that correspond to the message we want to delete
+    row = widget.grid_info()["row"]
+    for w in main_frame.grid_slaves():
+        if w.grid_info()["row"] == row and w.grid_info()["column"] in cols:
+            w.destroy()
+    # Shift up all rows below the deleted row up by 1
+    next_row = row + 1
+    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+    while widgets_below:
+        for widget in widgets_below:
+            grid_info = widget.grid_info()
+            if int(grid_info["column"]) in cols:
+                widget.grid(row=grid_info["row"] - 1)   
+        next_row += 1
+        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+
+
+# ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
 def load_login_frame():
     pass
@@ -184,9 +192,9 @@ def load_main_frame(user=None):
     drafts_recipients   = {}
     num_drafts          = 0
 
-    if user is not None:
-        user_info = get_user_info() 
-        load_main_frame_user_info(user_info)
+    user_data = db.db_get_user_data(user)
+    if user_data is not None:
+        load_main_frame_user_info(user_data)
 
 
 def load_main_frame_user_info(user_info):
