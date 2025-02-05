@@ -2,17 +2,27 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
-import tkinter as tk
+
 import sys
 import os
+import tkinter as tk
 from tkinter import messagebox, ttk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import database_functions as db
 
+
+
 # +++++++++++++++++  Variables  +++++++++++++++++ #
 
-# Message Frame Global Variables
+# Vars: TK Frames We Use
+gui = tk.Tk()
+gui.title("Login")
+gui.geometry("1400x600")
+login_frame = tk.Frame(gui)
+main_frame = tk.Frame(gui)
+
+# Vars: User's Data
 drafts_msgs         = {}        # dynamic: all of our drafts' current message entries
 drafts_recipients   = {}        # dynamic: all of our drafts' current recipients
 drafts_checkmarks   = {}        # dynamic: all of our drafts' current checked to be sent
@@ -21,8 +31,10 @@ num_drafts          = 0         # num of messages we're currently drafting to be
 read_messages       = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}
 unread_messages     = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}
 accounts            = [str(val) for val in range(100)] # TODO
+login_password      = None
+login_username      = None
 
-# Vars to determine what goes in what column
+# Vars: TK Column-Positioning
 """
 [Incoming Messages]
 1: delete
@@ -43,8 +55,6 @@ col_sending_message     = 5
 col_sending_edit        = 6
 col_sending_save        = 7
 col_sending_recipient   = 8
-
-# Vars to ensure data populates below column titles
 start_row_messages      = 4
 start_row_drafts        = 4
 
@@ -61,27 +71,19 @@ def login():
         # Create new user if this is a new user
         if db.db_get_user_data(username) is None:
             db.db_create_new_user(username, password)
+        user_data = db.db_get_user_data(username)
         # Load new screen
         login_frame.pack_forget()
+        load_main_frame(user_data)
         main_frame.pack(fill='both', expand=True)
     else:
         messagebox.showerror("Error", "Invalid Username or Password")
 
 def logout():
-    """ Logs out the user and returns to login frame. """
+    """ Default message template and return to login frame. """
     load_main_frame()
     main_frame.pack_forget()
     login_frame.pack(fill='both', expand=True)
-
-def send_message(row):
-    """ TODO """
-
-def filter_recipients(event, row):
-    """ Filters recipient dropdown list as user types. """
-    typed_text = drafts_recipients[row].get().lower()
-    filtered_users = [user for user in accounts if typed_text in user.lower()]
-    drafts_recipients[row]['values'] = filtered_users  # Update dropdown options
-    drafts_recipients[row].event_generate('<Down>')  # Open dropdown after filtering
 
 
 
@@ -107,6 +109,13 @@ def clicked_new_button():
     """ When we click 'New' button, create a new draft """
     global num_drafts 
     num_drafts = create_new_draft(num_drafts)
+
+def filter_recipients(event, row):
+    """ Filters recipient dropdown list as user types. """
+    typed_text = drafts_recipients[row].get().lower()
+    filtered_users = [user for user in accounts if typed_text in user.lower()]
+    drafts_recipients[row]['values'] = filtered_users  # Update dropdown options
+    drafts_recipients[row].event_generate('<Down>')  # Open dropdown after filtering
 
 def create_new_draft(num_drafts):
     """ Creates a new draft
@@ -153,55 +162,60 @@ def clicked_delete_msg(widget, cols):
         widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
 
 
+
 # ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
 def load_login_frame():
-    pass
+    login_frame.pack(fill='both', expand=True)
+    # Part 1: create username label and entry
+    # use 'pack' to position relative to other items
+    tk.Label(login_frame, text="Username:").pack()
+    login_username = tk.Entry(login_frame)
+    login_username.pack()
+    # Part 2: create password label and entry
+    tk.Label(login_frame, text="Password:").pack()
+    login_password = tk.Entry(login_frame, show='*')
+    login_password.pack()
+    # Part 3: create enter button
+    tk.Button(login_frame, text="Enter", command=login).pack()
+    return login_username, login_password
 
-def load_main_frame(user=None):
+def load_main_frame(user_data=None):
     """ Clears and resets the main frame to its initial state. 
-        user:   name of user to populate fields with data 
-                if user is None, then wipe data/nothing there"""
-
+        user_data: user data to populate fields
+        if user is None, then just provides defalt template."""
+    # Part 0: Destroy Initial Widget
     for widget in main_frame.winfo_children():
-        widget.destroy()  # Remove all existing widgets
-
-    # Recreate the default layout
+        widget.destroy()
+    # Part 1: Dark-Grey Account Info Frame
     top_frame = tk.Frame(main_frame, bg="black", height=30)
     top_frame.grid(row=0, column=0, columnspan=6, sticky="ew")
     tk.Label(top_frame, text="Account Info", bg="black", fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=10)
     tk.Button(top_frame, text="Logout", bg="black", fg="white", command=logout).pack(side="right", padx=100)
     tk.Button(top_frame, text="Delete Account", bg="black", fg="white").pack(side="right", padx=10)
-
-    # Recreate column titles
+    # Part 2: Column and Sub-Column Titles
     tk.Label(main_frame, text="Incoming Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
     tk.Label(main_frame, text="Send Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Content", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Recipient", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_recipient, padx=5, pady=5)
     tk.Label(main_frame, text="Send", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_sending_checkbox, padx=5, pady=5)
     tk.Label(main_frame, text="Unread", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
-
-    # Recreate buttons
     tk.Button(main_frame, text="Select All", command=clicked_select_all).grid(row=3, column=col_sending_checkbox, pady=10)
     tk.Button(main_frame, text="New", command=clicked_new_button).grid(row=3, column=col_sending_edit, pady=10)
-
-    # Reinitialize global variables
+    # TODO: reinitialize global variables inside Part 3
     global drafts_checkmarks, drafts_msgs, drafts_recipients, num_drafts
     drafts_checkmarks   = {}
     drafts_msgs         = {}
     drafts_recipients   = {}
     num_drafts          = 0
-
-    user_data = db.db_get_user_data(user)
+    # Part 3: Populate User Data
     if user_data is not None:
         load_main_frame_user_info(user_data)
 
-
 def load_main_frame_user_info(user_info):
     """ Clears and resets the main frame to its initial state. 
-        user:   name of user to populate fields with data 
-                if user is None, then wipe data/nothing there"""
-
+        user: name of user to populate fields with data 
+        if user is None, then wipe data/nothing there"""
     # Customize "Incoming Messages" Column
     # Part 1: unread messages
     cols = [col_incoming_delete, col_incoming_message, col_incoming_message]
@@ -220,77 +234,10 @@ def load_main_frame_user_info(user_info):
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
 
+
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
-
-# Create Main GUI
-gui = tk.Tk()
-gui.title("Login")
-gui.geometry("1400x600")
-
-
-# Create Login Frame/Page
-login_frame = tk.Frame(gui)
-login_frame.pack(fill='both', expand=True)
-# Part 1: create username label and entry
-# use 'pack' to position relative to other items
-tk.Label(login_frame, text="Username:").pack()
-login_username = tk.Entry(login_frame)
-login_username.pack()
-# Part 2: create password label and entry
-tk.Label(login_frame, text="Password:").pack()
-login_password = tk.Entry(login_frame, show='*')
-login_password.pack()
-# Part 3: create enter button
-tk.Button(login_frame, text="Enter", command=login).pack()
-
-
-# Create Main Message Frame/Page, Top Part
-main_frame = tk.Frame(gui)
-# Part 1: Dark-Grey Account Info Frame
-top_frame = tk.Frame(main_frame, bg="black", height=30)
-top_frame.grid(row=0, column=0, columnspan=6, sticky="ew")  # Sticky to expand across the full width
-tk.Label(top_frame,  text="Account Info", bg="black", fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=10)
-tk.Button(top_frame, text="Logout", bg="black", fg="white", command=logout).pack(side="right", padx=100)
-tk.Button(top_frame, text="Delete Account", bg="black", fg="white").pack(side="right", padx=10)                                                                                                                  
-# Part 2: Column and Sub-Column Titles 
-tk.Label(main_frame, text="Incoming Messages",       font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
-tk.Label(main_frame, text="Send Messages",           font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
-tk.Label(main_frame, text="Content",                 font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
-tk.Label(main_frame, text="Recipient",               font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_recipient, padx=5, pady=5)
-tk.Label(main_frame, text="Send",                    font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_sending_checkbox, padx=5, pady=5)
-tk.Label(main_frame, text="Unread",                  font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
-tk.Button(main_frame, text="Select All",             command=clicked_select_all).grid(row=3, column=col_sending_checkbox, pady=10)
-tk.Button(main_frame, text="New",                    command=lambda: clicked_new_button()).grid(row=3, column=col_sending_edit, pady=10)
-
-
-# Customize "Incoming Messages" Column
-# Part 1: unread messages
-cols = [col_incoming_delete, col_incoming_message, col_incoming_message]
-for i, sender in enumerate(unread_messages): 
-    i = i + start_row_messages
-    msg_formatted = sender + ": " + read_messages[sender]
-    btn = tk.Button(main_frame, text="Delete")
-    btn.grid(row=i+1, column=col_incoming_delete)
-    btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
-    tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
-# Part 2: read messages
-read_title_row = start_row_messages + len(unread_messages) + 1
-tk.Label(main_frame, text="Read", font=("Arial", 12, "bold"), width=30).grid(row=read_title_row, column=col_incoming_message, padx=5, pady=5)
-for i, sender in enumerate(read_messages): 
-    i = i + read_title_row
-    msg_formatted = sender + ": " + read_messages[sender]
-    btn = tk.Button(main_frame, text="Delete")
-    btn.grid(row=i+1, column=col_incoming_delete)
-    btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
-    tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
-
-
-# Customize "Send Messages" Column
-# Create one draft by default
-num_drafts = create_new_draft(num_drafts)
-
-
-# Start Up Main GUI
+# Create Main GUI By Starting Up Login Frame
+login_username, login_password = load_login_frame()
 gui.mainloop()
 
