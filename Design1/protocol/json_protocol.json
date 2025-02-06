@@ -38,7 +38,15 @@
         "status": "ok",
         "message": "Login successful.",
         "data": {
-          "unreadCount": "<integer>"
+          "unreadCount": "<integer>",
+          "unreadMessages": [
+            "<string>",
+            "<string>"
+          ],
+          "drafts": [
+            "<string>",
+            "<string>"
+          ]
         }
       },
       "errorResponse": {
@@ -53,9 +61,10 @@
         "requestId": "<string>",
         "action": "listAccounts",
         "data": {
-          "pattern": "<string | optional>",  
-          "page": "<integer>",
-          "pageSize": "<integer>"
+          "accounts": [
+            "<string>",
+            "<string>"
+          ]
         }
       },
       "successResponse": {
@@ -67,8 +76,6 @@
             "<string>",
             "<string>"
           ],
-          "page": "<integer>",
-          "pageSize": "<integer>",
           "totalCount": "<integer>"
         }
       },
@@ -101,12 +108,12 @@
         "data": {}
       }
     },
-    "readMessages": {
+    "openMessages": {
       "request": {
         "requestId": "<string>",
-        "action": "readMessages",
+        "action": "openMessages",
         "data": {
-          "count": "<integer>"
+          "maxCount": "<integer>"
         }
       },
       "successResponse": {
@@ -131,20 +138,39 @@
         "data": {}
       }
     },
-    "deleteMessages": {
+    "checkMessage": {
       "request": {
         "requestId": "<string>",
-        "action": "deleteMessages",
+        "action": "checkMessage",
         "data": {
-          "msgIds": [
-            "<integer>"
-          ]
+          "msgIds": "<integer>"
         }
       },
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Messages deleted.",
+        "message": "Message checked as read.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Message unable to read or other error.",
+        "data": {}
+      }
+    },
+    "deleteMessage": {
+      "request": {
+        "requestId": "<string>",
+        "action": "deleteMessage",
+        "data": {
+          "msgIds": "<integer>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Message deleted.",
         "data": {}
       },
       "errorResponse": {
