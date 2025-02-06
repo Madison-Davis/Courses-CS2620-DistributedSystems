@@ -13,7 +13,43 @@ import database_functions as db
 
 
 
-# +++++++++++++++++  Variables  +++++++++++++++++ #
+# ++++++++++++  Variables: Client Data  ++++++++++++ #
+
+# Vars: User's Data
+"""
+What should we keep track of?
+client info:
+username
+password
+all account usernames
+
+client's drafts: 
+# of drafts
+messages
+recipients
+individual chechmarks
+T/F: checkmark all of them
+
+client's msgs: 
+inbox msgs (the queue)
+unread msgs
+read msgs
+"""
+drafts_msgs             = {}        # dynamic: all of our drafts' current message entries
+drafts_recipients       = {}        # dynamic: all of our drafts' current recipients
+drafts_checkmarks       = {}        # dynamic: all of our drafts' individual checkmarks
+drafts_all_checkmarked  = False     # T/F: do we want to send all the drafts?
+num_drafts              = 0         # num of messages we're currently drafting to be sent
+
+msgs_read               = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'read' part of frame
+msgs_unread             = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'unread' part of frame
+msgs_queue              = {}                                                            # msgs yet to be open in inbox queue
+
+login_password          = None
+login_username          = None
+accounts                = [str(val) for val in range(100)] # TODO, placeholder
+
+# +++++++++++++++  Variables: GUI  +++++++++++++++ #
 
 # Vars: TK Frames We Use
 gui = tk.Tk()
@@ -21,18 +57,6 @@ gui.title("Login")
 gui.geometry("1400x600")
 login_frame = tk.Frame(gui)
 main_frame = tk.Frame(gui)
-
-# Vars: User's Data
-drafts_msgs         = {}        # dynamic: all of our drafts' current message entries
-drafts_recipients   = {}        # dynamic: all of our drafts' current recipients
-drafts_checkmarks   = {}        # dynamic: all of our drafts' current checked to be sent
-all_checkmarked     = False     # T/F: do we want to send all the drafts?
-num_drafts          = 0         # num of messages we're currently drafting to be sent
-read_messages       = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}
-unread_messages     = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}
-accounts            = [str(val) for val in range(100)] # TODO
-login_password      = None
-login_username      = None
 
 # Vars: TK Column-Positioning
 """
@@ -55,7 +79,7 @@ col_sending_message     = 5
 col_sending_edit        = 6
 col_sending_save        = 7
 col_sending_recipient   = 8
-start_row_messages      = 4
+start_row_messages      = 5
 start_row_drafts        = 4
 
 
@@ -89,6 +113,11 @@ def logout():
 
 # ++++++++++ Helper Functions: Main Page Buttons ++++++++++ #
 
+def clicked_open_inbox(num, queue):
+    """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
+    # TODO
+    pass
+
 def clicked_edit(row):
     """ When we click 'Edit' button, draft is editable. """
     drafts_msgs[row].config(state=tk.NORMAL)
@@ -100,10 +129,10 @@ def clicked_saved(row):
 
 def clicked_select_all():
     """ When we click 'Select all' button, turn on/off all checkboxes. """
-    global all_checkmarked
-    all_checkmarked = not all_checkmarked
+    global drafts_all_checkmarked
+    drafts_all_checkmarked = not drafts_all_checkmarked
     for i in drafts_checkmarks:
-        drafts_checkmarks[i].set(all_checkmarked)
+        drafts_checkmarks[i].set(drafts_all_checkmarked)
 
 def clicked_new_button():
     """ When we click 'New' button, create a new draft """
@@ -114,8 +143,8 @@ def filter_recipients(event, row):
     """ Filters recipient dropdown list as user types. """
     typed_text = drafts_recipients[row].get().lower()
     filtered_users = [user for user in accounts if typed_text in user.lower()]
-    drafts_recipients[row]['values'] = filtered_users  # Update dropdown options
-    drafts_recipients[row].event_generate('<Down>')  # Open dropdown after filtering
+    drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
+    drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
 def create_new_draft(num_drafts):
     """ Creates a new draft
@@ -193,13 +222,25 @@ def load_main_frame(user_data=None):
     tk.Label(top_frame, text="Account Info", bg="black", fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=10)
     tk.Button(top_frame, text="Logout", bg="black", fg="white", command=logout).pack(side="right", padx=100)
     tk.Button(top_frame, text="Delete Account", bg="black", fg="white").pack(side="right", padx=10)
-    # Part 2: Column and Sub-Column Titles
+    
+    # Part 2: Column and Sub-Column Titles for Incoming Messages
     tk.Label(main_frame, text="Incoming Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text="Unread", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text=f"Inbox: {15} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
+    
+    # Part 2.5: Open Inbox
+    inbox_control_frame = tk.Frame(main_frame)
+    inbox_control_frame.grid(row=3, column=col_incoming_message, sticky="ew")
+    view_options = [5, 10, 15, 20, 25, 50]
+    selected_val = tk.IntVar(value=5)
+    tk.OptionMenu(inbox_control_frame, selected_val, *view_options, command=lambda value: selected_val.set(value)).pack(side="right")
+    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val, msgs_queue)).pack(side="right")
+
+    # Part 3: Column and Sub-Column Titles for Sending Messages
     tk.Label(main_frame, text="Send Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Content", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Recipient", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_recipient, padx=5, pady=5)
     tk.Label(main_frame, text="Send", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_sending_checkbox, padx=5, pady=5)
-    tk.Label(main_frame, text="Unread", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
     tk.Button(main_frame, text="Select All", command=clicked_select_all).grid(row=3, column=col_sending_checkbox, pady=10)
     tk.Button(main_frame, text="New", command=clicked_new_button).grid(row=3, column=col_sending_edit, pady=10)
     # TODO: reinitialize global variables inside Part 3
@@ -208,7 +249,8 @@ def load_main_frame(user_data=None):
     drafts_msgs         = {}
     drafts_recipients   = {}
     num_drafts          = 0
-    # Part 3: Populate User Data
+
+    # Part 4: Populate User Data
     if user_data is not None:
         load_main_frame_user_info(user_data)
 
@@ -219,22 +261,32 @@ def load_main_frame_user_info(user_info):
     # Customize "Incoming Messages" Column
     # Part 1: unread messages
     cols = [col_incoming_delete, col_incoming_message, col_incoming_message]
-    for i, sender in enumerate(unread_messages): 
+    for i, sender in enumerate(msgs_unread): 
         i = i + start_row_messages
-        msg_formatted = sender + ": " + read_messages[sender]
-        btn = tk.Button(main_frame, text="Delete")
-        btn.grid(row=i+1, column=col_incoming_delete)
-        btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
+        msg_formatted = sender + ": " + msgs_read[sender]
+        btn_del = tk.Button(main_frame, text="Delete")
+        btn_del.grid(row=i+1, column=col_incoming_delete)
+        btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, cols))
+        check_var=tk.IntVar()
+        check_btn = tk.Checkbutton(main_frame, variable=check_var)
+        check_btn.grid(row=i+1, column=col_incoming_checkbox)
+        check_btn.var = check_var # saves a reference to allow us to immediately check it
+        check_var.set(0)
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     # Part 2: read messages
-    read_title_row = start_row_messages + len(unread_messages) + 1
+    read_title_row = start_row_messages + len(msgs_unread) + 1
     tk.Label(main_frame, text="Read", font=("Arial", 12, "bold"), width=30).grid(row=read_title_row, column=col_incoming_message, padx=5, pady=5)
-    for i, sender in enumerate(read_messages): 
+    for i, sender in enumerate(msgs_read): 
         i = i + read_title_row
-        msg_formatted = sender + ": " + read_messages[sender]
+        msg_formatted = sender + ": " + msgs_read[sender]
         btn = tk.Button(main_frame, text="Delete")
         btn.grid(row=i+1, column=col_incoming_delete)
         btn.config(command=lambda widget=btn: clicked_delete_msg(widget, cols))
+        check_var=tk.IntVar()
+        check_btn = tk.Checkbutton(main_frame, variable=check_var)
+        check_btn.grid(row=i+1, column=col_incoming_checkbox)
+        check_btn.var = check_var # saves a reference to allow us to immediately check it
+        check_var.set(1)
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
 
