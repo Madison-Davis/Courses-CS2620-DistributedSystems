@@ -1,0 +1,199 @@
+{
+  "protocolVersion": 1,
+  "description": "Simple client-server chat application JSON wire protocol",
+  "actions": {
+    "createAccount": {
+      "request": {
+        "requestId": "<string>",
+        "action": "createAccount",
+        "data": {
+          "username": "<string>",
+          "passwordHash": "<string>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Account created successfully.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "An account with that username already exists.",
+        "data": {}
+      }
+    },
+    "login": {
+      "request": {
+        "requestId": "<string>",
+        "action": "login",
+        "data": {
+          "username": "<string>",
+          "passwordHash": "<string>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Login successful.",
+        "data": {
+          "unreadCount": "<integer>"
+        }
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Invalid credentials.",
+        "data": {}
+      }
+    },
+    "listAccounts": {
+      "request": {
+        "requestId": "<string>",
+        "action": "listAccounts",
+        "data": {
+          "pattern": "<string | optional>",  
+          "page": "<integer>",
+          "pageSize": "<integer>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "",
+        "data": {
+          "accounts": [
+            "<string>",
+            "<string>"
+          ],
+          "page": "<integer>",
+          "pageSize": "<integer>",
+          "totalCount": "<integer>"
+        }
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Not authenticated or other error.",
+        "data": {}
+      }
+    },
+    "sendMessage": {
+      "request": {
+        "requestId": "<string>",
+        "action": "sendMessage",
+        "data": {
+          "recipient": "<string>",
+          "content": "<string>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Message sent (and delivered/stored).",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Recipient does not exist or other error.",
+        "data": {}
+      }
+    },
+    "readMessages": {
+      "request": {
+        "requestId": "<string>",
+        "action": "readMessages",
+        "data": {
+          "count": "<integer>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "",
+        "data": {
+          "messages": [
+            {
+              "msgId": "<integer>",
+              "sender": "<string>",
+              "content": "<string>",
+              "timestamp": "<string - e.g. 2025-02-04T13:00:00Z>"
+            }
+          ]
+        }
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "User not logged in or other error.",
+        "data": {}
+      }
+    },
+    "deleteMessages": {
+      "request": {
+        "requestId": "<string>",
+        "action": "deleteMessages",
+        "data": {
+          "msgIds": [
+            "<integer>"
+          ]
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Messages deleted.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Not authorized to delete or other error.",
+        "data": {}
+      }
+    },
+    "deleteAccount": {
+      "request": {
+        "requestId": "<string>",
+        "action": "deleteAccount",
+        "data": {
+          "username": "<string>",
+          "passwordHash": "<string>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Account and all messages have been deleted.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Invalid credentials or other error.",
+        "data": {}
+      }
+    },
+    "logout": {
+      "request": {
+        "requestId": "<string>",
+        "action": "logout",
+        "data": {}
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "message": "Logged out successfully.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "message": "Not logged in or other error.",
+        "data": {}
+      }
+    }
+  }
+}
