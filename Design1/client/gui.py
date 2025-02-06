@@ -49,6 +49,8 @@ login_password          = None
 login_username          = None
 accounts                = [str(val) for val in range(100)] # TODO, placeholder
 
+
+
 # +++++++++++++++  Variables: GUI  +++++++++++++++ #
 
 # Vars: TK Frames We Use
@@ -116,27 +118,21 @@ def logout():
 
 def clicked_open_inbox(num, queue):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
-    # TODO
-    pass
+    for i in range(num):
+        # TODO: call '' on the msg
+        create_new_unread_msg()
+        continue
 
-def clicked_msg_checkbox(widget, check_var):
+def clicked_msg_checkbox(check_var, btn):
     """ When we click or unclick a checkbox, sends it to read/unread section. 
     Note: clicked_delete_msg called twice due to need to check_var 
     in conditional/before temporary deletion. """
     # Option 1: initially read, send to unread
     if check_var.get() == 1:
-        check_var.set(0)
-        # Delete message and move anything below it up by 1
-        clicked_delete_msg(widget)
-        # Move read down by 1, move msg to bottom of unread
-        # TODO
+        btn.config(text="Read")
     # Option 2: initially unread, send to read
     else:
-        check_var.set(1)
-        # Delete message and move anything below it up by 1; can't do before
-        clicked_delete_msg(widget)
-        # Move msg to bottom of read
-        # TODO
+        btn.config(text="Unread")
 
 def clicked_edit(row):
     """ When we click 'Edit' button, draft is editable. """
@@ -166,6 +162,27 @@ def filter_recipients(event, row):
     drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
+def clicked_delete_msg(widget):
+    """ When we click 'Delete' button, removes row and moves other rows up. """
+    # Delete specified cells that correspond to the message we want to delete
+    row = widget.grid_info()["row"]
+    for w in main_frame.grid_slaves():
+        if w.grid_info()["row"] == row and w.grid_info()["column"] in incoming_cols:
+            w.destroy()
+    # Shift up all rows below the deleted row up by 1
+    next_row = row + 1
+    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+    while widgets_below:
+        for widget in widgets_below:
+            grid_info = widget.grid_info()
+            if int(grid_info["column"]) in incoming_cols:
+                widget.grid(row=grid_info["row"] - 1)   
+        next_row += 1
+        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+
+
+# ++++++++++ Helper Functions: Create New Components ++++++++++ #
+
 def create_new_draft(num_drafts):
     """ Creates a new draft
         num_drafts: how many drafts do we currently have """
@@ -192,26 +209,8 @@ def create_new_draft(num_drafts):
     # update the number of drafts we currently have
     return num_drafts + 1
 
-def create_msg():
+def create_new_unread_msg():
     pass
-
-def clicked_delete_msg(widget):
-    """ When we click 'Delete' button, removes row and moves other rows up. """
-    # Delete specified cells that correspond to the message we want to delete
-    row = widget.grid_info()["row"]
-    for w in main_frame.grid_slaves():
-        if w.grid_info()["row"] == row and w.grid_info()["column"] in incoming_cols:
-            w.destroy()
-    # Shift up all rows below the deleted row up by 1
-    next_row = row + 1
-    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
-    while widgets_below:
-        for widget in widgets_below:
-            grid_info = widget.grid_info()
-            if int(grid_info["column"]) in incoming_cols:
-                widget.grid(row=grid_info["row"] - 1)   
-        next_row += 1
-        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
 
 
 
@@ -247,9 +246,9 @@ def load_main_frame(user_data=None):
     tk.Button(top_frame, text="Delete Account", bg="black", fg="white").pack(side="right", padx=10)
     
     # Part 2: Column and Sub-Column Titles for Incoming Messages
-    tk.Label(main_frame, text="Incoming Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
-    tk.Label(main_frame, text="Unread", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)
-    tk.Label(main_frame, text=f"Inbox: {15} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text="Receiving Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text="Inbox", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text=f"Incoming: {15} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
     
     # Part 2.5: Open Inbox
     inbox_control_frame = tk.Frame(main_frame)
@@ -257,10 +256,10 @@ def load_main_frame(user_data=None):
     view_options = [5, 10, 15, 20, 25, 50]
     selected_val = tk.IntVar(value=5)
     tk.OptionMenu(inbox_control_frame, selected_val, *view_options, command=lambda value: selected_val.set(value)).pack(side="right")
-    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val, msgs_queue)).pack(side="right")
+    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val.get(), msgs_queue)).pack(side="right")
 
     # Part 3: Column and Sub-Column Titles for Sending Messages
-    tk.Label(main_frame, text="Send Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
+    tk.Label(main_frame, text="Sending Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Content", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Recipient", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_recipient, padx=5, pady=5)
     tk.Label(main_frame, text="Send", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_sending_checkbox, padx=5, pady=5)
@@ -289,15 +288,15 @@ def load_main_frame_user_info(user_info):
         btn_del = tk.Button(main_frame, text="Delete")
         btn_del.grid(row=i+1, column=col_incoming_delete)
         btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget))
-        check_var=tk.IntVar()
-        check_btn = tk.Checkbutton(main_frame, variable=check_var, command=lambda widget=check_btn: clicked_msg_checkbox(widget, check_var))
+        check_var = tk.IntVar()
+        check_btn = tk.Checkbutton(main_frame, text="Unread", variable=check_var)
+        check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn))
         check_btn.grid(row=i+1, column=col_incoming_checkbox)
         check_btn.var = check_var # saves a reference to allow us to immediately check it
         check_var.set(0)
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     # Part 2: read messages
-    read_title_row = start_row_messages + len(msgs_unread) + 1
-    tk.Label(main_frame, text="Read", font=("Arial", 12, "bold"), width=30).grid(row=read_title_row, column=col_incoming_message, padx=5, pady=5)
+    read_title_row = start_row_messages + len(msgs_unread)
     for i, sender in enumerate(msgs_read): 
         i = i + read_title_row
         msg_formatted = sender + ": " + msgs_read[sender]
@@ -305,7 +304,8 @@ def load_main_frame_user_info(user_info):
         btn.grid(row=i+1, column=col_incoming_delete)
         btn.config(command=lambda widget=btn: clicked_delete_msg(widget))
         check_var=tk.IntVar()
-        check_btn = tk.Checkbutton(main_frame, variable=check_var, command=lambda widget=check_btn: clicked_msg_checkbox(widget, check_var))
+        check_btn = tk.Checkbutton(main_frame, text="Read", variable=check_var)
+        check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn))
         check_btn.grid(row=i+1, column=col_incoming_checkbox)
         check_btn.var = check_var # saves a reference to allow us to immediately check it
         check_var.set(1)
