@@ -107,36 +107,6 @@
         "data": {}
       }
     },
-    "openMessages": {
-      "request": {
-        "requestId": "<string>",
-        "action": "openMessages",
-        "data": {
-          "maxCount": "<integer>"
-        }
-      },
-      "successResponse": {
-        "requestId": "<string>",
-        "status": "ok",
-        "msg": "",
-        "data": {
-          "msgs": [
-            {
-              "msgId": "<integer>",
-              "sender": "<string>",
-              "content": "<string>",
-              "timestamp": "<string - e.g. 2025-02-04T13:00:00Z>"
-            }
-          ]
-        }
-      },
-      "errorResponse": {
-        "requestId": "<string>",
-        "status": "error",
-        "msg": "User not logged in or other error.",
-        "data": {}
-      }
-    },
     "checkMessage": {
       "request": {
         "requestId": "<string>",

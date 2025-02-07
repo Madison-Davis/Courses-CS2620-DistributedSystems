@@ -225,5 +225,6 @@ def client_conn_send_message(user, draftId):
 
 
 if __name__ == "main":
+    # this will request to the server to accept the connection for future data I/O
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((config.HOST, config.PORT))
