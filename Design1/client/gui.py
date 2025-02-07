@@ -176,6 +176,7 @@ def clicked_open_inbox(num):
     for i in range(num):
         # Edge case: user asks for too many
         if i >= len(inbox_msgs):
+            messagebox.showerror("Error", message="Nothing in inbox!")
             break
         create_new_unread_msg(inbox_msgs[i])
         db_user_data.remove(inbox_msgs[i])
@@ -382,20 +383,21 @@ def load_main_frame(db_user_data=[0,[],[]]):
     # Part 0: Destroy Initial Widget
     for widget in main_frame.winfo_children():
         widget.destroy()
+
     # Part 1: Account Options
     tk.Button(main_frame, text="Logout", command=logout).grid(row=0, column=1, sticky="e", padx=5)
     tk.Button(main_frame, text="Delete Account", bg="red").grid(row=0, column=2, sticky="e", padx=5)
     # Part 2: Column and Sub-Column Titles For Receiving Messages
     tk.Label(main_frame, text="Receiving Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
     tk.Label(main_frame, text="Inbox", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)
-    tk.Label(main_frame, text=f"Incoming: {15} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
+    tk.Label(main_frame, text=f"Incoming: {db_user_data[0]} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
     # Part 2.5: Open Inbox
     inbox_control_frame = tk.Frame(main_frame)
     inbox_control_frame.grid(row=3, column=col_incoming_message, sticky="ew")
     view_options = [5, 10, 15, 20, 25, 50]
     selected_val = tk.IntVar(value=5)
     tk.OptionMenu(inbox_control_frame, selected_val, *view_options, command=lambda value: selected_val.set(value)).pack(side="right")
-    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val.get())).pack(side="right")
+    tk.Button(inbox_control_frame, text="Open Inbox Items", command=lambda:clicked_open_inbox(selected_val.get())).pack(side="right")
     # Part 3: Column and Sub-Column Titles for Sending Messages
     tk.Label(main_frame, text="Sending Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Content", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
