@@ -2,19 +2,18 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
-
 import sys
 import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
+import client_conn
 import database_functions as db
 
 
 
 # ++++++++++++  Variables: Client Data  ++++++++++++ #
-
 # Vars: User's Data
 """
 What should we keep track of?
@@ -88,6 +87,24 @@ incoming_cols = [col_incoming_delete, col_incoming_checkbox, col_incoming_messag
 
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
+
+def determine_user(username):
+    """ Determines if it is a returning user and responds accordingly.
+    Regardless if new or old, provides place for password.
+    Gives different textual response based if new/returning."""
+    global login_password
+    username = login_username.get()
+    # TODO: UNCOMMENT
+    # accounts = client_conn.client_conn_list_accounts()
+    accounts = []
+    result_text = "Welcome Back!" if username in accounts else "Welcome, New User!"
+    # Create password label and entry
+    tk.Label(login_frame, text=result_text).grid(row=3, column=0, padx=5)
+    tk.Label(login_frame, text="Password:").grid(row=4, column=0, padx=5)
+    login_password = tk.Entry(login_frame, show='*')
+    login_password.grid(row=5, column=0, padx=5)
+    # Create enter button
+    tk.Button(login_frame, text="Enter", command=login).grid(row=6, column=0, padx=5)
 
 def login():
     """ Determine if good login, and if so, load main frame. """
@@ -217,19 +234,20 @@ def create_new_unread_msg():
 # ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
 def load_login_frame():
+    global login_username, login_password
     login_frame.pack(fill='both', expand=True)
+    # Part 0: dfine column/row weights
+    weights = [10,1,1,1,1,1,1,10]
+    for i in range(len(weights)):
+        login_frame.rowconfigure(i, weight=weights[i]) 
+    login_frame.columnconfigure(0, weight=1) 
     # Part 1: create username label and entry
     # use 'pack' to position relative to other items
-    tk.Label(login_frame, text="Username:").pack()
+    tk.Label(login_frame, text="Enter New or Existing Username:").grid(row=1, column=0, padx=5)
     login_username = tk.Entry(login_frame)
-    login_username.pack()
-    # Part 2: create password label and entry
-    tk.Label(login_frame, text="Password:").pack()
-    login_password = tk.Entry(login_frame, show='*')
-    login_password.pack()
-    # Part 3: create enter button
-    tk.Button(login_frame, text="Enter", command=login).pack()
-    return login_username, login_password
+    login_username.grid(row=2, column=0, padx=5)
+    # Part 2: determine if new/existing user
+    login_username.bind('<Return>', lambda event,username=login_username: determine_user(username))
 
 def load_main_frame(user_data=None):
     """ Clears and resets the main frame to its initial state. 
@@ -240,16 +258,17 @@ def load_main_frame(user_data=None):
         widget.destroy()
     # Part 1: Dark-Grey Account Info Frame
     top_frame = tk.Frame(main_frame, bg="black", height=30)
-    top_frame.grid(row=0, column=0, columnspan=6, sticky="ew")
-    tk.Label(top_frame, text="Account Info", bg="black", fg="white", font=("Arial", 10, "bold")).pack(side="left", padx=10)
-    tk.Button(top_frame, text="Logout", bg="black", fg="white", command=logout).pack(side="right", padx=100)
-    tk.Button(top_frame, text="Delete Account", bg="black", fg="white").pack(side="right", padx=10)
-    
+    top_frame.grid(row=0, column=0, columnspan=15, sticky="ew")
+    top_frame.columnconfigure(0, weight=0)  # Buttons
+    top_frame.columnconfigure(1, weight=1)  # Spacer
+    top_frame.columnconfigure(2, weight=0)  # "Account Info" label
+    tk.Label(top_frame, text="Account Info", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky="w")
+    tk.Button(top_frame, text="Logout", command=logout).grid(row=0, column=2, sticky="e")
+    tk.Button(top_frame, text="Delete Account").grid(row=0, column=2, sticky="w")
     # Part 2: Column and Sub-Column Titles for Incoming Messages
     tk.Label(main_frame, text="Receiving Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
     tk.Label(main_frame, text="Inbox", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)
     tk.Label(main_frame, text=f"Incoming: {15} Items", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_incoming_message, padx=5, pady=5)
-    
     # Part 2.5: Open Inbox
     inbox_control_frame = tk.Frame(main_frame)
     inbox_control_frame.grid(row=3, column=col_incoming_message, sticky="ew")
@@ -316,6 +335,6 @@ def load_main_frame_user_info(user_info):
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
 # Create Main GUI By Starting Up Login Frame
-login_username, login_password = load_login_frame()
+load_login_frame()
 gui.mainloop()
 

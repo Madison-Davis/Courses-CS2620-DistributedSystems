@@ -60,12 +60,7 @@
       "request": {
         "requestId": "<string>",
         "action": "listAccounts",
-        "data": {
-          "accounts": [
-            "<string>",
-            "<string>"
-          ]
-        }
+        "data": {}
       },
       "successResponse": {
         "requestId": "<string>",
