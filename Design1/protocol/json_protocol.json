@@ -134,6 +134,7 @@
         "requestId": "<string>",
         "action": "deleteMessage",
         "data": {
+          "username": "<string>",
           "msgIds": "<integer>"
         }
       },

@@ -16,7 +16,7 @@ import client_conn
 # Vars: User's Data
 """
 SQL DB Setup: 3 databases
-Accounts database: user, pwd
+Accounts database: user, pwd, logged_in
 Msgs     database: user, msgId, sender user, msg, checked, inbox
 Drafts   database: user, draftId, recipient user, msg, checked
 """
@@ -145,11 +145,22 @@ def login(new_user, account_users, account_pwds):
         
 def logout():
     """ Default message template and return to login frame. """
-    global login_username, login_pwd, db_user_data, db_accounts
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
 
+def delete_account():
+    """ Delete account and send request to DB to update this. """
+    # Reset all data
+    db_accounts = [[], []]
+    db_user_data = [0, [], []]
+    # TODO: UNCOMMENT CLIENT CONN
+    # status = client_conn_delete_account(login_username, login_pwd)
+    # if not status:
+    #    messagebox.showerror("Error", "Unable to delete user.")
+    load_main_frame()
+    main_frame.pack_forget()
+    load_login_frame()
 
 
 # ++++++++++ Helper Functions: Main Page Buttons ++++++++++ #
@@ -318,7 +329,6 @@ def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
     save_btn.config(command=lambda r=i: clicked_saved(r, draftId, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+1, column=col_sending_save, padx=5)
 
-
 def create_new_unread_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""
     # Set up variables
@@ -386,7 +396,7 @@ def load_main_frame(db_user_data=[0,[],[]]):
 
     # Part 1: Account Options
     tk.Button(main_frame, text="Logout", command=logout).grid(row=0, column=1, sticky="e", padx=5)
-    tk.Button(main_frame, text="Delete Account", bg="red").grid(row=0, column=2, sticky="e", padx=5)
+    tk.Button(main_frame, text="Delete Account", bg="red", command=delete_account).grid(row=0, column=2, sticky="e", padx=5)
     # Part 2: Column and Sub-Column Titles For Receiving Messages
     tk.Label(main_frame, text="Receiving Messages", font=("Arial", 12, "bold"), width=20).grid(row=1, column=col_incoming_message, padx=5, pady=5)
     tk.Label(main_frame, text="Inbox", font=("Arial", 12, "bold"), width=30).grid(row=4, column=col_incoming_message, padx=5, pady=5)

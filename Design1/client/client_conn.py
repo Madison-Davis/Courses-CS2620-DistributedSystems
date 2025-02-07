@@ -14,39 +14,6 @@ import config
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
 
-def client_conn_list_accounts():
-    """ JSON: listAccounts 
-    Return: lists of account users and passwords, else [], []."""
-    # Set up request
-    request_id = str(uuid.uuid4())
-    request = {
-        "protocolVersion": 1,
-        "description": "Simple client-server chat application JSON wire protocol",
-        "actions": {
-            "listAccounts": {
-                "request": {
-                    "requestId": request_id,
-                    "action": "listAccounts",
-                    "data": {}
-                }
-            }
-        }
-    }
-    # Send request
-    msg = json.dumps(request)
-    s.sendall(msg.encode("utf-8"))
-    # Receive response form server
-    data = s.recv(config.PORT)
-    response = data.decode("utf-8")
-    # Parse response from server
-    try:
-        response_json = json.loads(response)
-        account_users = response_json.get("data").get("accounts_users", [])
-        account_pwds = response_json.get("data").get("accounts_pwds", [])
-        return account_users, account_pwds
-    except json.JSONDecodeError:
-        return [], []
-    
 def client_conn_create_account(user, pwd):
     """ JSON: createAccount
     Return: T for success, F for no success """
@@ -80,7 +47,7 @@ def client_conn_create_account(user, pwd):
         return True if response_json.get("status") == "ok" else False
     except json.JSONDecodeError:
         return False
-
+    
 def client_conn_login(user, pwd):
     """ JSON: login
     Return: [inboxCount, msgs, drafts] of user, else [] """
@@ -119,7 +86,74 @@ def client_conn_login(user, pwd):
         return []
     except json.JSONDecodeError:
         return []
+    
+def client_conn_list_accounts():
+    """ JSON: listAccounts 
+    Return: lists of account users and passwords, else [], []."""
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "listAccounts": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "listAccounts",
+                    "data": {}
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # Parse response from server
+    try:
+        response_json = json.loads(response)
+        account_users = response_json.get("data").get("accounts_users", [])
+        account_pwds = response_json.get("data").get("accounts_pwds", [])
+        return account_users, account_pwds
+    except json.JSONDecodeError:
+        return [], []
 
+def client_conn_send_message(user, draftId):
+    """ JSON: sendMessage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "sendMessage": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "sendMessage",
+                    "data": {
+                    "recipient": user,
+                    "content": draftId
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+    
 def client_conn_check_message(user, msgId):
     """ JSON: checkMesssage
     Return: T for success, F for no success """
@@ -155,7 +189,7 @@ def client_conn_check_message(user, msgId):
         return False
 
 def client_conn_delete_message(user, msgId):
-    """ JSON: deleteMessage
+    """ JSON: checkMesssage
     Return: T for success, F for no success """
     # Set up request
     request_id = str(uuid.uuid4())
@@ -168,7 +202,7 @@ def client_conn_delete_message(user, msgId):
                     "requestId": request_id,
                     "action": "deleteMessage",
                     "data": {
-                    "username": user,
+                     "username": user,
                      "msgIds": msgId
                     }
                 }
@@ -187,9 +221,9 @@ def client_conn_delete_message(user, msgId):
         return True if response_json.get("status") == "ok" else False
     except json.JSONDecodeError:
         return False
-
-def client_conn_send_message(user, draftId):
-    """ JSON: sendMessage
+    
+def client_conn_delete_account(user, pwd):
+    """ JSON: deleteAccount
     Return: T for success, F for no success """
     # Set up request
     request_id = str(uuid.uuid4())
@@ -197,13 +231,13 @@ def client_conn_send_message(user, draftId):
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
-            "sendMessage": {
+            "deleteAccount": {
                 "request": {
                     "requestId": request_id,
-                    "action": "sendMessage",
+                    "action": "deleteAccount",
                     "data": {
-                    "recipient": user,
-                    "content": draftId
+                    "username": user,
+                     "passwordHash": pwd
                     }
                 }
             }
@@ -221,9 +255,7 @@ def client_conn_send_message(user, draftId):
         return True if response_json.get("status") == "ok" else False
     except json.JSONDecodeError:
         return False
-
-
-
+    
 if __name__ == "main":
     # this will request to the server to accept the connection for future data I/O
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
