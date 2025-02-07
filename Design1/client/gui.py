@@ -5,11 +5,10 @@
 import sys
 import os
 import tkinter as tk
+import uuid
 from tkinter import messagebox, ttk
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import client_conn
-import database_functions as db
 
 
 
@@ -21,17 +20,17 @@ Accounts database: user, pwd
 Msgs     database: user, msgId, sender user, msg, checked, inbox
 Drafts   database: user, draftId, recipient user, msg, checked
 """
-
-
+# These are for retrieving information from DB, as well as 
+# creating edits/changes that we'll send to the DB.
 db_accounts             = [["asd","user1","user2","user3"],
                            ["asd","pwd1","pwd2","pwd3"]]   
                                     # NOTE: the above is just dummy data
                                     # TODO: UNCOMMENT client conns and set this to [[],[]]
                                     # list of accounts and their passwords, updated to/from DB
 db_user_data            = [0, 
-                           [["asd",1,"user2","hello asd!",0,0],
-                            ["asd",1,"user3","hello asd!",0,0]],
-                           []]        
+                           [["asd",uuid.uuid4(),"user2","hello asd!",0,0],
+                            ["asd",uuid.uuid4(),"user3","hello asd!",0,0]],
+                           [["asd",uuid.uuid4(),"user3","hello asd!",0]]]        
                                     # NOTE: the above is just dummy data
                                     # TODO: UNCOMMENT client conns and set this to [0, [],[]]
                                     # list of all (un)downloaded and drafted msgs, updated to/from DB
@@ -46,17 +45,17 @@ db_user_data            = [0,
                                         # determine rows to insert: modified data row if row not in DB data
                                         # determine rows to update: for each row, val in DB: see if cell = modified data cell
 
+# These are for edits we make to the drafts, but are yet to be "queued" up for DB 
+# For example, we can edit a message as many times as we want, but only when we save do we
+# edit our db_user_data to reflect the changes.
+# when do we solidify the draft changes: 'new' button, 'save' button
 drafts_msgs             = {}        # dynamic: all of our drafts' current message entries
 drafts_recipients       = {}        # dynamic: all of our drafts' current recipients
 drafts_checkmarks       = {}        # dynamic: all of our drafts' individual checkmarks
 drafts_all_checkmarked  = False     # T/F: do we want to send all the drafts?
-num_drafts              = 0         # num of messages we're currently drafting to be sent
-
 login_username          = None
 login_pwd               = None
 
-msgs_read               = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'read' part of frame
-msgs_unread             = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'unread' part of frame
 
 
 # +++++++++++++++  Variables: GUI  +++++++++++++++ #
@@ -91,7 +90,8 @@ col_sending_save        = 7
 col_sending_recipient   = 8
 start_row_messages      = 5
 start_row_drafts        = 4
-incoming_cols = [col_incoming_delete, col_incoming_checkbox, col_incoming_message, col_incoming_message]
+incoming_cols = [col_incoming_delete, col_incoming_checkbox, 
+                 col_incoming_message, col_incoming_message]
 
 
 
@@ -191,9 +191,24 @@ def clicked_edit(row):
     drafts_msgs[row].config(state=tk.NORMAL)
     drafts_msgs[row].focus()
 
-def clicked_saved(row):
-    """ When we click 'Saved' button, draft is not editable. """
+def clicked_saved(row, draftId, msg, recipient, checked):
+    """ When we click 'Saved' button, draft is not editable. 
+    Update server DB with new information."""
+    global db_user_data
     drafts_msgs[row].config(state=tk.DISABLED)
+    # We already made a new draft when clicking 'New', so let's just find that entry
+    data_index = -1
+    for i, entry in enumerate(db_user_data[2]):
+        if entry[1] == draftId:
+            data_index = i
+            break
+    if data_index == -1:
+        messagebox.showerror("Error", "Unable to save.")
+    # Once we have entry, update its values
+    db_user_data[2][data_index][2] = recipient
+    db_user_data[2][data_index][3] = msg
+    db_user_data[2][data_index][4] = checked
+    # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
     """ When we click 'Select all' button, turn on/off all checkboxes. """
@@ -203,9 +218,9 @@ def clicked_select_all():
         drafts_checkmarks[i].set(drafts_all_checkmarked)
 
 def clicked_new_button():
-    """ When we click 'New' button, create a new draft """
-    global num_drafts 
-    num_drafts, draftId = create_new_draft(num_drafts)
+    """ When we click 'New' button, create a new draft """  
+    row_idx = len(db_user_data[2]) + start_row_messages
+    create_new_draft(row_idx)
 
 def filter_recipients(event, row):
     """ Filters recipient dropdown list as user types. """
@@ -218,7 +233,7 @@ def clicked_delete_msg(widget, user, msgId):
     """ When we click 'Delete' button, removes row and moves other rows up. """
     # TODO: UNCOMMENT CLIENT CONN
     # status = client_conn.client_conn_delete_message(user, msgId)
-    #if status != "ok":
+    # if status != "ok":
     #    messagebox.showerror("Error", "Deletion unsuccessful")
     # Delete specified cells that correspond to the message we want to delete
     row = widget.grid_info()["row"]
@@ -241,11 +256,13 @@ def clicked_delete_msg(widget, user, msgId):
 
 # ++++++++++ Helper Functions: Create New Components ++++++++++ #
 
-def create_new_draft(num_drafts):
+def create_new_draft(row_idx):
     """ Creates a new draft
         num_drafts: how many drafts do we currently have
         draftId: assigns unique draftId to this draft for the user."""
-    i = num_drafts + start_row_drafts # the row we will put this new draft on
+    global db_user_data
+    draftId = uuid.uuid4()
+    i = row_idx # start here
     # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
     tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+1, column=col_sending_checkbox, padx=5, pady=5)
@@ -254,22 +271,52 @@ def create_new_draft(num_drafts):
     message_entry = tk.Entry(main_frame, width=30, state=tk.DISABLED)
     message_entry.grid(row=i+1, column=col_sending_message, padx=5, pady=5)
     drafts_msgs[i] = message_entry
-    # create edit and save buttons
-    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
-    tk.Button(main_frame, text="Save", command=lambda r=i: clicked_saved(r)).grid(row=i+1, column=col_sending_save, padx=5)
     # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
     recipient_entry['values'] = db_accounts[0]
-    recipient_entry.set("Type or select...")
+    recipient_entry.set(recipient_entry)
     recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
     # bind key release event to the filter recipient dropdown
     recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
+    # create edit and save buttons
+    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
+    save_btn = tk.Button(main_frame, text="Save")
+    save_btn.config(command=lambda r=i: clicked_saved(r, draftId, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
+    save_btn.grid(row=i+1, column=col_sending_save, padx=5)
     # create draftId for this draft
-    # because we can't delete drafts, we will just assign draftId = num_drafts + 1
-    draftId = num_drafts + 1
-    # update the number of drafts we currently have and 
-    return num_drafts + 1, draftId
+    # return num of drafts and draftId
+    db_user_data[2].append([login_username, draftId, "", "", 0])
+
+def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
+    """ Creates a pre-existing draft
+        num_drafts: how many drafts do we currently have
+        draftId: assigns unique draftId to this draft for the user."""
+    i = row_idx + start_row_drafts # start here
+    # create the select button
+    drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
+    tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+1, column=col_sending_checkbox, padx=5, pady=5)
+    # create deliverable's message box
+    tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
+    message_entry = tk.Entry(main_frame, width=30, state=tk.NORMAL)
+    message_entry.grid(row=i+1, column=col_sending_message, padx=5, pady=5)
+    message_entry.insert(0, msg)
+    message_entry.config(state=tk.DISABLED)
+    drafts_msgs[i] = message_entry
+    # create recipient dropdown list
+    recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
+    recipient_entry['values'] = db_accounts[0]
+    recipient_entry.set(recipient)
+    recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
+    drafts_recipients[i] = recipient_entry
+    # bind key release event to the filter recipient dropdown
+    recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
+    # create edit and save buttons
+    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
+    save_btn = tk.Button(main_frame, text="Save")
+    save_btn.config(command=lambda r=i: clicked_saved(r, draftId, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
+    save_btn.grid(row=i+1, column=col_sending_save, padx=5)
+
 
 def create_new_unread_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""
@@ -291,6 +338,7 @@ def create_new_unread_msg(inbox_msg):
         next_row += 1
         widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
     # Insert new widget
+    checkbox_text = "Read" if checkbox else "Unread"
     msg_formatted = sender + ": " + content
     btn_del = tk.Button(main_frame, text="Delete")
     btn_del.grid(row=i+1, column=col_incoming_delete)
@@ -302,7 +350,6 @@ def create_new_unread_msg(inbox_msg):
     check_btn.var = check_var # saves a reference to allow us to immediately check it
     check_var.set(checkbox)
     tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
-
 
 
 
@@ -357,13 +404,12 @@ def load_main_frame(db_user_data=[0,[],[]]):
     tk.Button(main_frame, text="Select All", command=clicked_select_all).grid(row=4, column=col_sending_checkbox, pady=10)
     tk.Button(main_frame, text="Send", command=clicked_send).grid(row=3, column=col_sending_checkbox, pady=10)
     tk.Button(main_frame, text="New", command=clicked_new_button).grid(row=3, column=col_sending_edit, pady=10)
-    
-    # TODO: delete these instantiations later on
-    global drafts_checkmarks, drafts_msgs, drafts_recipients, num_drafts
+
+    # blank out any unsaved changes to our drafts, as we're reloading this screen
+    global drafts_checkmarks, drafts_msgs, drafts_recipients
     drafts_checkmarks   = {}
     drafts_msgs         = {}
     drafts_recipients   = {}
-    num_drafts          = 0
 
     if db_user_data != [0,[],[]]:
         load_main_frame_user_info(db_user_data)
@@ -372,18 +418,10 @@ def load_main_frame_user_info(db_user_data):
     """ Clears and resets the main frame to its initial state. 
         user: name of user to populate fields with data 
         if user is None, then wipe data/nothing there"""
-    
-    # TODO: parse through user_data to get relevant info... for now im using dummy data
-        #inboxCount = db_user_data[0]
-        #msgs = db_user_data[1]
-        #drafts = db_user_data[2]
-        # dummy example of what parsed should look like:
-
     # Customize "Incoming Messages" Column
     # Populate messages
     for i, msg in enumerate(db_user_data[1]): 
         # user, msgId, sender user, msg, checked, inbox
-
         # Is it meant to be in inbox?  Otherwise, make a widget
         if msg[-1] != 1:
             sender = msg[2]
@@ -404,6 +442,12 @@ def load_main_frame_user_info(db_user_data):
             check_btn.var = check_var # saves a reference to allow us to immediately check it
             check_var.set(checkbox)
             tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
+    i = 0
+    for draft in db_user_data[2]: 
+        print(draft)
+        create_existing_draft(i, draft[1], draft[2], draft[3], draft[4])
+        i += 1
+
 
 
 # ++++++++++++++  Main Function  ++++++++++++++ #
