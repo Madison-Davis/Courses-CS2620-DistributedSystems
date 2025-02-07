@@ -16,38 +16,47 @@ import database_functions as db
 # ++++++++++++  Variables: Client Data  ++++++++++++ #
 # Vars: User's Data
 """
-What should we keep track of?
-client info:
-username
-password
-all account usernames
-
-client's drafts: 
-# of drafts
-messages
-recipients
-individual chechmarks
-T/F: checkmark all of them
-
-client's msgs: 
-inbox msgs (the queue)
-unread msgs
-read msgs
+SQL DB Setup: 3 databases
+Accounts database: user, pwd
+Msgs     database: user, msgId, sender user, msg, checked, inbox
+Drafts   database: user, draftId, recipient user, msg, checked
 """
+
+
+db_accounts             = [["asd","user1","user2","user3"],
+                           ["asd","pwd1","pwd2","pwd3"]]   
+                                    # NOTE: the above is just dummy data
+                                    # TODO: UNCOMMENT client conns and set this to [[],[]]
+                                    # list of accounts and their passwords, updated to/from DB
+db_user_data            = [0, 
+                           [["asd",1,"user2","hello asd!",0,0],
+                            ["asd",1,"user3","hello asd!",0,0]],
+                           []]        
+                                    # NOTE: the above is just dummy data
+                                    # TODO: UNCOMMENT client conns and set this to [0, [],[]]
+                                    # list of all (un)downloaded and drafted msgs, updated to/from DB
+                                    # inboxCount
+                                    # msgs: user, msgId, sender user, msg, checked, inbox
+                                    # drafts: user, draftId, recipient user, msg
+                                    
+                                    # NOTE: we will take this and update it on our side
+                                    # then, when we send over this data to server, SQL will:
+                                        # DB data: select ALL from DB
+                                        # determine rows to delete: DB data - modified data
+                                        # determine rows to insert: modified data row if row not in DB data
+                                        # determine rows to update: for each row, val in DB: see if cell = modified data cell
+
 drafts_msgs             = {}        # dynamic: all of our drafts' current message entries
 drafts_recipients       = {}        # dynamic: all of our drafts' current recipients
 drafts_checkmarks       = {}        # dynamic: all of our drafts' individual checkmarks
 drafts_all_checkmarked  = False     # T/F: do we want to send all the drafts?
 num_drafts              = 0         # num of messages we're currently drafting to be sent
 
+login_username          = None
+login_pwd               = None
+
 msgs_read               = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'read' part of frame
 msgs_unread             = {"User1":"Message1", "User2":"Message2", "User3":"Message3"}  # msgs in 'unread' part of frame
-msgs_queue              = {}                                                            # msgs yet to be open in inbox queue
-
-login_password          = None
-login_username          = None
-accounts                = [str(val) for val in range(100)] # TODO, placeholder
-
 
 
 # +++++++++++++++  Variables: GUI  +++++++++++++++ #
@@ -92,19 +101,19 @@ def check_username(username):
     """ Determines if it is a returning user and responds accordingly.
     Regardless if new or old, provides place for password.
     Gives different textual response based if new/returning."""
-    global login_password
+    global login_username, login_pwd, db_user_data, db_accounts
     username = username.get()
-    # TODO: UNCOMMENT
-    # account_users, accounts_pwds = client_conn.client_conn_list_accounts()
-    account_users = []
-    account_pwds = []
+    # TODO: UNCOMMENT CLIENT CONN
+    # db_accounts[0], db_accounts[1] = client_conn.client_conn_list_accounts()
+    account_users = db_accounts[0]
+    account_pwds = db_accounts[1]
     result_text = "Welcome Back!" if username in account_users else "Welcome, New User!"
     new_user = False if username in account_users else True
     # Create password label and entry
     tk.Label(login_frame, text=result_text).grid(row=3, column=0, padx=5)
     tk.Label(login_frame, text="Password:").grid(row=4, column=0, padx=5)
-    login_password = tk.Entry(login_frame, show='*')
-    login_password.grid(row=5, column=0, padx=5)
+    login_pwd = tk.Entry(login_frame, show='*')
+    login_pwd.grid(row=5, column=0, padx=5)
     # Create enter button
     tk.Button(login_frame, text="Enter", command=lambda:login(new_user, account_users, account_pwds)).grid(row=6, column=0, padx=5)
 
@@ -112,48 +121,68 @@ def login(new_user, account_users, account_pwds):
     """ If new user, create an account.
     If returning user, verify correct username/password.
     Determine if good login, and if so, load main frame. """
+    global login_username, login_pwd, db_user_data, db_accounts
     user = login_username.get()
-    pwd = login_password.get()
+    pwd = login_pwd.get()
     # If new user, create a new account
     if new_user:
-        # TODO: UNCOMMENT
+        # TODO: UNCOMMENT CLIENT CONN
         #status = client_conn_create_account(user, pwd)
         #if not status:
         #    messagebox.showerror("Error", "Unable to create new user.  Try again")
-        print("Created account!")
-        user_data = []
+        db_user_data = [0,[],[]]
     # If existing user, verify password lines up
     elif account_pwds[account_users.index(user)] != pwd:
         messagebox.showerror("Error", "Invalid Username or Password")
     # If existing user and password lines up, login/load information
     else:
-        # TODO: UNCOMMENT
-        # user_data = client_conn_login(user, pwd) # [inboxCount, msgs, drafts]
+        # TODO: UNCOMMENT CLIENT CONN
+        # db_user_data = client_conn_login(user, pwd) # [inboxCount, msgs, drafts]
         pass
     login_frame.pack_forget()
-    load_main_frame(user_data)
+    load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
         
 def logout():
     """ Default message template and return to login frame. """
+    global login_username, login_pwd, db_user_data, db_accounts
     load_main_frame()
     main_frame.pack_forget()
-    login_frame.pack(fill='both', expand=True)
+    load_login_frame()
 
 
 
 # ++++++++++ Helper Functions: Main Page Buttons ++++++++++ #
 
-def clicked_open_inbox(num, queue):
+def clicked_send():
+    """ When we click 'Send', we send all drafts with checks and delete from GUI. """
+    # Get user drafts that have checkmarks from GUI
+    drafts = db_user_data[2]
+    draftIds_with_checkmarks = [msg[1] for msg in drafts if msg[-1] == 1]
+    # Go through the drafts and send them one by one
+    for i in range(len(draftIds_with_checkmarks)):
+        draftId = draftIds_with_checkmarks[i]
+        # TODO: UNCOMMENT CLIENT CONN
+        # status = client_conn_send_message(db_user, draftId)
+        # if status != "ok":
+        #    messagebox.showerror("Error", "Delivery of some messages unsuccessful")
+    pass
+
+def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
+    # Get all messages in inbox (if the inbox is marked as True)
+    inbox_msgs = [row for row in db_user_data[1] if row[-1] == 1]
+    # Go through 'num' messages, create a new unread msg, and remove from inbox db
     for i in range(num):
-        # TODO: call '' on the msg
-        create_new_unread_msg()
-        continue
+        # Edge case: user asks for too many
+        if i >= len(inbox_msgs):
+            break
+        create_new_unread_msg(inbox_msgs[i])
+        db_user_data.remove(inbox_msgs[i])
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
-    # TODO: UNCOMMENT
+    # TODO: UNCOMMENT CLIENT CONN
     # client_conn.client_conn_check_message(user, msgId)
     btn.config(text="Read") if check_var.get() == 1 else btn.config(text="Unread")
 
@@ -176,18 +205,18 @@ def clicked_select_all():
 def clicked_new_button():
     """ When we click 'New' button, create a new draft """
     global num_drafts 
-    num_drafts = create_new_draft(num_drafts)
+    num_drafts, draftId = create_new_draft(num_drafts)
 
 def filter_recipients(event, row):
     """ Filters recipient dropdown list as user types. """
     typed_text = drafts_recipients[row].get().lower()
-    filtered_users = [user for user in accounts if typed_text in user.lower()]
+    filtered_users = [user for user in db_accounts[0] if typed_text in user.lower()]
     drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
 def clicked_delete_msg(widget, user, msgId):
     """ When we click 'Delete' button, removes row and moves other rows up. """
-    # TODO: UNCOMMENT
+    # TODO: UNCOMMENT CLIENT CONN
     # status = client_conn.client_conn_delete_message(user, msgId)
     #if status != "ok":
     #    messagebox.showerror("Error", "Deletion unsuccessful")
@@ -214,39 +243,77 @@ def clicked_delete_msg(widget, user, msgId):
 
 def create_new_draft(num_drafts):
     """ Creates a new draft
-        num_drafts: how many drafts do we currently have """
+        num_drafts: how many drafts do we currently have
+        draftId: assigns unique draftId to this draft for the user."""
     i = num_drafts + start_row_drafts # the row we will put this new draft on
-    # select button
+    # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
     tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+1, column=col_sending_checkbox, padx=5, pady=5)
-    # deliverable's message box
+    # create deliverable's message box
     tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
     message_entry = tk.Entry(main_frame, width=30, state=tk.DISABLED)
     message_entry.grid(row=i+1, column=col_sending_message, padx=5, pady=5)
     drafts_msgs[i] = message_entry
-    # edit and save buttons
+    # create edit and save buttons
     tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
     tk.Button(main_frame, text="Save", command=lambda r=i: clicked_saved(r)).grid(row=i+1, column=col_sending_save, padx=5)
-    # recipient dropdown list
+    # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
-    recipient_entry['values'] = accounts
+    recipient_entry['values'] = db_accounts[0]
     recipient_entry.set("Type or select...")
     recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
-    # bind key release event to filter recipient dropdown
+    # bind key release event to the filter recipient dropdown
     recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
-    # update the number of drafts we currently have
-    return num_drafts + 1
+    # create draftId for this draft
+    # because we can't delete drafts, we will just assign draftId = num_drafts + 1
+    draftId = num_drafts + 1
+    # update the number of drafts we currently have and 
+    return num_drafts + 1, draftId
 
-def create_new_unread_msg():
-    pass
+def create_new_unread_msg(inbox_msg):
+    """ Create new unread message when opening inbox, shifting everything else down by 1."""
+    # Set up variables
+    sender = inbox_msg[2]
+    checkbox = 0 # default
+    content = inbox_msg[3]
+    user = inbox_msg[0]
+    msgId = inbox_msg[1]
+    i = start_row_messages
+    next_row = i + 1
+    # Shift down all rows by 1 to make room for inserted widget
+    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+    while widgets_below:
+        for widget in widgets_below:
+            grid_info = widget.grid_info()
+            if int(grid_info["column"]) in incoming_cols:
+                widget.grid(row=grid_info["row"] - 1)   
+        next_row += 1
+        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+    # Insert new widget
+    msg_formatted = sender + ": " + content
+    btn_del = tk.Button(main_frame, text="Delete")
+    btn_del.grid(row=i+1, column=col_incoming_delete)
+    btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, user, msgId))
+    check_var = tk.IntVar()
+    check_btn = tk.Checkbutton(main_frame, text="Unread", variable=check_var)
+    check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
+    check_btn.grid(row=i+1, column=col_incoming_checkbox)
+    check_btn.var = check_var # saves a reference to allow us to immediately check it
+    check_var.set(checkbox)
+    tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
+
 
 
 
 # ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
 def load_login_frame():
-    global login_username, login_password
+    global login_username, login_pwd, login_frame
+    # Destroy login frame if we're logging out/going back after changes
+    if login_frame:
+        login_frame.destroy()
+        login_frame = tk.Frame(gui)
     login_frame.pack(fill='both', expand=True)
     # Part 0: dfine column/row weights
     weights = [10,1,1,1,1,1,1,10]
@@ -261,9 +328,9 @@ def load_login_frame():
     # Part 2: determine if new/existing user
     login_username.bind('<Return>', lambda event,username=login_username: check_username(username))
 
-def load_main_frame(user_data=[]):
+def load_main_frame(db_user_data=[0,[],[]]):
     """ Clears and resets the main frame to its initial state. 
-        user_data: user data to populate fields
+        db_user_data: user data to populate fields
         if user is None, then just provides defalt template."""
     # Part 0: Destroy Initial Widget
     for widget in main_frame.winfo_children():
@@ -281,13 +348,14 @@ def load_main_frame(user_data=[]):
     view_options = [5, 10, 15, 20, 25, 50]
     selected_val = tk.IntVar(value=5)
     tk.OptionMenu(inbox_control_frame, selected_val, *view_options, command=lambda value: selected_val.set(value)).pack(side="right")
-    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val.get(), msgs_queue)).pack(side="right")
+    tk.Button(inbox_control_frame, text="Open Inbox Items", command=clicked_open_inbox(selected_val.get())).pack(side="right")
     # Part 3: Column and Sub-Column Titles for Sending Messages
     tk.Label(main_frame, text="Sending Messages", font=("Arial", 12, "bold"), width=30).grid(row=1, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Content", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_message, padx=5, pady=5)
     tk.Label(main_frame, text="Recipient", font=("Arial", 12, "bold"), width=20).grid(row=2, column=col_sending_recipient, padx=5, pady=5)
     tk.Label(main_frame, text="Send", font=("Arial", 12, "bold"), width=30).grid(row=2, column=col_sending_checkbox, padx=5, pady=5)
-    tk.Button(main_frame, text="Select All", command=clicked_select_all).grid(row=3, column=col_sending_checkbox, pady=10)
+    tk.Button(main_frame, text="Select All", command=clicked_select_all).grid(row=4, column=col_sending_checkbox, pady=10)
+    tk.Button(main_frame, text="Send", command=clicked_send).grid(row=3, column=col_sending_checkbox, pady=10)
     tk.Button(main_frame, text="New", command=clicked_new_button).grid(row=3, column=col_sending_edit, pady=10)
     
     # TODO: delete these instantiations later on
@@ -296,30 +364,26 @@ def load_main_frame(user_data=[]):
     drafts_msgs         = {}
     drafts_recipients   = {}
     num_drafts          = 0
-    user_data = ["dummy stuff"]
 
-    if user_data != []:
-        load_main_frame_user_info(user_data)
+    if db_user_data != [0,[],[]]:
+        load_main_frame_user_info(db_user_data)
 
-def load_main_frame_user_info(user_data):
+def load_main_frame_user_info(db_user_data):
     """ Clears and resets the main frame to its initial state. 
         user: name of user to populate fields with data 
         if user is None, then wipe data/nothing there"""
     
     # TODO: parse through user_data to get relevant info... for now im using dummy data
-        #inboxCount = user_data[0]
-        #msgs = user_data[1]
-        #drafts = user_data[2]
+        #inboxCount = db_user_data[0]
+        #msgs = db_user_data[1]
+        #drafts = db_user_data[2]
         # dummy example of what parsed should look like:
-    parsed_user_data = [1,
-    [["user",1,"User1","hello!",0,0],
-     ["user",2,"User2","hello!",0,0]], 
-     [["user",1,"User1","send to User1!"],
-     ["user",1,"","send to whoever!"]]] 
 
     # Customize "Incoming Messages" Column
     # Populate messages
-    for i, msg in enumerate(parsed_user_data[1]): 
+    for i, msg in enumerate(db_user_data[1]): 
+        # user, msgId, sender user, msg, checked, inbox
+
         # Is it meant to be in inbox?  Otherwise, make a widget
         if msg[-1] != 1:
             sender = msg[2]
@@ -327,7 +391,6 @@ def load_main_frame_user_info(user_data):
             content = msg[3]
             user = msg[0]
             msgId = msg[1]
-
             checkbox_text = "Read" if checkbox else "Unread"
             i = i + start_row_messages
             msg_formatted = sender + ": " + content

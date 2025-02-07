@@ -36,7 +36,7 @@ def client_conn_list_accounts():
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(1024)
+    data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # Parse response from server
     try:
@@ -72,7 +72,7 @@ def client_conn_create_account(user, pwd):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(1024)
+    data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # See if successfully created account
     try:
@@ -106,7 +106,7 @@ def client_conn_login(user, pwd):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(1024)
+    data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # See if successfully created account
     try:
@@ -145,7 +145,7 @@ def client_conn_check_message(user, msgId):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(1024)
+    data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # See if successfully created account
     try:
@@ -179,7 +179,41 @@ def client_conn_delete_message(user, msgId):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(1024)
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
+def client_conn_send_message(user, draftId):
+    """ JSON: sendMessage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "sendMessage": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "sendMessage",
+                    "data": {
+                    "recipient": user,
+                    "content": draftId
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # See if successfully created account
     try:
