@@ -88,41 +88,52 @@ incoming_cols = [col_incoming_delete, col_incoming_checkbox, col_incoming_messag
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
-def determine_user(username):
+def check_username(username):
     """ Determines if it is a returning user and responds accordingly.
     Regardless if new or old, provides place for password.
     Gives different textual response based if new/returning."""
     global login_password
-    username = login_username.get()
+    username = username.get()
     # TODO: UNCOMMENT
-    # accounts = client_conn.client_conn_list_accounts()
-    accounts = []
-    result_text = "Welcome Back!" if username in accounts else "Welcome, New User!"
+    # account_users, accounts_pwds = client_conn.client_conn_list_accounts()
+    account_users = []
+    account_pwds = []
+    result_text = "Welcome Back!" if username in account_users else "Welcome, New User!"
+    new_user = False if username in account_users else True
     # Create password label and entry
     tk.Label(login_frame, text=result_text).grid(row=3, column=0, padx=5)
     tk.Label(login_frame, text="Password:").grid(row=4, column=0, padx=5)
     login_password = tk.Entry(login_frame, show='*')
     login_password.grid(row=5, column=0, padx=5)
     # Create enter button
-    tk.Button(login_frame, text="Enter", command=login).grid(row=6, column=0, padx=5)
+    tk.Button(login_frame, text="Enter", command=lambda:login(new_user, account_users, account_pwds)).grid(row=6, column=0, padx=5)
 
-def login():
-    """ Determine if good login, and if so, load main frame. """
-    username = login_username.get()
-    password = login_password.get()
-    # TODO: verify the username and password are valid
-    if username and password:
-        # Create new user if this is a new user
-        if db.db_get_user_data(username) is None:
-            db.db_create_new_user(username, password)
-        user_data = db.db_get_user_data(username)
-        # Load new screen
-        login_frame.pack_forget()
-        load_main_frame(user_data)
-        main_frame.pack(fill='both', expand=True)
-    else:
+def login(new_user, account_users, account_pwds):
+    """ If new user, create an account.
+    If returning user, verify correct username/password.
+    Determine if good login, and if so, load main frame. """
+    user = login_username.get()
+    pwd = login_password.get()
+    # If new user, create a new account
+    if new_user:
+        # TODO: UNCOMMENT
+        #status = client_conn_create_account(user, pwd)
+        #if not status:
+        #    messagebox.showerror("Error", "Unable to create new user.  Try again")
+        print("Created account!")
+        user_data = []
+    # If existing user, verify password lines up
+    elif account_pwds[account_users.index(user)] != pwd:
         messagebox.showerror("Error", "Invalid Username or Password")
-
+    # If existing user and password lines up, login/load information
+    else:
+        # TODO: UNCOMMENT
+        # user_data = client_conn_login(user, pwd) # [inboxCount, msgs, drafts]
+        pass
+    login_frame.pack_forget()
+    load_main_frame(user_data)
+    main_frame.pack(fill='both', expand=True)
+        
 def logout():
     """ Default message template and return to login frame. """
     load_main_frame()
@@ -247,9 +258,9 @@ def load_login_frame():
     login_username = tk.Entry(login_frame)
     login_username.grid(row=2, column=0, padx=5)
     # Part 2: determine if new/existing user
-    login_username.bind('<Return>', lambda event,username=login_username: determine_user(username))
+    login_username.bind('<Return>', lambda event,username=login_username: check_username(username))
 
-def load_main_frame(user_data=None):
+def load_main_frame(user_data=[]):
     """ Clears and resets the main frame to its initial state. 
         user_data: user data to populate fields
         if user is None, then just provides defalt template."""
@@ -292,10 +303,12 @@ def load_main_frame(user_data=None):
     num_drafts          = 0
 
     # Part 4: Populate User Data
-    if user_data is not None:
+    # TODO: parse through user_data to get relevant info... for now im using dummy data
+    user_data = ["dummy data"]
+    if user_data != []:
         load_main_frame_user_info(user_data)
 
-def load_main_frame_user_info(user_info):
+def load_main_frame_user_info(user_data):
     """ Clears and resets the main frame to its initial state. 
         user: name of user to populate fields with data 
         if user is None, then wipe data/nothing there"""

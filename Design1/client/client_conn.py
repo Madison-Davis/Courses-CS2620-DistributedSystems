@@ -13,8 +13,10 @@ import config
 
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
+
 def client_conn_list_accounts():
-    """ Create a request ID, a request JSON """
+    """ JSON: listAccounts 
+    Return: lists of account users and passwords, else [], []."""
     # Set up request
     request_id = str(uuid.uuid4())
     request = {
@@ -31,18 +33,161 @@ def client_conn_list_accounts():
         }
     }
     # Send request
-    message = json.dumps(request)
-    s.sendall(message.encode("utf-8"))
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
     # Receive response form server
     data = s.recv(1024)
     response = data.decode("utf-8")
     # Parse response from server
     try:
         response_json = json.loads(response)
-        accounts = response_json.get("data", {})
-        return accounts
+        account_users = response_json.get("data").get("accounts_users", [])
+        account_pwds = response_json.get("data").get("accounts_pwds", [])
+        return account_users, account_pwds
+    except json.JSONDecodeError:
+        return [], []
+    
+def client_conn_create_account(user, pwd):
+    """ JSON: createAccount
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "createAccount": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "createAccount",
+                    "data": {
+                    "username": user,
+                    "passwordHash": pwd
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(1024)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
+def client_conn_login(user, pwd):
+    """ JSON: login
+    Return: [inboxCount, msgs, drafts] of user, else [] """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "login": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "login",
+                    "data": {
+                    "username": user,
+                    "passwordHash": pwd
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(1024)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        if response_json.get("status") == "ok":
+            inboxCount = response_json.get("inboxCount")
+            msgs = response_json.get("msgs")
+            drafts = response_json.get("drafts")
+            return [inboxCount, msgs, drafts]
+        return []
     except json.JSONDecodeError:
         return []
+
+def client_conn_check_message(user, msgId):
+    """ JSON: checkMesssage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "checkMessage": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "checkMessage",
+                    "data": {
+                    "username": user,
+                     "msgIds": msgId
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(1024)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
+def client_conn_delete_message(user, msgId):
+    """ JSON: deleteMessage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "deleteMessage": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "deleteMessage",
+                    "data": {
+                    "username": user,
+                     "msgIds": msgId
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(1024)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
 
 
 if __name__ == "main":

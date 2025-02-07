@@ -14,13 +14,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Account created successfully.",
+        "msg": "Account created successfully.",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "An account with that username already exists.",
+        "msg": "An account with that username already exists.",
         "data": {}
       }
     },
@@ -36,10 +36,10 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Login successful.",
+        "msg": "Login successful.",
         "data": {
-          "unreadCount": "<integer>",
-          "unreadMessages": [
+          "inboxCount": "<integer>",
+          "msgs": [
             "<string>",
             "<string>"
           ],
@@ -52,7 +52,7 @@
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Invalid credentials.",
+        "msg": "Invalid credentials.",
         "data": {}
       }
     },
@@ -65,9 +65,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "",
+        "msg": "",
         "data": {
-          "accounts": [
+          "accounts_users": [
+            "<string>",
+            "<string>"
+          ],
+          "accounts_pwds": [
             "<string>",
             "<string>"
           ],
@@ -77,7 +81,7 @@
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Not authenticated or other error.",
+        "msg": "Not authenticated or other error.",
         "data": {}
       }
     },
@@ -93,13 +97,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Message sent (and delivered/stored).",
+        "msg": "Message sent (and delivered/stored).",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Recipient does not exist or other error.",
+        "msg": "Recipient does not exist or other error.",
         "data": {}
       }
     },
@@ -114,9 +118,9 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "",
+        "msg": "",
         "data": {
-          "messages": [
+          "msgs": [
             {
               "msgId": "<integer>",
               "sender": "<string>",
@@ -129,7 +133,7 @@
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "User not logged in or other error.",
+        "msg": "User not logged in or other error.",
         "data": {}
       }
     },
@@ -138,19 +142,20 @@
         "requestId": "<string>",
         "action": "checkMessage",
         "data": {
+          "username": "<string>",
           "msgIds": "<integer>"
         }
       },
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Message checked as read.",
+        "msg": "Message checked as read.",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Message unable to read or other error.",
+        "msg": "Message unable to read or other error.",
         "data": {}
       }
     },
@@ -165,13 +170,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Message deleted.",
+        "msg": "Message deleted.",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Not authorized to delete or other error.",
+        "msg": "Not authorized to delete or other error.",
         "data": {}
       }
     },
@@ -187,13 +192,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Account and all messages have been deleted.",
+        "msg": "Account and all messages have been deleted.",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Invalid credentials or other error.",
+        "msg": "Invalid credentials or other error.",
         "data": {}
       }
     },
@@ -206,13 +211,13 @@
       "successResponse": {
         "requestId": "<string>",
         "status": "ok",
-        "message": "Logged out successfully.",
+        "msg": "Logged out successfully.",
         "data": {}
       },
       "errorResponse": {
         "requestId": "<string>",
         "status": "error",
-        "message": "Not logged in or other error.",
+        "msg": "Not logged in or other error.",
         "data": {}
       }
     }
