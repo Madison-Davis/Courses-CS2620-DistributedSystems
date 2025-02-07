@@ -256,6 +256,39 @@ def client_conn_delete_account(user, pwd):
     except json.JSONDecodeError:
         return False
     
+def client_conn_logout(user):
+    """ JSON: logout
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "logout": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "logout",
+                    "data": {
+                    "username": user,
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response form server
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # See if successfully created account
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+    
 if __name__ == "main":
     # this will request to the server to accept the connection for future data I/O
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

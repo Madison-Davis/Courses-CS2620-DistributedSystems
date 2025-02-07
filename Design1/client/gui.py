@@ -145,6 +145,10 @@ def login(new_user, account_users, account_pwds):
         
 def logout():
     """ Default message template and return to login frame. """
+    # TODO: UNCOMMENT CLIENT CONN
+    # status = client_conn_logout(login_username)
+    # if not status:
+    #    messagebox.showerror("Error", "Unable to delete user.")
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()

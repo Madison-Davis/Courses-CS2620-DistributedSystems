@@ -1,85 +1,52 @@
-Sample documentation for required assignment.
+Documentation.txt
 
-Design exercise 1: Wire protocols
 
-For this design exercise, you will be building a simple, client-server chat application. The application will allow users to send and receive text messages. There will be a centralized server that will mediate the passing of messages. The application should allow:
+
+-------------------------------------------
+DESIGN REQUIREMENTS:
+
+Simple, client-server chat application. 
+GUI required.
+Connection information as config.
 
 1: Creating an account. The user supplies a unique (login) name. If there is already an account with that name, the user is prompted for the password. If the name is not being used, the user is prompted to supply a password. The password should not be passed as plaintext.
-
 2: Log in to an account. Using a login name and password, log into an account. An incorrect login or bad user name should display an error. A successful login should display the number of unread messages.
-
 3: List accounts, or a subset of accounts that fit a text wildcard pattern. If there are more accounts than can comfortably be displayed, allow iterating through the accounts.
-
 4. Send a message to a recipient. If the recipient is logged in, deliver immediately; if not the message should be stored until the recipient logs in and requests to see the message.
-
 5: Read messages. If there are undelivered messages, display those messages. The user should be able to specify the number of messages they want delivered at any single time.
-
 6. Delete a message or set of messages. Once deleted messages are gone.
-
 7. Delete an account. You will need to specify the semantics of deleting an account that contains unread messages.
 
-The client should offer a reasonable graphical interface. Connection information may be specified as either a command-line option or in a configuration file.
 
 
 -------------------------------------------
-Information we'll need:
+SQL DB:
 
-Username
-    => ...
-Username
-    => ...
-Username
-    => account info
-        => password
-        => are they currently logged in (T/F)
-    => messages
-        => received messages
-            => unread
-            => read
-        => delivering messages
+Accounts Database
+    [COLUMN]        [TYPE]      [DEFAULT]
+    user:           str         N/A (no default; should not be in DB)
+    pwd:            str         N/A (no default; should not be in DB)
+    logged_in:      bool        0   
 
+Messages Database
+    [COLUMN]        [TYPE]      [DEFAULT]
+    user:           str         N/A (no default; should not be in DB)
+    msgId:          str         N/A (no default; should not be in DB)
+    sender:         str         N/A (no default; should not be in DB)
+    msg:            str         N/A (no default; should not be in DB)
+    checked:        int 0/1     0
+    inbox:          bool        T
 
--------------------------------------------
-GUI Setup:
+Drafts Database
+    [COLUMN]        [TYPE]      [DEFAULT]
+    user:           str         N/A (no default; should not be in DB)
+    draftId:        str         N/A (no default; should not be in DB)
+    recipient:      str         ""
+    msg:            str         ""
 
-1st page:
-=> Username input
-=> Password input
-=> Enter button
-
-2nd page:
-=> top of page: nice-looking overhang/curtain-thingy
-    => account icon button
-    => when button pressed, two options appear
-    => log out
-    => delete account
-    => both these options take you back to 1st page
-=> left column: received messages
-    => top part, initially hidden: unread messages
-        => click a button to display unread messages
-    => bottom half: read messages
-    => each message has an "X" button to delete
-=> right column: delivering messages
-    => list of rows
-    => each row is a message
-    => each row has an individual send button
-    => each row has a selector button
-        => at the top of the rows is a send button
-        => this allows us to send 1+ messages selected (not just one at a time)
-    => each row has an "X" button to delete
-    => each row has a text wildcard input to determine username
-        => upon clicking enter, a pop-up shows up with list of accounts 
-        => 10 accounts per page (arbitrary #)
-        => can "X" out of pop-up
-    => upon being sent, message is removed from 'delivering messages' tab
 
 
 -------------------------------------------
-System Setup:
-2 computers
-Let 1 computer open 2 terminals to call client and server
-Let the other computer just open 1 terminal to call client
-Now, we have 2 clients and 1 server
 
 
 

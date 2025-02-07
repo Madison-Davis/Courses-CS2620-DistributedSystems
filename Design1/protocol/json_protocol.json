@@ -177,7 +177,9 @@
       "request": {
         "requestId": "<string>",
         "action": "logout",
-        "data": {}
+        "data": {
+          "username": "<string>"
+        }
       },
       "successResponse": {
         "requestId": "<string>",
