@@ -31,6 +31,7 @@ def db_init(connection=None):
         logged_in INTEGER NOT NULL CHECK (logged_in IN (0, 1))
     )
     ''')
+
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS messages (
         msg_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,6 +42,7 @@ def db_init(connection=None):
         inbox INTEGER NOT NULL CHECK (inbox IN (0, 1))
     )
     ''')
+
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS drafts (
         draft_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,15 +79,22 @@ def process_request(request, connection=None):
             user = action["createAccount"]["request"]["data"]["username"]
             pwd = action["createAccount"]["request"]["data"]["passwordHash"]
             try:
-                # are users logged in once they register?
-                cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
-                response = action["createAccount"]["successResponse"]
+                # Check that user does not already exist
+                cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
+                if cursor.fetchone() is not None:
+                    response = action["createAccount"]["errorResponse"]
+                # Are users logged in once they register?
+                else:
+                    cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
+                    response = action["createAccount"]["successResponse"]
             except:
                 response = action["createAccount"]["errorResponse"]
+        
         elif "login" in action:
             user = action["login"]["request"]["data"]["username"]
             pwd = action["login"]["request"]["data"]["passwordHash"]
             try:
+                # Check that username and password combo exists
                 cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
                 account = cursor.fetchone()
                 if account is not None:
@@ -139,8 +148,10 @@ def process_request(request, connection=None):
                     response = action["login"]["errorResponse"]
             except:
                 response = action["login"]["errorResponse"]
+        
         elif "listAccounts" in action:
             try:
+                # Get all existing usernames
                 cursor.execute("SELECT user FROM accounts ORDER BY uuid")
                 usernames = [row[0] for row in cursor.fetchall()]
                 response = action["listAccounts"]["successResponse"]
@@ -148,6 +159,7 @@ def process_request(request, connection=None):
                 response["data"]["totalCount"] = len(usernames)
             except:
                 response = action["listAccounts"]["errorResponse"]
+        
         elif "sendMessage" in action:
             # TODO: Client Outbound Connection
             user = action["sendMessage"]["request"]["data"]["user"]
@@ -159,6 +171,8 @@ def process_request(request, connection=None):
                 if cursor.fetchone() is None:
                     response = action["sendMessage"]["errorResponse"]
                 else:
+                    # Add message to messages table
+                    # Note: `user` is the recipient
                     cursor.execute("""
                         INSERT INTO messages (user, sender, msg, checked, inbox)
                         VALUES (?, ?, ?, ?, ?)
@@ -166,39 +180,48 @@ def process_request(request, connection=None):
                     response = action["sendMessage"]["successResponse"]
             except:
                 response = action["sendMessage"]["errorResponse"]
+        
         elif "checkMessage" in action:
             user = action["checkMessage"]["request"]["data"]["username"]
             msg_id = action["checkMessage"]["request"]["data"]["msgId"]
             try:
+                # Update checked status
                 cursor.execute("UPDATE messages SET checked = 1 WHERE user = ? AND msg_id = ?", (user, msg_id,))
                 response = action["checkMessage"]["successResponse"]
             except:
                 response = action["checkMessage"]["errorResponse"]
+        
         elif "deleteMessage" in action:
             user = action["deleteMessage"]["request"]["data"]["username"]
             msg_id = action["deleteMessage"]["request"]["data"]["msgId"]
             try:
+                # Remove message from messages table
                 cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
                 response = action["deleteMessage"]["successResponse"]
             except:
                 response = action["deleteMessage"]["errorResponse"]
+        
         elif "deleteAccount" in action:
             user = action["deleteAccount"]["request"]["data"]["username"]
             pwd = action["deleteAccount"]["request"]["data"]["passwordHash"]
             try:
+                # Remove messages sent to the user, user's drafts, and user's account information
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
                 response = action["deleteAccount"]["successResponse"]
             except:
                 response = action["deleteAccount"]["errorResponse"]
+        
         elif "logout" in action:
             user = action["logout"]["request"]["data"]["username"]
             try:
+                # Update logged in status
                 cursor.execute("UPDATE accounts SET logged_in = 0 WHERE user = ?", (user,))
                 response = action["logout"]["successResponse"]
             except:
                 response = action["logout"]["errorResponse"]
+        
         else:
             response = {
                 "status": "error",
