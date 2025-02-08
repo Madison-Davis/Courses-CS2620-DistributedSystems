@@ -60,6 +60,29 @@
         "data": {}
       }
     },
+    "getPwd": {
+      "request": {
+        "requestId": "<string>",
+        "action": "getPwd",
+        "data": {
+          "username": "<string>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "msg": "",
+        "data": {
+          "passwordHash": "<string>"
+        }
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "msg": "User does not exist or other error.",
+        "data": {}
+      }
+    },
     "listAccounts": {
       "request": {
         "requestId": "<string>",

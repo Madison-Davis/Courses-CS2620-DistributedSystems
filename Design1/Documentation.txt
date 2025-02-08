@@ -49,7 +49,14 @@ Drafts Database
 
 
 -------------------------------------------
+RUNNING 
+Start server: `py .\server\server.py`
+Run GUI: `py .\client\gui.py`
+
+
+
+-------------------------------------------
 TESTING
-To run unit tests, navigate to the `Design1` directory and run: `py -m unittest .\tests\tests_server.py`
+To run unit tests, run: `py -m unittest .\tests\tests_server.py`
 
 

@@ -11,6 +11,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import sqlite3
+import logging
 
 
 
@@ -59,7 +60,7 @@ def db_init(connection=None):
 
 
 # +++++++++++++++++++  Variables  +++++++++++++++++++ #
-sel = selectors.BaseSelector
+sel = selectors.DefaultSelector()
 
 
 
@@ -83,9 +84,11 @@ def process_request(request, connection=None):
                 # Check that user does not already exist
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is not None:
+                    logging.debug("username already exists")
                     response = action["createAccount"]["errorResponse"]
                 # Are users logged in once they register?
                 else:
+                    logging.debug("creating new account")
                     cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
                     response = action["createAccount"]["successResponse"]
             except:
@@ -149,6 +152,17 @@ def process_request(request, connection=None):
                     response = action["login"]["errorResponse"]
             except:
                 response = action["login"]["errorResponse"]
+        
+        elif "getPwd" in action:
+            user = action["getPwd"]["request"]["data"]["username"]
+            try:
+                # Get password for user
+                cursor.execute("SELECT pwd FROM accounts WHERE user = ?", (user,))
+                pwd_hash = cursor.fetchone()[0]
+                response = action["getPwd"]["successResponse"]
+                response["data"]["passwordHash"] = pwd_hash
+            except:
+                response = action["getPwd"]["errorResponse"]
         
         elif "listAccounts" in action:
             try:
@@ -260,7 +274,8 @@ def process_request(request, connection=None):
         db.commit()
         if not connection:
             db.close()
-
+        logging.info("reached end of process_request")
+        logging.info(f"response: {response}")
         return json.dumps(response).encode("utf-8")
     except json.JSONDecodeError:
         return json.dumps({"status": "error", "message": "Invalid JSON"}).encode("utf-8")
@@ -273,7 +288,7 @@ def process_request(request, connection=None):
 def accept_wrapper(sock):
     """Accept connection from client."""
     conn, addr = sock.accept()
-    print(f"Accepted connection from {addr}")
+    logging.info(f"Accepted connection from {addr}")
     conn.setblocking(False)
     # inb   = in buffer, starts out empty
     # outb  = out buffer, starts out empty
@@ -288,9 +303,10 @@ def service_connection(key, mask):
     if mask & selectors.EVENT_READ:
         recv_data = sock.recv(config.PORT)
         if recv_data:
+            logging.info(f"Raw received data: {recv_data}")
             data.outb += recv_data
         else:
-            print(f"Closing connection to {data.addr}")
+            logging.info(f"Closing connection to {data.addr}")
             sel.unregister(sock)
             sock.close()
     # If client requests for us to do a task:
@@ -299,10 +315,13 @@ def service_connection(key, mask):
         # format response into JSON
     if mask & selectors.EVENT_WRITE:
         if data.outb:
-            return_data = process_request(data.inb.decode("utf-8"))
-            return_data = return_data.encode("utf-8")
-            sent = sock.send(return_data)
-            data.outb = data.outb[sent:]
+            try:
+                request_json = data.outb.decode("utf-8").strip()
+                return_data = process_request(request_json)
+                sent = sock.send(return_data)
+                data.outb = data.outb[sent:]
+            except Exception as e:
+                logging.error(f"Error processing request: {e}")
 
 def start_server():
     lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -313,7 +332,7 @@ def start_server():
     sel.register(lsock, selectors.EVENT_READ, data=None)
     try:
         while True:
-            events = sel.select(timeout=None)
+            events = sel.select(timeout=1)
             for key, mask in events:
                 if key.data is None:
                     accept_wrapper(key.fileobj)
@@ -322,7 +341,19 @@ def start_server():
     except KeyboardInterrupt:
         print("Caught keyboard interrupt, exiting")
     finally:
+        print("Closing server...")
         sel.close()
+        lsock.close()
 
 if __name__ == "__main__":
+    # Set up logging
+    logging.basicConfig(
+        level=logging.DEBUG,  # Change to logging.INFO to reduce verbosity
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("server.log"),  # Save logs to a file
+            logging.StreamHandler()  # Show logs in the console
+        ]
+    )
+
     start_server()

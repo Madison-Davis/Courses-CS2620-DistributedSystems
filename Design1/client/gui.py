@@ -102,6 +102,7 @@ def check_username(username):
     username = username.get()
     # NOTE: should not pull passwords for security
     account_users = client_conn.client_conn_list_accounts()
+    pwd_hash = client_conn.client_conn_get_pwd(username)
     result_text = "Welcome Back!" if username in account_users else "Welcome, New User!"
     new_user = False if username in account_users else True
     # Create password label and entry
@@ -110,9 +111,9 @@ def check_username(username):
     login_pwd = tk.Entry(login_frame, show='*')
     login_pwd.grid(row=5, column=0, padx=5)
     # Create enter button
-    tk.Button(login_frame, text="Enter", command=lambda:login(new_user, account_users, account_pwds)).grid(row=6, column=0, padx=5)
+    tk.Button(login_frame, text="Enter", command=lambda:login(new_user, account_users, pwd_hash)).grid(row=6, column=0, padx=5)
 
-def login(new_user, account_users, account_pwds):
+def login(new_user, account_users, pwd_hash):
     """ If new user, create an account.
     If returning user, verify correct username/password.
     Determine if good login, and if so, load main frame. """
@@ -126,7 +127,7 @@ def login(new_user, account_users, account_pwds):
            messagebox.showerror("Error", "Unable to create new user.  Try again")
         db_user_data = [0,[],[],[]]
     # If existing user, verify password lines up
-    elif account_pwds[account_users.index(user)] != pwd:
+    elif pwd_hash != pwd:
         messagebox.showerror("Error", "Invalid Username or Password")
     # If existing user and password lines up, login/load information
     else:
