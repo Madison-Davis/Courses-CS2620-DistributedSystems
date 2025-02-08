@@ -44,10 +44,12 @@ Drafts Database
     user:           str         N/A (no default; should not be in DB)
     recipient:      str         ""
     msg:            str         ""
+    checked:        bool        0
 
 
 
 -------------------------------------------
-
+TESTING
+To run unit tests, navigate to the `Design1` directory and run: `py -m unittest .\tests\tests_server.py`
 
 

@@ -48,7 +48,8 @@ def db_init(connection=None):
         draft_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user TEXT NOT NULL,
         recipient TEXT NOT NULL,
-        msg TEXT NOT NULL
+        msg TEXT NOT NULL,
+        checked INTEGER NOT NULL CHECK (checked IN (0, 1))
     )
     ''')
 
@@ -139,7 +140,7 @@ def process_request(request, connection=None):
                     """, (user,))
                     drafts = cursor.fetchall()
                     draft_list = [
-                        {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3]}
+                        {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                         for row in drafts
                     ]
                     response["data"]["drafts"] = draft_list
@@ -181,6 +182,23 @@ def process_request(request, connection=None):
             except:
                 response = action["sendMessage"]["errorResponse"]
         
+        elif "saveDrafts" in action:
+            user = action["saveDrafts"]["request"]["data"]["user"]
+            drafts = action["saveDrafts"]["request"]["data"]["drafts"]
+            try:
+                # Reset drafts
+                cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
+                # Add draft to drafts table
+                # Note: `user` is the sender
+                for recipient, msg in drafts:
+                    cursor.execute("""
+                        INSERT INTO drafts (user, recipient, msg, checked)
+                        VALUES (?, ?, ?, ?)
+                    """, (user, recipient, msg, 0))
+                response = action["saveDraft"]["successResponse"]
+            except:
+                response = action["saveDraft"]["errorResponse"]
+        
         elif "checkMessage" in action:
             user = action["checkMessage"]["request"]["data"]["username"]
             msg_id = action["checkMessage"]["request"]["data"]["msgId"]
@@ -190,6 +208,16 @@ def process_request(request, connection=None):
                 response = action["checkMessage"]["successResponse"]
             except:
                 response = action["checkMessage"]["errorResponse"]
+        
+        elif "downloadMessage" in action:
+            user = action["downloadMessage"]["request"]["data"]["username"]
+            msg_id = action["downloadMessage"]["request"]["data"]["msgId"]
+            try:
+                # Update checked status
+                cursor.execute("UPDATE messages SET inbox = 0 WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                response = action["downloadMessage"]["successResponse"]
+            except:
+                response = action["downloadMessage"]["errorResponse"]
         
         elif "deleteMessage" in action:
             user = action["deleteMessage"]["request"]["data"]["username"]

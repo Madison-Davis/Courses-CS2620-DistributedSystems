@@ -16,28 +16,25 @@ import client_conn
 # Vars: User's Data
 """
 SQL DB Setup: 3 databases
-Accounts database: user, pwd, logged_in
-Msgs     database: user, msgId, sender user, msg, checked, inbox
-Drafts   database: user, draftId, recipient user, msg, checked
+Accounts database: uuid, user, pwd, logged_in
+Msgs     database: msg_id, user, sender, msg, checked, inbox
+Drafts   database: draft_id, user, recipient, msg, checked
 """
 # These are for retrieving information from DB, as well as 
 # creating edits/changes that we'll send to the DB.
-db_accounts             = [["asd","user1","user2","user3"],
-                           ["asd","pwd1","pwd2","pwd3"]]   
-                                    # NOTE: the above is just dummy data
-                                    # TODO: UNCOMMENT client conns and set this to [[],[]]
-                                    # list of accounts and their passwords, updated to/from DB
+
+# list of account usernames, updated to/from DB
+db_accounts             = []
+
+# list of all (un)downloaded and drafted msgs, updated to/from DB
+# # inboxCount
+# # old_msgs: msg_id, user, sender, msg, checked, inbox
+# # inbox_msgs: msg_id, user, sender, msg, checked, inbox
+# # drafts: draft_id, user, recipient, msg, checked
 db_user_data            = [0, 
-                           [["asd",uuid.uuid4(),"user2","hello asd!",0,0],
-                            ["asd",uuid.uuid4(),"user3","hello asd!",0,0]],
-                           [["asd",uuid.uuid4(),"user3","hello asd!",0]]]        
-                                    # NOTE: the above is just dummy data
-                                    # TODO: UNCOMMENT client conns and set this to [0, [],[]]
-                                    # list of all (un)downloaded and drafted msgs, updated to/from DB
-                                    # inboxCount
-                                    # msgs: user, msgId, sender user, msg, checked, inbox
-                                    # drafts: user, draftId, recipient user, msg
-                                    
+                           [],
+                           [],
+                           []]
                                     # NOTE: we will take this and update it on our side
                                     # then, when we send over this data to server, SQL will:
                                         # DB data: select ALL from DB
@@ -103,10 +100,8 @@ def check_username(username):
     Gives different textual response based if new/returning."""
     global login_username, login_pwd, db_user_data, db_accounts
     username = username.get()
-    # TODO: UNCOMMENT CLIENT CONN
-    # db_accounts[0], db_accounts[1] = client_conn.client_conn_list_accounts()
-    account_users = db_accounts[0]
-    account_pwds = db_accounts[1]
+    # NOTE: should not pull passwords for security
+    account_users = client_conn.client_conn_list_accounts()
     result_text = "Welcome Back!" if username in account_users else "Welcome, New User!"
     new_user = False if username in account_users else True
     # Create password label and entry
@@ -126,29 +121,28 @@ def login(new_user, account_users, account_pwds):
     pwd = login_pwd.get()
     # If new user, create a new account
     if new_user:
-        # TODO: UNCOMMENT CLIENT CONN
-        #status = client_conn_create_account(user, pwd)
-        #if not status:
-        #    messagebox.showerror("Error", "Unable to create new user.  Try again")
-        db_user_data = [0,[],[]]
+        status = client_conn.client_conn_create_account(user, pwd)
+        if not status:
+           messagebox.showerror("Error", "Unable to create new user.  Try again")
+        db_user_data = [0,[],[],[]]
     # If existing user, verify password lines up
     elif account_pwds[account_users.index(user)] != pwd:
         messagebox.showerror("Error", "Invalid Username or Password")
     # If existing user and password lines up, login/load information
     else:
-        # TODO: UNCOMMENT CLIENT CONN
-        # db_user_data = client_conn_login(user, pwd) # [inboxCount, msgs, drafts]
-        pass
+        db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
         
 def logout():
     """ Default message template and return to login frame. """
-    # TODO: UNCOMMENT CLIENT CONN
-    # status = client_conn_logout(login_username)
-    # if not status:
-    #    messagebox.showerror("Error", "Unable to delete user.")
+    status = client_conn.client_conn_logout(login_username)
+    if not status:
+       messagebox.showerror("Error", "Unable to log out.")
+    # Save all drafts to db
+    drafts = [(msg[2], msg[3]) for msg in db_user_data[3]]
+    client_conn.client_conn_save_drafts(login_username, drafts)
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -156,12 +150,11 @@ def logout():
 def delete_account():
     """ Delete account and send request to DB to update this. """
     # Reset all data
-    db_accounts = [[], []]
-    db_user_data = [0, [], []]
-    # TODO: UNCOMMENT CLIENT CONN
-    # status = client_conn_delete_account(login_username, login_pwd)
-    # if not status:
-    #    messagebox.showerror("Error", "Unable to delete user.")
+    db_accounts = []
+    db_user_data = [0, [], [], []]
+    status = client_conn.client_conn_delete_account(login_username, login_pwd)
+    if not status:
+       messagebox.showerror("Error", "Unable to delete user.")
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -172,34 +165,36 @@ def delete_account():
 def clicked_send():
     """ When we click 'Send', we send all drafts with checks and delete from GUI. """
     # Get user drafts that have checkmarks from GUI
-    drafts = db_user_data[2]
-    draftIds_with_checkmarks = [msg[1] for msg in drafts if msg[-1] == 1]
+    drafts = db_user_data[3]
+    drafts_with_checkmarks = [msg for msg in drafts if msg[-1] == 1]
     # Go through the drafts and send them one by one
-    for i in range(len(draftIds_with_checkmarks)):
-        draftId = draftIds_with_checkmarks[i]
-        # TODO: UNCOMMENT CLIENT CONN
-        # status = client_conn_send_message(db_user, draftId)
-        # if status != "ok":
-        #    messagebox.showerror("Error", "Delivery of some messages unsuccessful")
-    pass
+    for draft in drafts_with_checkmarks:
+        recipient = draft[2]
+        content = draft[3]
+        status = client_conn.client_conn_send_message(recipient, login_username, content)
+        if status != "ok":
+           messagebox.showerror("Error", "Delivery of some messages unsuccessful")
+        # Remove drafts that are sent
+        db_user_data.remove(draft) # can you directly move an item of a sublist?
 
 def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
     # Get all messages in inbox (if the inbox is marked as True)
-    inbox_msgs = [row for row in db_user_data[1] if row[-1] == 1]
+    inbox_msgs = db_user_data[2]
+    inboxCount = len(inbox_msgs)
     # Go through 'num' messages, create a new unread msg, and remove from inbox db
     for i in range(num):
         # Edge case: user asks for too many
-        if i >= len(inbox_msgs):
+        if i >= inboxCount:
             messagebox.showerror("Error", message="Nothing in inbox!")
             break
         create_new_unread_msg(inbox_msgs[i])
-        db_user_data.remove(inbox_msgs[i])
+        client_conn.client_conn_download_message(login_username, inbox_msgs[i][0])  # does this store message ID?
+        db_user_data.remove(inbox_msgs[i])  # can you directly move an item of a sublist?
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
-    # TODO: UNCOMMENT CLIENT CONN
-    # client_conn.client_conn_check_message(user, msgId)
+    client_conn.client_conn_check_message(user, msgId)
     btn.config(text="Read") if check_var.get() == 1 else btn.config(text="Unread")
 
 def clicked_edit(row):
@@ -214,16 +209,16 @@ def clicked_saved(row, draftId, msg, recipient, checked):
     drafts_msgs[row].config(state=tk.DISABLED)
     # We already made a new draft when clicking 'New', so let's just find that entry
     data_index = -1
-    for i, entry in enumerate(db_user_data[2]):
-        if entry[1] == draftId:
+    for i, entry in enumerate(db_user_data[3]):
+        if entry[0] == draftId:
             data_index = i
             break
     if data_index == -1:
         messagebox.showerror("Error", "Unable to save.")
     # Once we have entry, update its values
-    db_user_data[2][data_index][2] = recipient
-    db_user_data[2][data_index][3] = msg
-    db_user_data[2][data_index][4] = checked
+    db_user_data[3][data_index][2] = recipient
+    db_user_data[3][data_index][3] = msg
+    db_user_data[3][data_index][4] = checked
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -235,22 +230,22 @@ def clicked_select_all():
 
 def clicked_new_button():
     """ When we click 'New' button, create a new draft """  
-    row_idx = len(db_user_data[2]) + start_row_messages
+    row_idx = len(db_user_data[3]) + start_row_messages
     create_new_draft(row_idx)
 
 def filter_recipients(event, row):
     """ Filters recipient dropdown list as user types. """
     typed_text = drafts_recipients[row].get().lower()
-    filtered_users = [user for user in db_accounts[0] if typed_text in user.lower()]
+    updated_accounts = client_conn.client_conn_list_accounts()
+    filtered_users = [user for user in updated_accounts if typed_text in user.lower()]
     drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
 def clicked_delete_msg(widget, user, msgId):
     """ When we click 'Delete' button, removes row and moves other rows up. """
-    # TODO: UNCOMMENT CLIENT CONN
-    # status = client_conn.client_conn_delete_message(user, msgId)
-    # if status != "ok":
-    #    messagebox.showerror("Error", "Deletion unsuccessful")
+    status = client_conn.client_conn_delete_message(user, msgId)
+    if status != "ok":
+       messagebox.showerror("Error", "Deletion unsuccessful")
     # Delete specified cells that correspond to the message we want to delete
     row = widget.grid_info()["row"]
     for w in main_frame.grid_slaves():
@@ -289,7 +284,7 @@ def create_new_draft(row_idx):
     drafts_msgs[i] = message_entry
     # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
-    recipient_entry['values'] = db_accounts[0]
+    recipient_entry['values'] = db_accounts
     recipient_entry.set(recipient_entry)
     recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
@@ -302,7 +297,7 @@ def create_new_draft(row_idx):
     save_btn.grid(row=i+1, column=col_sending_save, padx=5)
     # create draftId for this draft
     # return num of drafts and draftId
-    db_user_data[2].append([login_username, draftId, "", "", 0])
+    db_user_data[3].append([draftId, login_username, "", "", 0])
 
 def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
@@ -321,7 +316,7 @@ def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
     drafts_msgs[i] = message_entry
     # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
-    recipient_entry['values'] = db_accounts[0]
+    recipient_entry['values'] = db_accounts
     recipient_entry.set(recipient)
     recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
@@ -339,8 +334,8 @@ def create_new_unread_msg(inbox_msg):
     sender = inbox_msg[2]
     checkbox = 0 # default
     content = inbox_msg[3]
-    user = inbox_msg[0]
-    msgId = inbox_msg[1]
+    user = inbox_msg[1]
+    msgId = inbox_msg[0]
     i = start_row_messages
     next_row = i + 1
     # Shift down all rows by 1 to make room for inserted widget
@@ -390,7 +385,7 @@ def load_login_frame():
     # Part 2: determine if new/existing user
     login_username.bind('<Return>', lambda event,username=login_username: check_username(username))
 
-def load_main_frame(db_user_data=[0,[],[]]):
+def load_main_frame(db_user_data=[0,[],[],[]]):
     """ Clears and resets the main frame to its initial state. 
         db_user_data: user data to populate fields
         if user is None, then just provides defalt template."""
@@ -427,7 +422,7 @@ def load_main_frame(db_user_data=[0,[],[]]):
     drafts_msgs         = {}
     drafts_recipients   = {}
 
-    if db_user_data != [0,[],[]]:
+    if db_user_data != [0,[],[],[]]:
         load_main_frame_user_info(db_user_data)
 
 def load_main_frame_user_info(db_user_data):
@@ -438,28 +433,27 @@ def load_main_frame_user_info(db_user_data):
     # Populate messages
     for i, msg in enumerate(db_user_data[1]): 
         # user, msgId, sender user, msg, checked, inbox
-        # Is it meant to be in inbox?  Otherwise, make a widget
-        if msg[-1] != 1:
-            sender = msg[2]
-            checkbox = msg[4]
-            content = msg[3]
-            user = msg[0]
-            msgId = msg[1]
-            checkbox_text = "Read" if checkbox else "Unread"
-            i = i + start_row_messages
-            msg_formatted = sender + ": " + content
-            btn_del = tk.Button(main_frame, text="Delete")
-            btn_del.grid(row=i+1, column=col_incoming_delete)
-            btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, user, msgId))
-            check_var = tk.IntVar()
-            check_btn = tk.Checkbutton(main_frame, text=checkbox_text, variable=check_var)
-            check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
-            check_btn.grid(row=i+1, column=col_incoming_checkbox)
-            check_btn.var = check_var # saves a reference to allow us to immediately check it
-            check_var.set(checkbox)
-            tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
+        # db_user_data[1] are non-inbox messages
+        sender = msg[2]
+        checkbox = msg[4]
+        content = msg[3]
+        user = msg[1]
+        msgId = msg[0]
+        checkbox_text = "Read" if checkbox else "Unread"
+        i = i + start_row_messages
+        msg_formatted = sender + ": " + content
+        btn_del = tk.Button(main_frame, text="Delete")
+        btn_del.grid(row=i+1, column=col_incoming_delete)
+        btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, user, msgId))
+        check_var = tk.IntVar()
+        check_btn = tk.Checkbutton(main_frame, text=checkbox_text, variable=check_var)
+        check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
+        check_btn.grid(row=i+1, column=col_incoming_checkbox)
+        check_btn.var = check_var # saves a reference to allow us to immediately check it
+        check_var.set(checkbox)
+        tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     i = 0
-    for draft in db_user_data[2]: 
+    for draft in db_user_data[3]: 
         print(draft)
         create_existing_draft(i, draft[1], draft[2], draft[3], draft[4])
         i += 1

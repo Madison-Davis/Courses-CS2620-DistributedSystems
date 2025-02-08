@@ -108,6 +108,33 @@
         "data": {}
       }
     },
+    "saveDrafts": {
+      "request": {
+        "requestId": "<string>",
+        "action": "saveDraft",
+        "data": {
+          "user": "<string>",
+          "drafts": [
+            {
+              "recipient": "<string>",
+              "content": "<string>"
+            }
+          ]
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "msg": "Draft saved.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "msg": "Cannot save draft or other error.",
+        "data": {}
+      }
+    },
     "checkMessage": {
       "request": {
         "requestId": "<string>",
@@ -127,6 +154,28 @@
         "requestId": "<string>",
         "status": "error",
         "msg": "Message unable to read or other error.",
+        "data": {}
+      }
+    },
+    "downloadMessage": {
+      "request": {
+        "requestId": "<string>",
+        "action": "downloadMessage",
+        "data": {
+          "username": "<string>",
+          "msgId": "<integer>"
+        }
+      },
+      "successResponse": {
+        "requestId": "<string>",
+        "status": "ok",
+        "msg": "Message downloaded from inbox.",
+        "data": {}
+      },
+      "errorResponse": {
+        "requestId": "<string>",
+        "status": "error",
+        "msg": "Message unable to download or other error.",
         "data": {}
       }
     },

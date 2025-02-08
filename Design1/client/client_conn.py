@@ -28,8 +28,8 @@ def client_conn_create_account(user, pwd):
                     "requestId": request_id,
                     "action": "createAccount",
                     "data": {
-                    "username": user,
-                    "passwordHash": pwd
+                        "username": user,
+                        "passwordHash": pwd
                     }
                 }
             }
@@ -38,7 +38,7 @@ def client_conn_create_account(user, pwd):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
     # See if successfully created account
@@ -62,8 +62,8 @@ def client_conn_login(user, pwd):
                     "requestId": request_id,
                     "action": "login",
                     "data": {
-                    "username": user,
-                    "passwordHash": pwd
+                        "username": user,
+                        "passwordHash": pwd
                     }
                 }
             }
@@ -72,24 +72,25 @@ def client_conn_login(user, pwd):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully logged in
     try:
         response_json = json.loads(response)
         if response_json.get("status") == "ok":
             inboxCount = response_json.get("inboxCount")
-            msgs = response_json.get("msgs")
+            old_msgs = response_json.get("old_msgs")
+            inbox_msgs = response_json.get("inbox_msgs")
             drafts = response_json.get("drafts")
-            return [inboxCount, msgs, drafts]
+            return [inboxCount, old_msgs, inbox_msgs, drafts]
         return []
     except json.JSONDecodeError:
         return []
     
 def client_conn_list_accounts():
     """ JSON: listAccounts 
-    Return: lists of account users and passwords, else [], []."""
+    Return: lists of account users, else []."""
     # Set up request
     request_id = str(uuid.uuid4())
     request = {
@@ -115,12 +116,11 @@ def client_conn_list_accounts():
     try:
         response_json = json.loads(response)
         account_users = response_json.get("data").get("accounts_users", [])
-        account_pwds = response_json.get("data").get("accounts_pwds", [])
-        return account_users, account_pwds
+        return account_users
     except json.JSONDecodeError:
-        return [], []
+        return []
 
-def client_conn_send_message(user, draftId):
+def client_conn_send_message(user, sender, content):
     """ JSON: sendMessage
     Return: T for success, F for no success """
     # Set up request
@@ -134,8 +134,9 @@ def client_conn_send_message(user, draftId):
                     "requestId": request_id,
                     "action": "sendMessage",
                     "data": {
-                    "recipient": user,
-                    "content": draftId
+                        "recipient": user,
+                        "sender": sender,
+                        "content": content
                     }
                 }
             }
@@ -144,10 +145,44 @@ def client_conn_send_message(user, draftId):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully sent message
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
+def client_conn_save_drafts(user, drafts):
+    """ JSON: sendMessage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "saveDrafts": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "saveDrafts",
+                    "data": {
+                        "user": user,
+                        "drafts": drafts
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response from server
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # See if successfully sent message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
@@ -168,8 +203,8 @@ def client_conn_check_message(user, msgId):
                     "requestId": request_id,
                     "action": "checkMessage",
                     "data": {
-                    "username": user,
-                     "msgIds": msgId
+                        "username": user,
+                        "msgId": msgId
                     }
                 }
             }
@@ -178,10 +213,44 @@ def client_conn_check_message(user, msgId):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully checked message
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+    
+def client_conn_download_message(user, msgId):
+    """ JSON: downloadMesssage
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "downloadMesssage": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "downloadMesssage",
+                    "data": {
+                        "username": user,
+                        "msgId": msgId
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response from server
+    data = s.recv(config.PORT)
+    response = data.decode("utf-8")
+    # See if successfully downloaded message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
@@ -202,8 +271,8 @@ def client_conn_delete_message(user, msgId):
                     "requestId": request_id,
                     "action": "deleteMessage",
                     "data": {
-                     "username": user,
-                     "msgIds": msgId
+                        "username": user,
+                        "msgId": msgId
                     }
                 }
             }
@@ -212,10 +281,10 @@ def client_conn_delete_message(user, msgId):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully deleted message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
@@ -236,8 +305,8 @@ def client_conn_delete_account(user, pwd):
                     "requestId": request_id,
                     "action": "deleteAccount",
                     "data": {
-                    "username": user,
-                     "passwordHash": pwd
+                        "username": user,
+                        "passwordHash": pwd
                     }
                 }
             }
@@ -246,10 +315,10 @@ def client_conn_delete_account(user, pwd):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully deleted account
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
@@ -270,7 +339,7 @@ def client_conn_logout(user):
                     "requestId": request_id,
                     "action": "logout",
                     "data": {
-                    "username": user,
+                        "username": user,
                     }
                 }
             }
@@ -279,10 +348,10 @@ def client_conn_logout(user):
     # Send request
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
-    # Receive response form server
+    # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
-    # See if successfully created account
+    # See if successfully logged out
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
