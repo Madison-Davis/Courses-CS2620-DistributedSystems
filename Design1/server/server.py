@@ -15,9 +15,9 @@ import sqlite3
 
 
 # ++++++++++++ Database: Set Up ++++++++++++ #
-def db_init():
+def db_init(connection=None):
     # Connect to database, or create if doesn't exist
-    db = sqlite3.connect('chat_database.db')
+    db = connection if connection else sqlite3.connect('chat_database.db')
 
     # Create cursor to interact with database
     cursor = db.cursor()
@@ -51,7 +51,8 @@ def db_init():
     ''')
 
     db.commit()
-    db.close()
+    if not connection:
+        db.close()
 
 
 # +++++++++++++++++++  Variables  +++++++++++++++++++ #
@@ -60,14 +61,14 @@ sel = selectors.BaseSelector
 
 
 # ++++++++++++ Functions: Processing Requests ++++++++++++ #
-def process_request(request):
+def process_request(request, connection=None):
     """Process JSON request from client and return response."""
     try:
         request_json = json.loads(request)
         action = request_json.get("actions", {})
 
         # Connect to database, or create if doesn't exist
-        db = sqlite3.connect('chat_database.db')
+        db = connection if connection else sqlite3.connect('chat_database.db')
 
         # Create cursor to interact with database
         cursor = db.cursor()
@@ -93,13 +94,13 @@ def process_request(request):
                     # Populate data of user
                     # Not newly received messages
                     cursor.execute("""
-                        SELECT msg_id, user, recipient, msg, checked, inbox
-                        FROM messages WHERE recipient = ? AND inbox = 0
+                        SELECT msg_id, user, sender, msg, checked, inbox
+                        FROM messages WHERE user = ? AND inbox = 0
                         ORDER BY msg_id DESC
                     """, (user,))
                     old_messages = cursor.fetchall()
                     old_message_list = [
-                        {"msg_id": row[0], "user": row[1], "recipient": row[2],
+                        {"msg_id": row[0], "user": row[1], "sender": row[2],
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
                         for row in old_messages
                     ]
@@ -107,13 +108,13 @@ def process_request(request):
 
                     # Newly received messages in inbox
                     cursor.execute("""
-                        SELECT msg_id, user, recipient, msg, checked, inbox
-                        FROM messages WHERE recipient = ? AND inbox = 1
+                        SELECT msg_id, user, sender, msg, checked, inbox
+                        FROM messages WHERE user = ? AND inbox = 1
                         ORDER BY msg_id DESC
                     """, (user,))
                     new_messages = cursor.fetchall()
                     new_message_list = [
-                        {"msg_id": row[0], "user": row[1], "recipient": row[2],
+                        {"msg_id": row[0], "user": row[1], "sender": row[2],
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
                         for row in new_messages
                     ]
@@ -150,14 +151,19 @@ def process_request(request):
         elif "sendMessage" in action:
             # TODO: Client Outbound Connection
             user = action["sendMessage"]["request"]["data"]["user"]
-            recipient = action["sendMessage"]["request"]["data"]["recipient"]
+            sender = action["sendMessage"]["request"]["data"]["sender"]
             msg = action["sendMessage"]["request"]["data"]["content"]
             try:
-                cursor.execute("""
-                    INSERT INTO messages (user, recipient, msg, checked, inbox)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (user, recipient, msg, 0, 1))
-                response = action["sendMessage"]["successResponse"]
+                # Check if recipient exists
+                cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
+                if cursor.fetchone() is None:
+                    response = action["sendMessage"]["errorResponse"]
+                else:
+                    cursor.execute("""
+                        INSERT INTO messages (user, sender, msg, checked, inbox)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (sender, user, msg, 0, 1))
+                    response = action["sendMessage"]["successResponse"]
             except:
                 response = action["sendMessage"]["errorResponse"]
         elif "checkMessage" in action:
@@ -173,9 +179,9 @@ def process_request(request):
             msg_id = action["deleteMessage"]["request"]["data"]["msgId"]
             try:
                 cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
-                response = action["deleteAccount"]["successResponse"]
+                response = action["deleteMessage"]["successResponse"]
             except:
-                response = action["deleteAccount"]["errorResponse"]
+                response = action["deleteMessage"]["errorResponse"]
         elif "deleteAccount" in action:
             user = action["deleteAccount"]["request"]["data"]["username"]
             pwd = action["deleteAccount"]["request"]["data"]["passwordHash"]
@@ -201,7 +207,8 @@ def process_request(request):
             }
         
         db.commit()
-        db.close()
+        if not connection:
+            db.close()
 
         return json.dumps(response).encode("utf-8")
     except json.JSONDecodeError:

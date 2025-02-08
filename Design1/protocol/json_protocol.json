@@ -91,7 +91,7 @@
         "action": "sendMessage",
         "data": {
           "user": "<string>",
-          "recipient": "<string>",
+          "sender": "<string>",
           "content": "<string>"
         }
       },
