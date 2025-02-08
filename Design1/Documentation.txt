@@ -24,23 +24,24 @@ SQL DB:
 
 Accounts Database
     [COLUMN]        [TYPE]      [DEFAULT]
+    uuid:           int         N/A (no default; should not be in DB)
     user:           str         N/A (no default; should not be in DB)
     pwd:            str         N/A (no default; should not be in DB)
-    logged_in:      bool        0   
+    logged_in:      bool        0
 
 Messages Database
     [COLUMN]        [TYPE]      [DEFAULT]
+    msg_id:         int         N/A (no default; should not be in DB)
     user:           str         N/A (no default; should not be in DB)
-    msgId:          str         N/A (no default; should not be in DB)
     sender:         str         N/A (no default; should not be in DB)
     msg:            str         N/A (no default; should not be in DB)
-    checked:        int 0/1     0
-    inbox:          bool        T
+    checked:        bool        0
+    inbox:          bool        1
 
 Drafts Database
     [COLUMN]        [TYPE]      [DEFAULT]
+    draft_id:       int         N/A (no default; should not be in DB)
     user:           str         N/A (no default; should not be in DB)
-    draftId:        str         N/A (no default; should not be in DB)
     recipient:      str         ""
     msg:            str         ""
 

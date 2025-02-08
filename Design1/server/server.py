@@ -10,7 +10,48 @@ import types
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
+import sqlite3
 
+
+
+# ++++++++++++ Database: Set Up ++++++++++++ #
+def db_init():
+    # Connect to database, or create if doesn't exist
+    db = sqlite3.connect('chat_database.db')
+
+    # Create cursor to interact with database
+    cursor = db.cursor()
+
+    # Create tables
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS accounts (
+        uuid INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        pwd TEXT NOT NULL,
+        logged_in INTEGER NOT NULL CHECK (logged_in IN (0, 1))
+    )
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS messages (
+        msg_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        msg TEXT NOT NULL,
+        checked INTEGER NOT NULL CHECK (checked IN (0, 1)),
+        inbox INTEGER NOT NULL CHECK (inbox IN (0, 1))
+    )
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS drafts (
+        draft_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        msg TEXT NOT NULL
+    )
+    ''')
+
+    db.commit()
+    db.close()
 
 
 # +++++++++++++++++++  Variables  +++++++++++++++++++ #
@@ -25,33 +66,143 @@ def process_request(request):
         request_json = json.loads(request)
         action = request_json.get("actions", {})
 
+        # Connect to database, or create if doesn't exist
+        db = sqlite3.connect('chat_database.db')
+
+        # Create cursor to interact with database
+        cursor = db.cursor()
+
         if "createAccount" in action:
-            # TODO: SQL
-            response = {}
+            user = action["createAccount"]["request"]["data"]["username"]
+            pwd = action["createAccount"]["request"]["data"]["passwordHash"]
+            try:
+                # are users logged in once they register?
+                cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
+                response = action["createAccount"]["successResponse"]
+            except:
+                response = action["createAccount"]["errorResponse"]
         elif "login" in action:
-            # TODO: SQL
-            response = {}
+            user = action["login"]["request"]["data"]["username"]
+            pwd = action["login"]["request"]["data"]["passwordHash"]
+            try:
+                cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                account = cursor.fetchone()
+                if account is not None:
+                    cursor.execute("UPDATE accounts SET logged_in = 1 WHERE user = ?", (user,))
+                    response = action["login"]["successResponse"]
+                    # Populate data of user
+                    # Not newly received messages
+                    cursor.execute("""
+                        SELECT msg_id, user, recipient, msg, checked, inbox
+                        FROM messages WHERE recipient = ? AND inbox = 0
+                        ORDER BY msg_id DESC
+                    """, (user,))
+                    old_messages = cursor.fetchall()
+                    old_message_list = [
+                        {"msg_id": row[0], "user": row[1], "recipient": row[2],
+                        "msg": row[3], "checked": row[4], "inbox": row[5]}
+                        for row in old_messages
+                    ]
+                    response["data"]["old_msgs"] = old_message_list
+
+                    # Newly received messages in inbox
+                    cursor.execute("""
+                        SELECT msg_id, user, recipient, msg, checked, inbox
+                        FROM messages WHERE recipient = ? AND inbox = 1
+                        ORDER BY msg_id DESC
+                    """, (user,))
+                    new_messages = cursor.fetchall()
+                    new_message_list = [
+                        {"msg_id": row[0], "user": row[1], "recipient": row[2],
+                        "msg": row[3], "checked": row[4], "inbox": row[5]}
+                        for row in new_messages
+                    ]
+                    response["data"]["new_msgs"] = new_message_list
+                    response["data"]["inboxCount"] = len(new_message_list)
+
+                    # Saved drafts
+                    cursor.execute("""
+                        SELECT draft_id, user, recipient, msg
+                        FROM drafts
+                        WHERE user = ?
+                        ORDER BY draft_id
+                    """, (user,))
+                    drafts = cursor.fetchall()
+                    draft_list = [
+                        {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3]}
+                        for row in drafts
+                    ]
+                    response["data"]["drafts"] = draft_list
+
+                else:
+                    response = action["login"]["errorResponse"]
+            except:
+                response = action["login"]["errorResponse"]
         elif "listAccounts" in action:
-            # TODO: SQL
-            response = {}
+            try:
+                cursor.execute("SELECT user FROM accounts ORDER BY uuid")
+                usernames = [row[0] for row in cursor.fetchall()]
+                response = action["listAccounts"]["successResponse"]
+                response["data"]["accounts_users"] = usernames
+                response["data"]["totalCount"] = len(usernames)
+            except:
+                response = action["listAccounts"]["errorResponse"]
         elif "sendMessage" in action:
-            # TODO: SQL, Client Outbound Connection
-            response = {}
+            # TODO: Client Outbound Connection
+            user = action["sendMessage"]["request"]["data"]["user"]
+            recipient = action["sendMessage"]["request"]["data"]["recipient"]
+            msg = action["sendMessage"]["request"]["data"]["content"]
+            try:
+                cursor.execute("""
+                    INSERT INTO messages (user, recipient, msg, checked, inbox)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (user, recipient, msg, 0, 1))
+                response = action["sendMessage"]["successResponse"]
+            except:
+                response = action["sendMessage"]["errorResponse"]
         elif "checkMessage" in action:
-            # TODO: SQL
-            response = {}
+            user = action["checkMessage"]["request"]["data"]["username"]
+            msg_id = action["checkMessage"]["request"]["data"]["msgId"]
+            try:
+                cursor.execute("UPDATE messages SET checked = 1 WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                response = action["checkMessage"]["successResponse"]
+            except:
+                response = action["checkMessage"]["errorResponse"]
         elif "deleteMessage" in action:
-            # TODO: SQL
-            response = {}
+            user = action["deleteMessage"]["request"]["data"]["username"]
+            msg_id = action["deleteMessage"]["request"]["data"]["msgId"]
+            try:
+                cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                response = action["deleteAccount"]["successResponse"]
+            except:
+                response = action["deleteAccount"]["errorResponse"]
         elif "deleteAccount" in action:
-            # TODO: SQL
-            response = {}
+            user = action["deleteAccount"]["request"]["data"]["username"]
+            pwd = action["deleteAccount"]["request"]["data"]["passwordHash"]
+            try:
+                cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
+                cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
+                cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                response = action["deleteAccount"]["successResponse"]
+            except:
+                response = action["deleteAccount"]["errorResponse"]
         elif "logout" in action:
-            # TODO: SQL
-            response = {}
+            user = action["logout"]["request"]["data"]["username"]
+            try:
+                cursor.execute("UPDATE accounts SET logged_in = 0 WHERE user = ?", (user,))
+                response = action["logout"]["successResponse"]
+            except:
+                response = action["logout"]["errorResponse"]
         else:
-            # TODO: Error
-            repsonse = {}
+            response = {
+                "status": "error",
+                "msg": "Unknown error occurred.",
+                "data": {}
+            }
+        
+        db.commit()
+        db.close()
+
         return json.dumps(response).encode("utf-8")
     except json.JSONDecodeError:
         return json.dumps({"status": "error", "message": "Invalid JSON"}).encode("utf-8")

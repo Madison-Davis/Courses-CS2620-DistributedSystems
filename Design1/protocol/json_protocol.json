@@ -39,7 +39,11 @@
         "msg": "Login successful.",
         "data": {
           "inboxCount": "<integer>",
-          "msgs": [
+          "old_msgs": [
+            "<string>",
+            "<string>"
+          ],
+          "inbox_msgs": [
             "<string>",
             "<string>"
           ],
@@ -71,10 +75,6 @@
             "<string>",
             "<string>"
           ],
-          "accounts_pwds": [
-            "<string>",
-            "<string>"
-          ],
           "totalCount": "<integer>"
         }
       },
@@ -90,6 +90,7 @@
         "requestId": "<string>",
         "action": "sendMessage",
         "data": {
+          "user": "<string>",
           "recipient": "<string>",
           "content": "<string>"
         }
@@ -113,7 +114,7 @@
         "action": "checkMessage",
         "data": {
           "username": "<string>",
-          "msgIds": "<integer>"
+          "msgId": "<integer>"
         }
       },
       "successResponse": {
@@ -135,7 +136,7 @@
         "action": "deleteMessage",
         "data": {
           "username": "<string>",
-          "msgIds": "<integer>"
+          "msgId": "<integer>"
         }
       },
       "successResponse": {
