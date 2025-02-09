@@ -176,7 +176,7 @@ def clicked_send():
         if status != "ok":
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
         # Remove drafts that are sent
-        db_user_data.remove(draft) # can you directly move an item of a sublist?
+        db_user_data[3].remove(draft)
 
 def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
@@ -190,8 +190,8 @@ def clicked_open_inbox(num):
             messagebox.showerror("Error", message="Nothing in inbox!")
             break
         create_new_unread_msg(inbox_msgs[i])
-        client_conn.client_conn_download_message(login_username, inbox_msgs[i][0])  # does this store message ID?
-        db_user_data.remove(inbox_msgs[i])  # can you directly move an item of a sublist?
+        client_conn.client_conn_download_message(login_username, inbox_msgs[i]["msg_id"])  # does this store message ID?
+        db_user_data[2].remove(inbox_msgs[i])
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
@@ -324,11 +324,11 @@ def create_existing_draft(row_idx, recipient="", msg="", checked=0):
 def create_new_unread_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""
     # Set up variables
-    sender = inbox_msg[2]
+    sender = inbox_msg["sender"]
     checkbox = 0 # default
-    content = inbox_msg[3]
-    user = inbox_msg[1]
-    msgId = inbox_msg[0]
+    content = inbox_msg["msg"]
+    user = inbox_msg["user"]
+    msgId = inbox_msg["msg_id"]
     i = start_row_messages
     next_row = i + 1
     # Shift down all rows by 1 to make room for inserted widget
@@ -427,11 +427,11 @@ def load_main_frame_user_info(db_user_data):
     for i, msg in enumerate(db_user_data[1]): 
         # user, msgId, sender user, msg, checked, inbox
         # db_user_data[1] are non-inbox messages
-        sender = msg[2]
-        checkbox = msg[4]
-        content = msg[3]
-        user = msg[1]
-        msgId = msg[0]
+        sender = msg["sender"]
+        checkbox = msg["checked"]
+        content = msg["msg"]
+        user = msg["user"]
+        msgId = msg["msg_id"]
         checkbox_text = "Read" if checkbox else "Unread"
         i = i + start_row_messages
         msg_formatted = sender + ": " + content

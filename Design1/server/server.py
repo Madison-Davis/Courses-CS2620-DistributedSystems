@@ -302,7 +302,7 @@ def process_request(request, connection=None):
             drafts = action["saveDrafts"]["request"]["data"]["drafts"]
             try:
                 # Reset drafts
-                # cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
+                cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
                 # Add draft to drafts table
                 # Note: `user` is the sender
                 logging.info("drafts reset")
