@@ -57,7 +57,7 @@ def client_conn_create_account(user, pwd):
     logging.info(msg)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(4096)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     logging.info(response)
     # See if successfully created account
@@ -92,7 +92,7 @@ def client_conn_login(user, pwd):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     print(response)
     # See if successfully logged in
@@ -132,7 +132,7 @@ def client_conn_get_pwd(user):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # Parse response from server
     try:
@@ -167,7 +167,7 @@ def client_conn_list_accounts():
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response form server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     print(response)
     # Parse response from server
@@ -207,7 +207,7 @@ def client_conn_send_message(user, sender, content):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully sent message
     try:
@@ -241,7 +241,7 @@ def client_conn_save_drafts(user, drafts):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully sent message
     try:
@@ -275,7 +275,7 @@ def client_conn_check_message(user, msgId):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully checked message
     try:
@@ -309,7 +309,7 @@ def client_conn_download_message(user, msgId):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully downloaded message
     try:
@@ -343,7 +343,7 @@ def client_conn_delete_message(user, msgId):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully deleted message
     try:
@@ -377,7 +377,7 @@ def client_conn_delete_account(user, pwd):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     # See if successfully deleted account
     try:
@@ -410,7 +410,7 @@ def client_conn_logout(user):
     msg = json.dumps(request)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
     print(response)
     # See if successfully logged out
