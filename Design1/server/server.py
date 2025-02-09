@@ -17,6 +17,8 @@ import logging
 
 # ++++++++++++ Database: Set Up ++++++++++++ #
 def db_init(connection=None):
+    logging.info("SERVER: initializing database")
+
     # Connect to database, or create if doesn't exist
     db = connection if connection else sqlite3.connect('chat_database.db')
 
@@ -78,13 +80,14 @@ def process_request(request, connection=None):
         cursor = db.cursor()
 
         if "createAccount" in action:
+            logging.info("SERVER: starting to create account")
             user = action["createAccount"]["request"]["data"]["username"]
             pwd = action["createAccount"]["request"]["data"]["passwordHash"]
             try:
                 # Check that user does not already exist
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is not None:
-                    logging.debug("username already exists")
+                    logging.info("SERVER: username already exists")
                     response = {
                         "requestId": action["createAccount"]["request"]["requestId"],
                         "status": "error",
@@ -93,8 +96,8 @@ def process_request(request, connection=None):
                     }
                 # Are users logged in once they register?
                 else:
-                    logging.debug("creating new account")
                     cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
+                    logging.info("SERVER: account created successfully")
                     response = {
                         "requestId": action["createAccount"]["request"]["requestId"],
                         "status": "ok",
@@ -102,6 +105,7 @@ def process_request(request, connection=None):
                         "data": {}
                     }
             except:
+                logging.error("SERVER: cannot create account")
                 response = {
                     "requestId": action["createAccount"]["request"]["requestId"],
                     "status": "error",
@@ -110,6 +114,7 @@ def process_request(request, connection=None):
                 }
         
         elif "login" in action:
+            logging.info("SERVER: starting to login")
             user = action["login"]["request"]["data"]["username"]
             pwd = action["login"]["request"]["data"]["passwordHash"]
             try:
@@ -157,7 +162,7 @@ def process_request(request, connection=None):
                         {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                         for row in drafts
                     ]
-                    
+
                     response = {
                         "requestId": action["login"]["request"]["requestId"],
                         "status": "ok",
@@ -169,8 +174,11 @@ def process_request(request, connection=None):
                             "drafts": draft_list
                         }
                     }
+                    
+                    logging.info(f"SERVER: login information {response}")
 
                 else:
+                    logging.error("SERVER: 1invalid login credentials")
                     response = {
                         "requestId": action["login"]["request"]["requestId"],
                         "status": "error",
@@ -178,6 +186,7 @@ def process_request(request, connection=None):
                         "data": {}
                     }
             except:
+                logging.error("SERVER: 2invalid login credentials")
                 response = {
                     "requestId": action["login"]["request"]["requestId"],
                     "status": "error",
@@ -186,20 +195,32 @@ def process_request(request, connection=None):
                 }
         
         elif "getPwd" in action:
+            logging.info("SERVER: starting getPwd")
             user = action["getPwd"]["request"]["data"]["username"]
             try:
                 # Get password for user
                 cursor.execute("SELECT pwd FROM accounts WHERE user = ?", (user,))
                 pwd_hash = cursor.fetchone()[0]
-                response = {
-                    "requestId": action["getPwd"]["request"]["requestId"],
-                    "status": "ok",
-                    "msg": "",
-                    "data": {
-                        "passwordHash": pwd_hash
+                if pwd_hash is None:
+                    logging.error("SERVER: getPwd user does not have a pwd")
+                    response = {
+                        "requestId": action["getPwd"]["request"]["requestId"],
+                        "status": "error",
+                        "msg": "User does not exist or other error.",
+                        "data": {}
                     }
-                }
+                else:
+                    logging.info("SERVER: getPwd user pwd found")
+                    response = {
+                        "requestId": action["getPwd"]["request"]["requestId"],
+                        "status": "ok",
+                        "msg": "",
+                        "data": {
+                            "passwordHash": pwd_hash
+                        }
+                    }
             except:
+                logging.error("SERVER: getPwd user does not have a pwd or other error")
                 response = {
                     "requestId": action["getPwd"]["request"]["requestId"],
                     "status": "error",
@@ -208,6 +229,7 @@ def process_request(request, connection=None):
                 }
         
         elif "listAccounts" in action:
+            logging.info("SERVER: starting listAccounts")
             try:
                 # Get all existing usernames
                 cursor.execute("SELECT user FROM accounts ORDER BY uuid")
@@ -221,7 +243,9 @@ def process_request(request, connection=None):
                         "totalCount": len(usernames)
                     }
                 }
+                logging.info(f"SERVER: listAccounts response {response}")
             except:
+                logging.error(f"SERVER: cannot listAccounts")
                 response = {
                     "requestId": action["listAccounts"]["request"]["requestId"],
                     "status": "error",
@@ -230,6 +254,7 @@ def process_request(request, connection=None):
                 }
         
         elif "sendMessage" in action:
+            logging.info("SERVER: starting sendMessage")
             # TODO: Client Outbound Connection
             user = action["sendMessage"]["request"]["data"]["user"]
             sender = action["sendMessage"]["request"]["data"]["sender"]
@@ -238,6 +263,7 @@ def process_request(request, connection=None):
                 # Check if recipient exists
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is None:
+                    logging.error("SERVER: recipient does not exist")
                     response = {
                         "requestId": action["sendMessage"]["request"]["requestId"],
                         "status": "error",
@@ -257,7 +283,9 @@ def process_request(request, connection=None):
                         "msg": "Message sent (and delivered/stored).",
                         "data": {}
                     }
+                    logging.info("SERVER: message sent!")
             except:
+                logging.info("SERVER: sendMessage recipient does not exist or other error")
                 response = {
                     "requestId": action["sendMessage"]["request"]["requestId"],
                     "status": "error",
@@ -266,6 +294,7 @@ def process_request(request, connection=None):
                 }
         
         elif "saveDrafts" in action:
+            logging.info("SERVER: starting saveDrafts")
             user = action["saveDrafts"]["request"]["data"]["user"]
             drafts = action["saveDrafts"]["request"]["data"]["drafts"]
             try:
@@ -284,7 +313,9 @@ def process_request(request, connection=None):
                     "msg": "Draft saved.",
                     "data": {}
                 }
+                logging.info("SERVER: drafts saved")
             except:
+                logging.error("SERVER: cannot save drafts")
                 response = {
                     "requestId": action["saveDrafts"]["request"]["requestId"],
                     "status": "error",
@@ -293,11 +324,13 @@ def process_request(request, connection=None):
                 }
         
         elif "checkMessage" in action:
+            logging.info("SERVER: starting checkMessage")
             user = action["checkMessage"]["request"]["data"]["username"]
             msg_id = action["checkMessage"]["request"]["data"]["msgId"]
             try:
                 # Update checked status
                 cursor.execute("UPDATE messages SET checked = 1 WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                logging.info("SERVER: message checked as read")
                 response = {
                     "requestId": action["checkMessage"]["request"]["requestId"],
                     "status": "ok",
@@ -305,6 +338,7 @@ def process_request(request, connection=None):
                     "data": {}
                 }
             except:
+                logging.error("SERVER: message unable to check as read")
                 response = {
                     "requestId": action["checkMessage"]["request"]["requestId"],
                     "status": "error",
@@ -313,11 +347,13 @@ def process_request(request, connection=None):
                 }
         
         elif "downloadMessage" in action:
+            logging.info("SERVER: starting downloadMessage")
             user = action["downloadMessage"]["request"]["data"]["username"]
             msg_id = action["downloadMessage"]["request"]["data"]["msgId"]
             try:
                 # Update checked status
                 cursor.execute("UPDATE messages SET inbox = 0 WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                logging.info("SERVER: message downloaded from inbox")
                 response = {
                     "requestId": action["downloadMessage"]["request"]["requestId"],
                     "status": "ok",
@@ -325,6 +361,7 @@ def process_request(request, connection=None):
                     "data": {}
                 }
             except:
+                logging.error("SERVER: message unable to download")
                 response = {
                     "requestId": action["downloadMessage"]["request"]["requestId"],
                     "status": "error",
@@ -333,11 +370,13 @@ def process_request(request, connection=None):
                 }
         
         elif "deleteMessage" in action:
+            logging.info("SERVER: starting deleteMessage")
             user = action["deleteMessage"]["request"]["data"]["username"]
             msg_id = action["deleteMessage"]["request"]["data"]["msgId"]
             try:
                 # Remove message from messages table
                 cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                logging.info("SERVER: message deleted")
                 response = {
                     "requestId": action["deleteMessage"]["request"]["requestId"],
                     "status": "ok",
@@ -345,6 +384,7 @@ def process_request(request, connection=None):
                     "data": {}
                 }
             except:
+                logging.error("SERVER: cannot delete message")
                 response = {
                     "requestId": action["deleteMessage"]["request"]["requestId"],
                     "status": "error",
@@ -353,6 +393,7 @@ def process_request(request, connection=None):
                 }
         
         elif "deleteAccount" in action:
+            logging.info("SERVER: starting deleteAccount")
             user = action["deleteAccount"]["request"]["data"]["username"]
             pwd = action["deleteAccount"]["request"]["data"]["passwordHash"]
             try:
@@ -360,6 +401,7 @@ def process_request(request, connection=None):
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                logging.info("SERVER: account, messages, drafts deleted")
                 response = {
                     "requestId": action["deleteAccount"]["request"]["requestId"],
                     "status": "ok",
@@ -367,6 +409,7 @@ def process_request(request, connection=None):
                     "data": {}
                 }
             except:
+                logging.info("SERVER: error with deleting account")
                 response = {
                     "requestId": action["deleteAccount"]["request"]["requestId"],
                     "status": "error",
@@ -375,10 +418,12 @@ def process_request(request, connection=None):
                 }
         
         elif "logout" in action:
+            logging.info("SERVER: starting logout")
             user = action["logout"]["request"]["data"]["username"]
             try:
                 # Update logged in status
                 cursor.execute("UPDATE accounts SET logged_in = 0 WHERE user = ?", (user,))
+                logging.info("SERVER: successfully logged out")
                 response = {
                     "requestId": action["logout"]["request"]["requestId"],
                     "status": "ok",
@@ -386,6 +431,7 @@ def process_request(request, connection=None):
                     "data": {}
                 }
             except:
+                logging.error("SERVER; error logging out")
                 response = {
                     "requestId": action["logout"]["request"]["requestId"],
                     "status": "error",
@@ -394,6 +440,7 @@ def process_request(request, connection=None):
                 }
         
         else:
+            logging.error("SERVER: error logging out")
             response = {
                 "status": "error",
                 "msg": "Unknown error occurred.",
@@ -403,8 +450,6 @@ def process_request(request, connection=None):
         db.commit()
         if not connection:
             db.close()
-        logging.info("reached end of process_request")
-        logging.info(f"response: {response}")
         return json.dumps(response).encode("utf-8")
     except json.JSONDecodeError:
         return json.dumps({"status": "error", "message": "Invalid JSON"}).encode("utf-8")
