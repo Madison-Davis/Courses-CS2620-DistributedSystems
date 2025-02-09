@@ -181,7 +181,7 @@ def client_conn_list_accounts():
     except json.JSONDecodeError:
         return []
 
-def client_conn_send_message(user, sender, content):
+def client_conn_send_message(draft_id, user, sender, content):
     """ JSON: sendMessage
     Return: T for success, F for no success """
     # Set up request
@@ -195,6 +195,7 @@ def client_conn_send_message(user, sender, content):
                     "requestId": request_id,
                     "action": "sendMessage",
                     "data": {
+                        "draft_id": draft_id,
                         "recipient": user,
                         "sender": sender,
                         "content": content
@@ -243,6 +244,7 @@ def client_conn_save_drafts(user, drafts):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"SEND MESSAGE RESPONSE: {response}")
     # See if successfully sent message
     try:
         response_json = json.loads(response)

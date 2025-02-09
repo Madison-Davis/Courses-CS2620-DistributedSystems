@@ -258,8 +258,11 @@ def process_request(request, connection=None):
         
         elif "sendMessage" in action:
             logging.info("SERVER: starting sendMessage")
+            info = action["sendMessage"]["request"]["data"]
+            logging.info(f"send message data: {info}")
             # TODO: Client Outbound Connection
-            user = action["sendMessage"]["request"]["data"]["user"]
+            draft_id = action["sendMessage"]["request"]["data"]["draft_id"]
+            user = action["sendMessage"]["request"]["data"]["recipient"]
             sender = action["sendMessage"]["request"]["data"]["sender"]
             msg = action["sendMessage"]["request"]["data"]["content"]
             try:
@@ -274,12 +277,15 @@ def process_request(request, connection=None):
                         "data": {}
                     }
                 else:
+                    # Delete draft from sender
+                    logging.info("SERVER: deleting draft")
+                    cursor.execute("DELETE FROM drafts WHERE draft_id = ?", (draft_id,))
                     # Add message to messages table
                     # Note: `user` is the recipient
                     cursor.execute("""
                         INSERT INTO messages (user, sender, msg, checked, inbox)
                         VALUES (?, ?, ?, ?, ?)
-                    """, (sender, user, msg, 0, 1))
+                    """, (user, sender, msg, 0, 1))
                     response = {
                         "requestId": action["sendMessage"]["request"]["requestId"],
                         "status": "ok",

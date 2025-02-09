@@ -170,13 +170,16 @@ def clicked_send():
     drafts_with_checkmarks = [msg for msg in drafts if msg["checked"] == 1]
     # Go through the drafts and send them one by one
     for draft in drafts_with_checkmarks:
+        print(draft)
+        draft_id = draft["draft_id"]
         recipient = draft["recipient"]
         content = draft["msg"]
-        status = client_conn.client_conn_send_message(recipient, login_username, content)
+        status = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
         if status != "ok":
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
         # Remove drafts that are sent
         db_user_data[3].remove(draft)
+        print("draft(s) sent!")
 
 def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
@@ -190,7 +193,7 @@ def clicked_open_inbox(num):
             messagebox.showerror("Error", message="Nothing in inbox!")
             break
         create_new_unread_msg(inbox_msgs[i])
-        client_conn.client_conn_download_message(login_username, inbox_msgs[i]["msg_id"])  # does this store message ID?
+        client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])  # does this store message ID?
         db_user_data[2].remove(inbox_msgs[i])
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
@@ -290,6 +293,7 @@ def create_new_draft(row_idx):
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
     # return num of drafts
+    # TODO: SPECIFY DRAFT_ID
     db_user_data[3].append({"user": login_username.get(), "recipient": "", "message": "", "checked": 0})
     print(f"CREATE NEW DRAFT {db_user_data}")
 
