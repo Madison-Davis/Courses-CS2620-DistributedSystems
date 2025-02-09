@@ -15,6 +15,11 @@ import logging
 
 
 
+# +++++++++++++++ Variables: +++++++++++++++ #
+clients = {} # keep track of all clients and their connections subscribed via selector
+
+
+
 # ++++++++++++ Database: Set Up ++++++++++++ #
 def db_init(connection=None):
     logging.info("SERVER: initializing database")
@@ -292,7 +297,23 @@ def process_request(request, connection=None):
                         "msg": "Message sent (and delivered/stored).",
                         "data": {}
                     }
-                    logging.info("SERVER: message sent!")
+
+                    logging.info("SERVER: message delivered to user DB!")
+                    
+                    # We updated the user's database, now, can we immediately update inbox?
+                    # Check if recipient is logged in, and if so, send data
+                    cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
+                    logged_in = cursor.fetchone()
+                    if user in clients and logged_in:
+                        recipient_response = {
+                            "action": "receiveMessage",
+                            "sender": sender,
+                            "msg": msg
+                        }
+                        client_socket = clients[user]
+                        message = json.dumps(recipient_response)     # Convert response to JSON
+                        client_socket.send(message.encode('utf-8'))  # Send the response to the client
+                        logging.info("SERVER: message sent to user immediately!")
             except:
                 logging.info("SERVER: sendMessage recipient does not exist or other error")
                 response = {
@@ -482,6 +503,7 @@ def accept_wrapper(sock):
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     sel.register(conn, events, data=data)
+    clients[addr] = conn
 
 def service_connection(key, mask):
     """Accept connection from client."""
@@ -556,5 +578,5 @@ if __name__ == "__main__":
             logging.StreamHandler()  # Show logs in the console
         ]
     )
-
+    # Start server
     start_server()

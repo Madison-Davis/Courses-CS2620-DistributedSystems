@@ -10,23 +10,8 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import logging
-
-
-# +++++++++++++++++++ Logging +++++++++++++++++++ #
-logging.basicConfig(
-    level=logging.DEBUG,  # Change to logging.INFO to reduce verbosity
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("server.log"),  # Save logs to a file
-        logging.StreamHandler()  # Show logs in the console
-    ]
-)
-
-
-# +++++++++++++++++++ Server +++++++++++++++++++ #
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((config.HOST, config.PORT))
+import threading
+#import gui
 
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
@@ -422,7 +407,50 @@ def client_conn_logout(user):
     except json.JSONDecodeError:
         return False
     
-if __name__ == "main":
-    # this will request to the server to accept the connection for future data I/O
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((config.HOST, config.PORT))
+def client_conn_receive_message(s):
+    while True:
+        try:
+            data = s.recv(config.BUF_SIZE)
+            if not data:
+                logging.warning("SERVER: Connection closed by server.")
+                break  # Exit the loop if no data received, indicating server disconnected
+            data = data.decode("utf-8")
+            logging.info(f"CLIENT: Received message: {data}")
+            # Here we assume the message is JSON formatted
+            try:
+                server_msg = json.loads(data)
+                # Handle the action from the server
+                if server_msg.get("action") == "receiveMessage":
+                    msgId = server_msg.get("msgId")
+                    user = server_msg.get("user")
+                    sender = server_msg.get("sender")
+                    msg = server_msg.get("msg")
+                    incoming_msg = {"msg_id":msgId, "user":user, "sender":sender, "content":msg, "checkbox":0, "inbox":True}
+                    #gui.db_user_data[1].append(incoming_msg)
+                    #gui.create_new_unread_msg(incoming_msg)
+
+                    logging.info(f"CLIENT: Received message from {sender}: {msg}")
+                    print(f"Received message from {sender}: {msg}")
+                else:
+                    logging.warning("CLIENT: Unknown action received.")
+            except json.JSONDecodeError:
+                logging.error("CLIENT: Failed to decode the JSON message.")
+        except Exception as e:
+            logging.error(f"CLIENT: Error receiving message: {e}")
+
+
+# +++++++++++++++++++ Logging +++++++++++++++++++ #
+logging.basicConfig(
+    level=logging.DEBUG,  # Change to logging.INFO to reduce verbosity
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("server.log"),  # Save logs to a file
+        logging.StreamHandler()  # Show logs in the console
+    ]
+)
+
+
+# +++++++++++++++++++ Server +++++++++++++++++++ #
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((config.HOST, config.PORT))
+threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()

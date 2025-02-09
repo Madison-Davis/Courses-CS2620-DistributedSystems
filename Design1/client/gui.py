@@ -86,9 +86,12 @@ col_sending_edit        = 6
 col_sending_save        = 7
 col_sending_recipient   = 8
 start_row_messages      = 5
-start_row_drafts        = 4
+start_row_drafts        = 5
 incoming_cols = [col_incoming_delete, col_incoming_checkbox, 
                  col_incoming_message, col_incoming_message]
+sending_cols = [col_sending_checkbox, col_sending_message, 
+                 col_sending_edit, col_sending_save,
+                 col_sending_recipient]
 
 
 
@@ -132,7 +135,6 @@ def login(new_user, account_users, pwd_hash):
     # If existing user and password lines up, login/load information
     else:
         db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
-        print(db_user_data)
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
@@ -165,12 +167,11 @@ def delete_account():
 
 def clicked_send():
     """ When we click 'Send', we send all drafts with checks and delete from GUI. """
-    # Get user drafts that have checkmarks from GUI
-    drafts = db_user_data[3]
-    drafts_with_checkmarks = [msg for msg in drafts if msg["checked"] == 1]
-    # Go through the drafts and send them one by one
+    global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
+    
+    # Send one-by-one user drafts that have checkmarks
+    drafts_with_checkmarks = [draft for draft in db_user_data[3] if draft["checked"] == 1]
     for draft in drafts_with_checkmarks:
-        print(draft)
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
         content = draft["msg"]
@@ -181,6 +182,26 @@ def clicked_send():
         db_user_data[3].remove(draft)
         print("draft(s) sent!")
 
+    # Delete all checked-drafts from GUI and move up remaining GUI items
+    total_num_drafts = len(db_user_data[3])
+    for row in range(start_row_drafts, start_row_drafts+total_num_drafts+1):
+        for w in main_frame.grid_slaves():
+            if w.grid_info()["row"] == row and w.grid_info()["column"] in sending_cols:
+                w.destroy()
+
+    # Delete all remaining drafts
+    db_user_data[3] = [draft for draft in db_user_data[3] if not draft["checked"]] # just double-checking
+    drafts_rows = [key for key, var in drafts_checkmarks.items() if var.get()]
+    drafts_msgs = {key: value for key, value in drafts_msgs.items() if key not in drafts_rows}
+    drafts_checkmarks = {key: value for key, value in drafts_checkmarks.items() if key not in drafts_rows}
+    drafts_recipients = {key: value for key, value in drafts_recipients.items() if key not in drafts_rows}
+    # Re-load these drafts
+    for row_idx in range(len(db_user_data[3])):
+        recipient = db_user_data[3][row_idx]["recipient"]
+        msg = db_user_data[3][row_idx]["msg"]
+        checked = db_user_data[3][row_idx]["checked"]
+        create_existing_draft(row_idx, recipient, msg, checked)
+
 def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
     # Get all messages in inbox (if the inbox is marked as True)
@@ -190,11 +211,10 @@ def clicked_open_inbox(num):
     for i in range(num):
         # Edge case: user asks for too many
         if i >= inboxCount:
-            messagebox.showerror("Error", message="Nothing in inbox!")
             break
-        create_new_unread_msg(inbox_msgs[i])
-        client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])  # does this store message ID?
-        db_user_data[2].remove(inbox_msgs[i])
+        create_new_unread_msg(db_user_data[2][0])
+        #client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])  # does this store message ID?
+        db_user_data[2] = db_user_data[2][1:]
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
@@ -217,7 +237,6 @@ def clicked_saved(row, msg, recipient, checked):
     db_user_data[3][row]["recipient"] = recipient
     db_user_data[3][row]["msg"] = msg
     db_user_data[3][row]["checked"] = checked
-    print(f"CLICKED SAVED {db_user_data}")
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -295,7 +314,6 @@ def create_new_draft(row_idx):
     # return num of drafts
     # TODO: SPECIFY DRAFT_ID
     db_user_data[3].append({"user": login_username.get(), "recipient": "", "message": "", "checked": 0})
-    print(f"CREATE NEW DRAFT {db_user_data}")
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
@@ -334,16 +352,15 @@ def create_new_unread_msg(inbox_msg):
     user = inbox_msg["user"]
     msgId = inbox_msg["msg_id"]
     i = start_row_messages
-    next_row = i + 1
-    # Shift down all rows by 1 to make room for inserted widget
-    widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
-    while widgets_below:
-        for widget in widgets_below:
+    last_row = max([int(widget.grid_info()["row"]) for widget in main_frame.grid_slaves()], default=i)
+    # Move all widgets **bottom to top** to avoid overwriting
+    for row in range(last_row, i - 1, -1):  # Start from bottom row
+        widgets_in_row = [widget for widget in main_frame.grid_slaves(row=row)]
+        for widget in widgets_in_row:
             grid_info = widget.grid_info()
             if int(grid_info["column"]) in incoming_cols:
-                widget.grid(row=grid_info["row"] - 1)   
-        next_row += 1
-        widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
+                widget.grid(row=grid_info["row"] + 1)  # Move down
+
     # Insert new widget
     checkbox_text = "Read" if checkbox else "Unread"
     msg_formatted = sender + ": " + content
@@ -451,7 +468,6 @@ def load_main_frame_user_info(db_user_data):
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     i = 0
     for draft in db_user_data[3]: 
-        print(draft)
         create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
         i += 1
 
