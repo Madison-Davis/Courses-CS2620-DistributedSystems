@@ -48,18 +48,6 @@ def client_conn_create_account(user, pwd):
                         "username": user,
                         "passwordHash": pwd
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Account created successfully.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "An account with that username already exists.",
-                    "data": {}
                 }
             }
         }
@@ -69,7 +57,7 @@ def client_conn_create_account(user, pwd):
     logging.info(msg)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
-    data = s.recv(config.PORT)
+    data = s.recv(4096)
     response = data.decode("utf-8")
     logging.info(response)
     # See if successfully created account
@@ -96,23 +84,6 @@ def client_conn_login(user, pwd):
                         "username": user,
                         "passwordHash": pwd
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Login successful.",
-                    "data": {
-                    "inboxCount": 0,
-                    "old_msgs": [],
-                    "inbox_msgs": [],
-                    "drafts": []
-                    }
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Invalid credentials.",
-                    "data": {}
                 }
             }
         }
@@ -152,20 +123,6 @@ def client_conn_get_pwd(user):
                     "data": {
                         "username": user
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "",
-                    "data": {
-                    "passwordHash": ""
-                    }
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "User does not exist or other error.",
-                    "data": {}
                 }
             }
         }
@@ -200,21 +157,6 @@ def client_conn_list_accounts():
                 "request": {
                     "requestId": request_id,
                     "action": "listAccounts",
-                    "data": {}
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "",
-                    "data": {
-                        "accounts_users": [],
-                        "totalCount": 0
-                    }
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Not authenticated or other error.",
                     "data": {}
                 }
             }
@@ -255,18 +197,6 @@ def client_conn_send_message(user, sender, content):
                         "sender": sender,
                         "content": content
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Message sent (and delivered/stored).",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Recipient does not exist or other error.",
-                    "data": {}
                 }
             }
         }
@@ -301,18 +231,6 @@ def client_conn_save_drafts(user, drafts):
                         "user": user,
                         "drafts": drafts
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Draft saved.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Cannot save draft or other error.",
-                    "data": {}
                 }
             }
         }
@@ -347,18 +265,6 @@ def client_conn_check_message(user, msgId):
                         "username": user,
                         "msgId": msgId
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Message checked as read.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Message unable to read or other error.",
-                    "data": {}
                 }
             }
         }
@@ -393,18 +299,6 @@ def client_conn_download_message(user, msgId):
                         "username": user,
                         "msgId": msgId
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Message downloaded from inbox.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Message unable to download or other error.",
-                    "data": {}
                 }
             }
         }
@@ -439,18 +333,6 @@ def client_conn_delete_message(user, msgId):
                         "username": user,
                         "msgId": msgId
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Message deleted.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Not authorized to delete or other error.",
-                    "data": {}
                 }
             }
         }
@@ -485,18 +367,6 @@ def client_conn_delete_account(user, pwd):
                         "username": user,
                         "passwordHash": pwd
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Account and all messages have been deleted.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Invalid credentials or other error.",
-                    "data": {}
                 }
             }
         }
@@ -530,18 +400,6 @@ def client_conn_logout(user):
                     "data": {
                         "username": user,
                     }
-                },
-                "successResponse": {
-                    "requestId": request_id,
-                    "status": "ok",
-                    "msg": "Logged out successfully.",
-                    "data": {}
-                },
-                "errorResponse": {
-                    "requestId": request_id,
-                    "status": "error",
-                    "msg": "Not logged in or other error.",
-                    "data": {}
                 }
             }
         }

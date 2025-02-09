@@ -85,14 +85,29 @@ def process_request(request, connection=None):
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is not None:
                     logging.debug("username already exists")
-                    response = action["createAccount"]["errorResponse"]
+                    response = {
+                        "requestId": action["createAccount"]["request"]["requestId"],
+                        "status": "error",
+                        "msg": "An account with that username already exists.",
+                        "data": {}
+                    }
                 # Are users logged in once they register?
                 else:
                     logging.debug("creating new account")
                     cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
-                    response = action["createAccount"]["successResponse"]
+                    response = {
+                        "requestId": action["createAccount"]["request"]["requestId"],
+                        "status": "ok",
+                        "msg": "Account created successfully.",
+                        "data": {}
+                    }
             except:
-                response = action["createAccount"]["errorResponse"]
+                response = {
+                    "requestId": action["createAccount"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "An account with that username already exists.",
+                    "data": {}
+                }
         
         elif "login" in action:
             user = action["login"]["request"]["data"]["username"]
@@ -103,7 +118,6 @@ def process_request(request, connection=None):
                 account = cursor.fetchone()
                 if account is not None:
                     cursor.execute("UPDATE accounts SET logged_in = 1 WHERE user = ?", (user,))
-                    response = action["login"]["successResponse"]
                     # Populate data of user
                     # Not newly received messages
                     cursor.execute("""
@@ -117,7 +131,6 @@ def process_request(request, connection=None):
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
                         for row in old_messages
                     ]
-                    response["data"]["old_msgs"] = old_message_list
 
                     # Newly received messages in inbox
                     cursor.execute("""
@@ -131,8 +144,6 @@ def process_request(request, connection=None):
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
                         for row in new_messages
                     ]
-                    response["data"]["new_msgs"] = new_message_list
-                    response["data"]["inboxCount"] = len(new_message_list)
 
                     # Saved drafts
                     cursor.execute("""
@@ -146,12 +157,33 @@ def process_request(request, connection=None):
                         {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                         for row in drafts
                     ]
-                    response["data"]["drafts"] = draft_list
+                    
+                    response = {
+                        "requestId": action["login"]["request"]["requestId"],
+                        "status": "ok",
+                        "msg": "Login successful.",
+                        "data": {
+                            "inboxCount": len(new_message_list),
+                            "old_msgs": old_message_list,
+                            "inbox_msgs": new_message_list,
+                            "drafts": draft_list
+                        }
+                    }
 
                 else:
-                    response = action["login"]["errorResponse"]
+                    response = {
+                        "requestId": action["login"]["request"]["requestId"],
+                        "status": "error",
+                        "msg": "Invalid credentials.",
+                        "data": {}
+                    }
             except:
-                response = action["login"]["errorResponse"]
+                response = {
+                    "requestId": action["login"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Invalid credentials.",
+                    "data": {}
+                }
         
         elif "getPwd" in action:
             user = action["getPwd"]["request"]["data"]["username"]
@@ -159,21 +191,43 @@ def process_request(request, connection=None):
                 # Get password for user
                 cursor.execute("SELECT pwd FROM accounts WHERE user = ?", (user,))
                 pwd_hash = cursor.fetchone()[0]
-                response = action["getPwd"]["successResponse"]
-                response["data"]["passwordHash"] = pwd_hash
+                response = {
+                    "requestId": action["getPwd"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "",
+                    "data": {
+                        "passwordHash": pwd_hash
+                    }
+                }
             except:
-                response = action["getPwd"]["errorResponse"]
+                response = {
+                    "requestId": action["getPwd"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "User does not exist or other error.",
+                    "data": {}
+                }
         
         elif "listAccounts" in action:
             try:
                 # Get all existing usernames
                 cursor.execute("SELECT user FROM accounts ORDER BY uuid")
                 usernames = [row[0] for row in cursor.fetchall()]
-                response = action["listAccounts"]["successResponse"]
-                response["data"]["accounts_users"] = usernames
-                response["data"]["totalCount"] = len(usernames)
+                response = {
+                    "requestId": action["listAccounts"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "",
+                    "data": {
+                        "accounts_users": usernames,
+                        "totalCount": len(usernames)
+                    }
+                }
             except:
-                response = action["listAccounts"]["errorResponse"]
+                response = {
+                    "requestId": action["listAccounts"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Not authenticated or other error.",
+                    "data": {}
+                }
         
         elif "sendMessage" in action:
             # TODO: Client Outbound Connection
@@ -184,7 +238,12 @@ def process_request(request, connection=None):
                 # Check if recipient exists
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is None:
-                    response = action["sendMessage"]["errorResponse"]
+                    response = {
+                        "requestId": action["sendMessage"]["request"]["requestId"],
+                        "status": "error",
+                        "msg": "Recipient does not exist or other error.",
+                        "data": {}
+                    }
                 else:
                     # Add message to messages table
                     # Note: `user` is the recipient
@@ -192,9 +251,19 @@ def process_request(request, connection=None):
                         INSERT INTO messages (user, sender, msg, checked, inbox)
                         VALUES (?, ?, ?, ?, ?)
                     """, (sender, user, msg, 0, 1))
-                    response = action["sendMessage"]["successResponse"]
+                    response = {
+                        "requestId": action["sendMessage"]["request"]["requestId"],
+                        "status": "ok",
+                        "msg": "Message sent (and delivered/stored).",
+                        "data": {}
+                    }
             except:
-                response = action["sendMessage"]["errorResponse"]
+                response = {
+                    "requestId": action["sendMessage"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Recipient does not exist or other error.",
+                    "data": {}
+                }
         
         elif "saveDrafts" in action:
             user = action["saveDrafts"]["request"]["data"]["user"]
@@ -209,9 +278,19 @@ def process_request(request, connection=None):
                         INSERT INTO drafts (user, recipient, msg, checked)
                         VALUES (?, ?, ?, ?)
                     """, (user, recipient, msg, 0))
-                response = action["saveDraft"]["successResponse"]
+                response = {
+                    "requestId": action["saveDrafts"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Draft saved.",
+                    "data": {}
+                }
             except:
-                response = action["saveDraft"]["errorResponse"]
+                response = {
+                    "requestId": action["saveDrafts"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Cannot save draft or other error.",
+                    "data": {}
+                }
         
         elif "checkMessage" in action:
             user = action["checkMessage"]["request"]["data"]["username"]
@@ -219,9 +298,19 @@ def process_request(request, connection=None):
             try:
                 # Update checked status
                 cursor.execute("UPDATE messages SET checked = 1 WHERE user = ? AND msg_id = ?", (user, msg_id,))
-                response = action["checkMessage"]["successResponse"]
+                response = {
+                    "requestId": action["checkMessage"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Message checked as read.",
+                    "data": {}
+                }
             except:
-                response = action["checkMessage"]["errorResponse"]
+                response = {
+                    "requestId": action["checkMessage"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Message unable to read or other error.",
+                    "data": {}
+                }
         
         elif "downloadMessage" in action:
             user = action["downloadMessage"]["request"]["data"]["username"]
@@ -229,9 +318,19 @@ def process_request(request, connection=None):
             try:
                 # Update checked status
                 cursor.execute("UPDATE messages SET inbox = 0 WHERE user = ? AND msg_id = ?", (user, msg_id,))
-                response = action["downloadMessage"]["successResponse"]
+                response = {
+                    "requestId": action["downloadMessage"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Message downloaded from inbox.",
+                    "data": {}
+                }
             except:
-                response = action["downloadMessage"]["errorResponse"]
+                response = {
+                    "requestId": action["downloadMessage"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Message unable to download or other error.",
+                    "data": {}
+                }
         
         elif "deleteMessage" in action:
             user = action["deleteMessage"]["request"]["data"]["username"]
@@ -239,9 +338,19 @@ def process_request(request, connection=None):
             try:
                 # Remove message from messages table
                 cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
-                response = action["deleteMessage"]["successResponse"]
+                response = {
+                    "requestId": action["deleteMessage"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Message deleted.",
+                    "data": {}
+                }
             except:
-                response = action["deleteMessage"]["errorResponse"]
+                response = {
+                    "requestId": action["deleteMessage"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Not authorized to delete or other error.",
+                    "data": {}
+                }
         
         elif "deleteAccount" in action:
             user = action["deleteAccount"]["request"]["data"]["username"]
@@ -251,18 +360,38 @@ def process_request(request, connection=None):
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
-                response = action["deleteAccount"]["successResponse"]
+                response = {
+                    "requestId": action["deleteAccount"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Account and all messages have been deleted.",
+                    "data": {}
+                }
             except:
-                response = action["deleteAccount"]["errorResponse"]
+                response = {
+                    "requestId": action["deleteAccount"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Invalid credentials or other error.",
+                    "data": {}
+                }
         
         elif "logout" in action:
             user = action["logout"]["request"]["data"]["username"]
             try:
                 # Update logged in status
                 cursor.execute("UPDATE accounts SET logged_in = 0 WHERE user = ?", (user,))
-                response = action["logout"]["successResponse"]
+                response = {
+                    "requestId": action["logout"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Logged out successfully.",
+                    "data": {}
+                }
             except:
-                response = action["logout"]["errorResponse"]
+                response = {
+                    "requestId": action["logout"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Not logged in or other error.",
+                    "data": {}
+                }
         
         else:
             response = {
@@ -301,7 +430,7 @@ def service_connection(key, mask):
     sock = key.fileobj
     data = key.data
     if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(config.PORT)
+        recv_data = sock.recv(4096)
         if recv_data:
             logging.info(f"Raw received data: {recv_data}")
             data.outb += recv_data
@@ -316,14 +445,28 @@ def service_connection(key, mask):
     if mask & selectors.EVENT_WRITE:
         if data.outb:
             try:
-                request_json = data.outb.decode("utf-8").strip()
-                return_data = process_request(request_json)
-                sent = sock.send(return_data)
-                data.outb = data.outb[sent:]
+                # Split multiple JSON objects if received in one buffer
+                requests = data.outb.decode("utf-8").strip().split("}{")
+                for i in range(len(requests)):
+                    if i > 0:
+                        requests[i] = "{" + requests[i]  # Fix missing curly brace
+                    if i < len(requests) - 1:
+                        requests[i] += "}"  # Fix missing curly brace
+                
+                for request_json in requests:
+                    logging.info(f"Processing request: {request_json}")
+                    try:
+                        return_data = process_request(request_json)
+                        sock.send(return_data)
+                    except Exception as e:
+                        logging.error(f"Error processing request: {e}")
+                
+                data.outb = b""  # Clear buffer after processing all messages
             except Exception as e:
-                logging.error(f"Error processing request: {e}")
+                logging.error(f"Error handling request: {e}")
 
 def start_server():
+    db_init()
     lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     lsock.bind((config.HOST, config.PORT))
     lsock.listen()
