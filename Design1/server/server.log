@@ -1,0 +1,132 @@
+2025-02-09 12:13:27,471 - INFO - SERVER: initializing database
+2025-02-09 12:13:35,731 - INFO - Accepted connection from ('127.0.0.1', 65019)
+2025-02-09 12:13:37,351 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "fd0cd671-96c2-4fcb-ae5e-1c31f7eceebc", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:13:37,351 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "fd0cd671-96c2-4fcb-ae5e-1c31f7eceebc", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:13:37,351 - INFO - SERVER: starting listAccounts
+2025-02-09 12:13:37,351 - INFO - SERVER: listAccounts response {'requestId': 'fd0cd671-96c2-4fcb-ae5e-1c31f7eceebc', 'status': 'ok', 'msg': '', 'data': {'accounts_users': [], 'totalCount': 0}}
+2025-02-09 12:13:37,351 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "14840648-6b7f-43bb-94c8-1b32092217e8", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:13:37,351 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "14840648-6b7f-43bb-94c8-1b32092217e8", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:13:37,351 - INFO - SERVER: starting getPwd
+2025-02-09 12:13:37,352 - ERROR - SERVER: getPwd user does not have a pwd or other error
+2025-02-09 12:13:38,488 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"createAccount": {"request": {"requestId": "500dceb1-fd7c-4fa6-b6e1-bb7f3c791e89", "action": "createAccount", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:13:38,488 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"createAccount": {"request": {"requestId": "500dceb1-fd7c-4fa6-b6e1-bb7f3c791e89", "action": "createAccount", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:13:38,489 - INFO - SERVER: starting to create account
+2025-02-09 12:13:38,489 - INFO - SERVER: account created successfully
+2025-02-09 12:13:39,230 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "c96dc226-1cf1-48ef-a5e6-2607f3a1b1d3", "action": "logout", "data": {"username": "asd"}}}}}'
+2025-02-09 12:13:39,230 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "c96dc226-1cf1-48ef-a5e6-2607f3a1b1d3", "action": "logout", "data": {"username": "asd"}}}}}
+2025-02-09 12:13:39,230 - INFO - SERVER: starting logout
+2025-02-09 12:13:39,231 - INFO - SERVER: successfully logged out
+2025-02-09 12:13:39,231 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "fc880aeb-2217-4f3b-bb1e-a0fcf9e7c260", "action": "saveDrafts", "data": {"user": "asd", "drafts": []}}}}}'
+2025-02-09 12:13:39,231 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "fc880aeb-2217-4f3b-bb1e-a0fcf9e7c260", "action": "saveDrafts", "data": {"user": "asd", "drafts": []}}}}}
+2025-02-09 12:13:39,231 - INFO - SERVER: starting saveDrafts
+2025-02-09 12:13:39,232 - INFO - drafts reset
+2025-02-09 12:13:39,232 - INFO - SERVER: drafts saved
+2025-02-09 12:13:39,997 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "a3c6bb99-7d63-4c89-9d9d-ca9ec326dd93", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:13:39,997 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "a3c6bb99-7d63-4c89-9d9d-ca9ec326dd93", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:13:39,997 - INFO - SERVER: starting listAccounts
+2025-02-09 12:13:39,997 - INFO - SERVER: listAccounts response {'requestId': 'a3c6bb99-7d63-4c89-9d9d-ca9ec326dd93', 'status': 'ok', 'msg': '', 'data': {'accounts_users': ['asd'], 'totalCount': 1}}
+2025-02-09 12:13:39,997 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "486f86e1-eed5-4b76-b68d-6a3ab42b39fb", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:13:39,997 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "486f86e1-eed5-4b76-b68d-6a3ab42b39fb", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:13:39,997 - INFO - SERVER: starting getPwd
+2025-02-09 12:13:39,997 - INFO - SERVER: getPwd user pwd found
+2025-02-09 12:13:41,013 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "fdf2f6c2-2a39-4847-ade9-2a35a5e14e32", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:13:41,013 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "fdf2f6c2-2a39-4847-ade9-2a35a5e14e32", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:13:41,014 - INFO - SERVER: starting to login
+2025-02-09 12:13:41,014 - INFO - OLD MESSAGES: []
+2025-02-09 12:13:41,014 - INFO - NEW MESSAGES: []
+2025-02-09 12:13:41,014 - INFO - DRAFTS: []
+2025-02-09 12:13:41,014 - INFO - SERVER: login information {'requestId': 'fdf2f6c2-2a39-4847-ade9-2a35a5e14e32', 'status': 'ok', 'msg': 'Login successful.', 'data': {'inboxCount': 0, 'old_msgs': [], 'inbox_msgs': [], 'drafts': []}}
+2025-02-09 12:13:41,759 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "33459e9f-f76e-4795-b43e-c02346f908a6", "action": "logout", "data": {"username": "asd"}}}}}'
+2025-02-09 12:13:41,759 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "33459e9f-f76e-4795-b43e-c02346f908a6", "action": "logout", "data": {"username": "asd"}}}}}
+2025-02-09 12:13:41,759 - INFO - SERVER: starting logout
+2025-02-09 12:13:41,759 - INFO - SERVER: successfully logged out
+2025-02-09 12:13:41,760 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "435cb1d8-c093-40a0-b98e-8122d21fe107", "action": "saveDrafts", "data": {"user": "asd", "drafts": []}}}}}'
+2025-02-09 12:13:41,760 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "435cb1d8-c093-40a0-b98e-8122d21fe107", "action": "saveDrafts", "data": {"user": "asd", "drafts": []}}}}}
+2025-02-09 12:13:41,760 - INFO - SERVER: starting saveDrafts
+2025-02-09 12:13:41,760 - INFO - drafts reset
+2025-02-09 12:13:41,760 - INFO - SERVER: drafts saved
+2025-02-09 12:13:42,880 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "23e71d7e-56e3-475e-a702-9927b6d1b59b", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:13:42,880 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "23e71d7e-56e3-475e-a702-9927b6d1b59b", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:13:42,880 - INFO - SERVER: starting listAccounts
+2025-02-09 12:13:42,880 - INFO - SERVER: listAccounts response {'requestId': '23e71d7e-56e3-475e-a702-9927b6d1b59b', 'status': 'ok', 'msg': '', 'data': {'accounts_users': ['asd'], 'totalCount': 1}}
+2025-02-09 12:13:42,880 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "0ec8e746-0023-48aa-b4fc-aa0bbf598903", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:13:42,880 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "0ec8e746-0023-48aa-b4fc-aa0bbf598903", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:13:42,881 - INFO - SERVER: starting getPwd
+2025-02-09 12:13:42,881 - INFO - SERVER: getPwd user pwd found
+2025-02-09 12:13:43,901 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "59036aac-1e1a-43d3-a86f-047a81cb6271", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:13:43,901 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "59036aac-1e1a-43d3-a86f-047a81cb6271", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:13:43,901 - INFO - SERVER: starting to login
+2025-02-09 12:13:43,901 - INFO - OLD MESSAGES: []
+2025-02-09 12:13:43,901 - INFO - NEW MESSAGES: []
+2025-02-09 12:13:43,901 - INFO - DRAFTS: []
+2025-02-09 12:13:43,901 - INFO - SERVER: login information {'requestId': '59036aac-1e1a-43d3-a86f-047a81cb6271', 'status': 'ok', 'msg': 'Login successful.', 'data': {'inboxCount': 0, 'old_msgs': [], 'inbox_msgs': [], 'drafts': []}}
+2025-02-09 12:13:58,607 - INFO - Closing connection to ('127.0.0.1', 65019)
+2025-02-09 12:22:12,777 - INFO - SERVER: initializing database
+2025-02-09 12:22:14,603 - INFO - Accepted connection from ('127.0.0.1', 65031)
+2025-02-09 12:22:15,676 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "822bd1b1-dc86-4a8a-baf6-2b022729dd0e", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:22:15,676 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "822bd1b1-dc86-4a8a-baf6-2b022729dd0e", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:22:15,676 - INFO - SERVER: starting listAccounts
+2025-02-09 12:22:15,677 - INFO - SERVER: listAccounts response {'requestId': '822bd1b1-dc86-4a8a-baf6-2b022729dd0e', 'status': 'ok', 'msg': '', 'data': {'accounts_users': ['asd'], 'totalCount': 1}}
+2025-02-09 12:22:15,677 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "96dadf95-d4da-4f47-956d-d272568c04b9", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:22:15,677 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "96dadf95-d4da-4f47-956d-d272568c04b9", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:22:15,677 - INFO - SERVER: starting getPwd
+2025-02-09 12:22:15,677 - INFO - SERVER: getPwd user pwd found
+2025-02-09 12:22:16,952 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "5f64b4b7-7efa-4af3-b64f-144e5a745969", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:22:16,952 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "5f64b4b7-7efa-4af3-b64f-144e5a745969", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:22:16,952 - INFO - SERVER: starting to login
+2025-02-09 12:22:16,952 - INFO - OLD MESSAGES: []
+2025-02-09 12:22:16,952 - INFO - NEW MESSAGES: []
+2025-02-09 12:22:16,952 - INFO - DRAFTS: []
+2025-02-09 12:22:16,953 - INFO - SERVER: login information {'requestId': '5f64b4b7-7efa-4af3-b64f-144e5a745969', 'status': 'ok', 'msg': 'Login successful.', 'data': {'inboxCount': 0, 'old_msgs': [], 'inbox_msgs': [], 'drafts': []}}
+2025-02-09 12:22:30,706 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "d710eb9c-bbd5-4e66-9e0e-eeff447d7834", "action": "logout", "data": {"username": "asd"}}}}}'
+2025-02-09 12:22:30,706 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "d710eb9c-bbd5-4e66-9e0e-eeff447d7834", "action": "logout", "data": {"username": "asd"}}}}}
+2025-02-09 12:22:30,706 - INFO - SERVER: starting logout
+2025-02-09 12:22:30,707 - INFO - SERVER: successfully logged out
+2025-02-09 12:22:30,707 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "0d2e380a-c7a7-4c58-94de-8fbf197a33cd", "action": "saveDrafts", "data": {"user": "asd", "drafts": [{"user": "asd", "recipient": "", "message": "", "checked": false, "msg": "hello!"}]}}}}}'
+2025-02-09 12:22:30,707 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "0d2e380a-c7a7-4c58-94de-8fbf197a33cd", "action": "saveDrafts", "data": {"user": "asd", "drafts": [{"user": "asd", "recipient": "", "message": "", "checked": false, "msg": "hello!"}]}}}}}
+2025-02-09 12:22:30,708 - INFO - SERVER: starting saveDrafts
+2025-02-09 12:22:30,708 - INFO - drafts reset
+2025-02-09 12:22:30,708 - INFO - user asd recipient  msg hello!
+2025-02-09 12:22:30,708 - INFO - SERVER: drafts saved
+2025-02-09 12:22:32,958 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "1ec0fea7-aa49-4834-ae8c-0648533fae27", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:22:32,958 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "1ec0fea7-aa49-4834-ae8c-0648533fae27", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:22:32,959 - INFO - SERVER: starting listAccounts
+2025-02-09 12:22:32,959 - INFO - SERVER: listAccounts response {'requestId': '1ec0fea7-aa49-4834-ae8c-0648533fae27', 'status': 'ok', 'msg': '', 'data': {'accounts_users': ['asd'], 'totalCount': 1}}
+2025-02-09 12:22:32,959 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "4c784e00-565e-4db9-a175-1816042c2f9f", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:22:32,959 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "4c784e00-565e-4db9-a175-1816042c2f9f", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:22:32,959 - INFO - SERVER: starting getPwd
+2025-02-09 12:22:32,959 - INFO - SERVER: getPwd user pwd found
+2025-02-09 12:22:33,939 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "625395aa-4b53-47b3-ba18-dd7e24a97aca", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:22:33,940 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "625395aa-4b53-47b3-ba18-dd7e24a97aca", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:22:33,940 - INFO - SERVER: starting to login
+2025-02-09 12:22:33,940 - INFO - OLD MESSAGES: []
+2025-02-09 12:22:33,940 - INFO - NEW MESSAGES: []
+2025-02-09 12:22:33,940 - INFO - DRAFTS: [(1, 'asd', '', 'hello!', 0)]
+2025-02-09 12:22:33,940 - INFO - SERVER: login information {'requestId': '625395aa-4b53-47b3-ba18-dd7e24a97aca', 'status': 'ok', 'msg': 'Login successful.', 'data': {'inboxCount': 0, 'old_msgs': [], 'inbox_msgs': [], 'drafts': [{'draft_id': 1, 'user': 'asd', 'recipient': '', 'msg': 'hello!', 'checked': 0}]}}
+2025-02-09 12:22:45,044 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "cc706357-e6e4-471d-93c4-c1515cb24c42", "action": "logout", "data": {"username": "asd"}}}}}'
+2025-02-09 12:22:45,044 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"logout": {"request": {"requestId": "cc706357-e6e4-471d-93c4-c1515cb24c42", "action": "logout", "data": {"username": "asd"}}}}}
+2025-02-09 12:22:45,044 - INFO - SERVER: starting logout
+2025-02-09 12:22:45,044 - INFO - SERVER: successfully logged out
+2025-02-09 12:22:45,045 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "07a2cb72-f79c-4267-be02-2fd1a363d690", "action": "saveDrafts", "data": {"user": "asd", "drafts": [{"draft_id": 1, "user": "asd", "recipient": "", "msg": "hello!", "checked": 0}, {"user": "asd", "recipient": "", "message": "", "checked": false, "msg": "hi!"}]}}}}}'
+2025-02-09 12:22:45,045 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"saveDrafts": {"request": {"requestId": "07a2cb72-f79c-4267-be02-2fd1a363d690", "action": "saveDrafts", "data": {"user": "asd", "drafts": [{"draft_id": 1, "user": "asd", "recipient": "", "msg": "hello!", "checked": 0}, {"user": "asd", "recipient": "", "message": "", "checked": false, "msg": "hi!"}]}}}}}
+2025-02-09 12:22:45,045 - INFO - SERVER: starting saveDrafts
+2025-02-09 12:22:45,045 - INFO - drafts reset
+2025-02-09 12:22:45,045 - INFO - user asd recipient  msg hello!
+2025-02-09 12:22:45,045 - INFO - user asd recipient  msg hi!
+2025-02-09 12:22:45,045 - INFO - SERVER: drafts saved
+2025-02-09 12:22:46,251 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "e6f08524-71f6-4942-a4ab-76e53d543379", "action": "listAccounts", "data": {}}}}}'
+2025-02-09 12:22:46,252 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"listAccounts": {"request": {"requestId": "e6f08524-71f6-4942-a4ab-76e53d543379", "action": "listAccounts", "data": {}}}}}
+2025-02-09 12:22:46,252 - INFO - SERVER: starting listAccounts
+2025-02-09 12:22:46,252 - INFO - SERVER: listAccounts response {'requestId': 'e6f08524-71f6-4942-a4ab-76e53d543379', 'status': 'ok', 'msg': '', 'data': {'accounts_users': ['asd'], 'totalCount': 1}}
+2025-02-09 12:22:46,252 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "0ad4635a-a58b-4372-bc81-1a33805b094d", "action": "getPwd", "data": {"username": "asd"}}}}}'
+2025-02-09 12:22:46,252 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"getPwd": {"request": {"requestId": "0ad4635a-a58b-4372-bc81-1a33805b094d", "action": "getPwd", "data": {"username": "asd"}}}}}
+2025-02-09 12:22:46,252 - INFO - SERVER: starting getPwd
+2025-02-09 12:22:46,252 - INFO - SERVER: getPwd user pwd found
+2025-02-09 12:22:47,423 - INFO - Raw received data: b'{"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "3f637e95-659a-4a8e-a6e9-9452bba44363", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}'
+2025-02-09 12:22:47,423 - INFO - Processing request: {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"login": {"request": {"requestId": "3f637e95-659a-4a8e-a6e9-9452bba44363", "action": "login", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:22:47,423 - INFO - SERVER: starting to login
+2025-02-09 12:22:47,423 - INFO - OLD MESSAGES: []
+2025-02-09 12:22:47,423 - INFO - NEW MESSAGES: []
+2025-02-09 12:22:47,423 - INFO - DRAFTS: [(2, 'asd', '', 'hello!', 0), (3, 'asd', '', 'hi!', 0)]
+2025-02-09 12:22:47,423 - INFO - SERVER: login information {'requestId': '3f637e95-659a-4a8e-a6e9-9452bba44363', 'status': 'ok', 'msg': 'Login successful.', 'data': {'inboxCount': 0, 'old_msgs': [], 'inbox_msgs': [], 'drafts': [{'draft_id': 2, 'user': 'asd', 'recipient': '', 'msg': 'hello!', 'checked': 0}, {'draft_id': 3, 'user': 'asd', 'recipient': '', 'msg': 'hi!', 'checked': 0}]}}
+2025-02-09 12:22:54,943 - INFO - Closing connection to ('127.0.0.1', 65031)

@@ -226,7 +226,7 @@ def clicked_select_all():
 
 def clicked_new_button():
     """ When we click 'New' button, create a new draft """  
-    row_idx = len(db_user_data[3]) + start_row_messages
+    row_idx = len(db_user_data[3])
     create_new_draft(row_idx)
 
 def filter_recipients(event, row):
@@ -270,25 +270,25 @@ def create_new_draft(row_idx):
     i = row_idx # start here
     # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
-    tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+1, column=col_sending_checkbox, padx=5, pady=5)
+    tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+start_row_messages+1, column=col_sending_checkbox, padx=5, pady=5)
     # create deliverable's message box
-    tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
+    tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+start_row_messages+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
     message_entry = tk.Entry(main_frame, width=30, state=tk.DISABLED)
-    message_entry.grid(row=i+1, column=col_sending_message, padx=5, pady=5)
+    message_entry.grid(row=i+start_row_messages+1, column=col_sending_message, padx=5, pady=5)
     drafts_msgs[i] = message_entry
     # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
     recipient_entry['values'] = db_accounts
     recipient_entry.set("")
-    recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
+    recipient_entry.grid(row=i+start_row_messages+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
     # bind key release event to the filter recipient dropdown
     recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
     # create edit and save buttons
-    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
+    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+start_row_messages+1, column=col_sending_edit)
     save_btn = tk.Button(main_frame, text="Save")
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
-    save_btn.grid(row=i+1, column=col_sending_save, padx=5)
+    save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
     # return num of drafts
     db_user_data[3].append({"user": login_username.get(), "recipient": "", "message": "", "checked": 0})
     print(f"CREATE NEW DRAFT {db_user_data}")
@@ -296,14 +296,14 @@ def create_new_draft(row_idx):
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
         num_drafts: how many drafts do we currently have"""
-    i = row_idx + start_row_drafts # start here
+    i = row_idx # start here
     # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
-    tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+1, column=col_sending_checkbox, padx=5, pady=5)
+    tk.Checkbutton(main_frame, variable=drafts_checkmarks[i]).grid(row=i+start_row_drafts+1, column=col_sending_checkbox, padx=5, pady=5)
     # create deliverable's message box
-    tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
+    tk.Frame(main_frame, width=2, height=25, bg='black').grid(row=i+start_row_drafts+1, column=col_sending_message, padx=2, pady=5, sticky='ns')
     message_entry = tk.Entry(main_frame, width=30, state=tk.NORMAL)
-    message_entry.grid(row=i+1, column=col_sending_message, padx=5, pady=5)
+    message_entry.grid(row=i+start_row_drafts+1, column=col_sending_message, padx=5, pady=5)
     message_entry.insert(0, msg)
     message_entry.config(state=tk.DISABLED)
     drafts_msgs[i] = message_entry
@@ -311,15 +311,15 @@ def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
     recipient_entry['values'] = db_accounts
     recipient_entry.set(recipient)
-    recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
+    recipient_entry.grid(row=i+start_row_drafts+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
     # bind key release event to the filter recipient dropdown
     recipient_entry.bind('<KeyRelease>', lambda event, r=i: filter_recipients(event, r))
     # create edit and save buttons
-    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
+    tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+start_row_drafts+1, column=col_sending_edit)
     save_btn = tk.Button(main_frame, text="Save")
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
-    save_btn.grid(row=i+1, column=col_sending_save, padx=5)
+    save_btn.grid(row=i+start_row_drafts+1, column=col_sending_save, padx=5)
 
 def create_new_unread_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""

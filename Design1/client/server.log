@@ -1,0 +1,2 @@
+2025-02-09 12:13:38,488 - INFO - {"protocolVersion": 1, "description": "Simple client-server chat application JSON wire protocol", "actions": {"createAccount": {"request": {"requestId": "500dceb1-fd7c-4fa6-b6e1-bb7f3c791e89", "action": "createAccount", "data": {"username": "asd", "passwordHash": "asd"}}}}}
+2025-02-09 12:13:38,489 - INFO - {"requestId": "500dceb1-fd7c-4fa6-b6e1-bb7f3c791e89", "status": "ok", "msg": "Account created successfully.", "data": {}}
