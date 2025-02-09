@@ -131,6 +131,7 @@ def process_request(request, connection=None):
                         ORDER BY msg_id DESC
                     """, (user,))
                     old_messages = cursor.fetchall()
+                    logging.info(f"OLD MESSAGES: {old_messages}")
                     old_message_list = [
                         {"msg_id": row[0], "user": row[1], "sender": row[2],
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
@@ -144,6 +145,7 @@ def process_request(request, connection=None):
                         ORDER BY msg_id DESC
                     """, (user,))
                     new_messages = cursor.fetchall()
+                    logging.info(f"NEW MESSAGES: {new_messages}")
                     new_message_list = [
                         {"msg_id": row[0], "user": row[1], "sender": row[2],
                         "msg": row[3], "checked": row[4], "inbox": row[5]}
@@ -152,12 +154,13 @@ def process_request(request, connection=None):
 
                     # Saved drafts
                     cursor.execute("""
-                        SELECT draft_id, user, recipient, msg
+                        SELECT draft_id, user, recipient, msg, checked
                         FROM drafts
                         WHERE user = ?
                         ORDER BY draft_id
                     """, (user,))
                     drafts = cursor.fetchall()
+                    logging.info(f"DRAFTS: {drafts}")
                     draft_list = [
                         {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                         for row in drafts
@@ -185,8 +188,8 @@ def process_request(request, connection=None):
                         "msg": "Invalid credentials.",
                         "data": {}
                     }
-            except:
-                logging.error("SERVER: 2invalid login credentials")
+            except Exception as e:
+                logging.error(f"SERVER: 2invalid login credentials - {str(e)}")
                 response = {
                     "requestId": action["login"]["request"]["requestId"],
                     "status": "error",
@@ -299,14 +302,18 @@ def process_request(request, connection=None):
             drafts = action["saveDrafts"]["request"]["data"]["drafts"]
             try:
                 # Reset drafts
-                cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
+                # cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
                 # Add draft to drafts table
                 # Note: `user` is the sender
-                for recipient, msg in drafts:
+                logging.info("drafts reset")
+                for draft in drafts:
+                    recipient = draft["recipient"]
+                    msg = draft["msg"]
+                    logging.info(f"user {user} recipient {recipient} msg {msg}")
                     cursor.execute("""
                         INSERT INTO drafts (user, recipient, msg, checked)
                         VALUES (?, ?, ?, ?)
-                    """, (user, recipient, msg, 0))
+                    """, (user, recipient, msg, 0,))
                 response = {
                     "requestId": action["saveDrafts"]["request"]["requestId"],
                     "status": "ok",
@@ -314,8 +321,8 @@ def process_request(request, connection=None):
                     "data": {}
                 }
                 logging.info("SERVER: drafts saved")
-            except:
-                logging.error("SERVER: cannot save drafts")
+            except Exception as e:
+                logging.error(f"SERVER: cannot save drafts - {str(e)}")
                 response = {
                     "requestId": action["saveDrafts"]["request"]["requestId"],
                     "status": "error",

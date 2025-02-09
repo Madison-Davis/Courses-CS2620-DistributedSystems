@@ -143,8 +143,7 @@ def logout():
     if not status:
        messagebox.showerror("Error", "Unable to log out.")
     # Save all drafts to db
-    drafts = [(msg[2], msg[3]) for msg in db_user_data[3]]
-    client_conn.client_conn_save_drafts(login_username.get(), drafts)
+    client_conn.client_conn_save_drafts(login_username.get(), db_user_data[3])
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -168,11 +167,11 @@ def clicked_send():
     """ When we click 'Send', we send all drafts with checks and delete from GUI. """
     # Get user drafts that have checkmarks from GUI
     drafts = db_user_data[3]
-    drafts_with_checkmarks = [msg for msg in drafts if msg[-1] == 1]
+    drafts_with_checkmarks = [msg for msg in drafts if msg["checked"] == 1]
     # Go through the drafts and send them one by one
     for draft in drafts_with_checkmarks:
-        recipient = draft[2]
-        content = draft[3]
+        recipient = draft["recipient"]
+        content = draft["msg"]
         status = client_conn.client_conn_send_message(recipient, login_username, content)
         if status != "ok":
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
@@ -204,23 +203,18 @@ def clicked_edit(row):
     drafts_msgs[row].config(state=tk.NORMAL)
     drafts_msgs[row].focus()
 
-def clicked_saved(row, draftId, msg, recipient, checked):
+def clicked_saved(row, msg, recipient, checked):
     """ When we click 'Saved' button, draft is not editable. 
     Update server DB with new information."""
     global db_user_data
     drafts_msgs[row].config(state=tk.DISABLED)
-    # We already made a new draft when clicking 'New', so let's just find that entry
-    data_index = -1
-    for i, entry in enumerate(db_user_data[3]):
-        if entry[0] == draftId:
-            data_index = i
-            break
-    if data_index == -1:
+    if row >= len(db_user_data[3]):
         messagebox.showerror("Error", "Unable to save.")
     # Once we have entry, update its values
-    db_user_data[3][data_index][2] = recipient
-    db_user_data[3][data_index][3] = msg
-    db_user_data[3][data_index][4] = checked
+    db_user_data[3][row]["recipient"] = recipient
+    db_user_data[3][row]["msg"] = msg
+    db_user_data[3][row]["checked"] = checked
+    print(f"CLICKED SAVED {db_user_data}")
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -271,10 +265,8 @@ def clicked_delete_msg(widget, user, msgId):
 
 def create_new_draft(row_idx):
     """ Creates a new draft
-        num_drafts: how many drafts do we currently have
-        draftId: assigns unique draftId to this draft for the user."""
+        num_drafts: how many drafts do we currently have"""
     global db_user_data
-    draftId = uuid.uuid4()
     i = row_idx # start here
     # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
@@ -287,7 +279,7 @@ def create_new_draft(row_idx):
     # create recipient dropdown list
     recipient_entry = ttk.Combobox(main_frame, width=20, height=2)
     recipient_entry['values'] = db_accounts
-    recipient_entry.set(recipient_entry)
+    recipient_entry.set("")
     recipient_entry.grid(row=i+1, column=col_sending_recipient, padx=5, pady=5)
     drafts_recipients[i] = recipient_entry
     # bind key release event to the filter recipient dropdown
@@ -295,16 +287,15 @@ def create_new_draft(row_idx):
     # create edit and save buttons
     tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
     save_btn = tk.Button(main_frame, text="Save")
-    save_btn.config(command=lambda r=i: clicked_saved(r, draftId, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
+    save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+1, column=col_sending_save, padx=5)
-    # create draftId for this draft
-    # return num of drafts and draftId
-    db_user_data[3].append([draftId, login_username, "", "", 0])
+    # return num of drafts
+    db_user_data[3].append({"user": login_username.get(), "recipient": "", "message": "", "checked": 0})
+    print(f"CREATE NEW DRAFT {db_user_data}")
 
-def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
+def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
-        num_drafts: how many drafts do we currently have
-        draftId: assigns unique draftId to this draft for the user."""
+        num_drafts: how many drafts do we currently have"""
     i = row_idx + start_row_drafts # start here
     # create the select button
     drafts_checkmarks[i] = tk.BooleanVar() # unique to each row
@@ -327,7 +318,7 @@ def create_existing_draft(row_idx, draftId, recipient="", msg="", checked=0):
     # create edit and save buttons
     tk.Button(main_frame, text="Edit", command=lambda r=i: clicked_edit(r)).grid(row=i+1, column=col_sending_edit)
     save_btn = tk.Button(main_frame, text="Save")
-    save_btn.config(command=lambda r=i: clicked_saved(r, draftId, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
+    save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+1, column=col_sending_save, padx=5)
 
 def create_new_unread_msg(inbox_msg):
@@ -457,7 +448,7 @@ def load_main_frame_user_info(db_user_data):
     i = 0
     for draft in db_user_data[3]: 
         print(draft)
-        create_existing_draft(i, draft[1], draft[2], draft[3], draft[4])
+        create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
         i += 1
 
 
