@@ -94,18 +94,19 @@ def client_conn_login(user, pwd):
     # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
+    print(response)
     # See if successfully logged in
     try:
         response_json = json.loads(response)
         if response_json.get("status") == "ok":
-            inboxCount = response_json.get("inboxCount")
-            old_msgs = response_json.get("old_msgs")
-            inbox_msgs = response_json.get("inbox_msgs")
-            drafts = response_json.get("drafts")
+            inboxCount = response_json.get("data")["inboxCount"]
+            old_msgs = response_json.get("data")["old_msgs"]
+            inbox_msgs = response_json.get("data")["inbox_msgs"]
+            drafts = response_json.get("data")["drafts"]
             return [inboxCount, old_msgs, inbox_msgs, drafts]
-        return []
+        return [0, [], [], []]
     except json.JSONDecodeError:
-        return []
+        return [0, [], [], []]
     
 def client_conn_get_pwd(user):
     """ JSON: listAccounts 
@@ -168,6 +169,7 @@ def client_conn_list_accounts():
     # Receive response form server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
+    print(response)
     # Parse response from server
     try:
         response_json = json.loads(response)
@@ -410,6 +412,7 @@ def client_conn_logout(user):
     # Receive response from server
     data = s.recv(config.PORT)
     response = data.decode("utf-8")
+    print(response)
     # See if successfully logged out
     try:
         response_json = json.loads(response)

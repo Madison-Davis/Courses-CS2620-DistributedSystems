@@ -132,18 +132,19 @@ def login(new_user, account_users, pwd_hash):
     # If existing user and password lines up, login/load information
     else:
         db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
+        print(db_user_data)
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
         
 def logout():
     """ Default message template and return to login frame. """
-    status = client_conn.client_conn_logout(login_username)
+    status = client_conn.client_conn_logout(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to log out.")
     # Save all drafts to db
     drafts = [(msg[2], msg[3]) for msg in db_user_data[3]]
-    client_conn.client_conn_save_drafts(login_username, drafts)
+    client_conn.client_conn_save_drafts(login_username.get(), drafts)
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -466,4 +467,3 @@ def load_main_frame_user_info(db_user_data):
 # Create Main GUI By Starting Up Login Frame
 load_login_frame()
 gui.mainloop()
-
