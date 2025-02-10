@@ -1,15 +1,29 @@
+# tests.server
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import unittest
 import sqlite3
 import json
 import os
 import sys
-
 module_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../server'))
 sys.path.append(module_path)
-
 from server import db_init, process_request
 
+
+
+# +++++++++++++ Class: TestDatabase ++++++++++++++ #
 class TestChatDatabase(unittest.TestCase):
+    """ List of all tests on the server: """
+    # create account
+    # login
+    # list accounts
+    # send message
+    # delete message
+    # delete account
+    # logout
     
     def setUp(self):
         """Initialize a fresh in-memory database for each test."""
@@ -132,5 +146,8 @@ class TestChatDatabase(unittest.TestCase):
         response = json.loads(process_request(request, self.db))
         self.assertEqual(response["status"], "success")
     
+
+
+# ++++++++++++++++ Main Function +++++++++++++++++ #
 if __name__ == '__main__':
     unittest.main()

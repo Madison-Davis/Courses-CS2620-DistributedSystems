@@ -211,6 +211,7 @@ def clicked_send():
 def clicked_open_inbox(num):
     """ When we click 'Open Inbox', we select 'num' of msgs in queue. """
     # Get all messages in inbox (if the inbox is marked as True)
+    global db_user_data
     inbox_msgs = db_user_data[2]
     inboxCount = len(inbox_msgs)
     # Go through 'num' messages, create a new unread msg, and remove from inbox db
@@ -220,7 +221,15 @@ def clicked_open_inbox(num):
             break
         create_new_unread_msg(db_user_data[2][0])
         client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
+        db_user_data[0] -= 1
         db_user_data[2] = db_user_data[2][1:]
+    # Update the inbox Count automatically
+    for w in main_frame.grid_slaves():
+        if w.grid_info()["row"] == 2 and w.grid_info()["column"] == col_incoming_message:
+            w.destroy()
+            break
+    lbl_incoming = tk.Label(main_frame, text=f"Incoming: {db_user_data[0]} Items", font=("Arial", 12, "bold"), width=30)
+    lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
