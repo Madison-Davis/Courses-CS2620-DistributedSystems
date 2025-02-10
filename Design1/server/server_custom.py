@@ -162,6 +162,7 @@ def process_request(message_type, payload, connection=None):
 
                 # Add message to messages table
                 # Note: `user` is the recipient
+                # TODO: this exeuction part is not finishing
                 cursor.execute("""
                     INSERT INTO messages (user, sender, msg, checked, inbox)
                     VALUES (?, ?, ?, ?, ?)
@@ -172,6 +173,7 @@ def process_request(message_type, payload, connection=None):
                 # Check if recipient is logged in, and if so, send data
                 cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
                 logged_in = cursor.fetchone()
+
                 if user in clients and logged_in:
                     recipient_response = f"{sender}:{msg}"
                     payload_bytes = recipient_response.encode("utf-8")

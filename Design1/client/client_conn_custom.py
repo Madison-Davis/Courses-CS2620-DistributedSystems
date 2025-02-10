@@ -93,9 +93,11 @@ def client_conn_get_pwd(user):
 
 def client_conn_send_message(draft_id, user, sender, content):
     payload = f"{draft_id}:{user}:{sender}:{content}"
+    print(payload)
     send_request(0x0002, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_send_message:", response)
+    return True if response == "ok" else False
 
 def client_conn_add_draft(user, recipient, content, checked):
     """Returns newly assigned draft ID of draft."""
