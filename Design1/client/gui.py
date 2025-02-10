@@ -153,9 +153,10 @@ def logout():
 def delete_account():
     """ Delete account and send request to DB to update this. """
     # Reset all data
+    global db_accounts, db_user_data
     db_accounts = []
     db_user_data = [0, [], [], []]
-    status = client_conn.client_conn_delete_account(login_username, login_pwd)
+    status = client_conn.client_conn_delete_account(login_username.get(), login_pwd.get())
     if not status:
        messagebox.showerror("Error", "Unable to delete user.")
     load_main_frame()
