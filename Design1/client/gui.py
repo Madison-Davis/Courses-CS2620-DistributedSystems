@@ -5,10 +5,12 @@
 import sys
 import os
 import tkinter as tk
-import uuid
 from tkinter import messagebox, ttk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import client_conn
+import client_conn_custom
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
+import config
 
 
 
@@ -104,8 +106,12 @@ def check_username(username):
     global login_username, login_pwd, db_user_data, db_accounts
     username = username.get()
     # NOTE: should not pull passwords for security
-    account_users = client_conn.client_conn_list_accounts()
-    pwd_hash = client_conn.client_conn_get_pwd(username)
+    if config.PROTOCOL == 0:
+        account_users = client_conn.client_conn_list_accounts()
+        pwd_hash = client_conn.client_conn_get_pwd(username)
+    else:
+        account_users = client_conn_custom.client_conn_list_accounts()
+        pwd_hash = client_conn_custom.client_conn_get_pwd(username)
     result_text = "Welcome Back!" if username in account_users else "Welcome, New User!"
     new_user = False if username in account_users else True
     # Create password label and entry
@@ -125,7 +131,10 @@ def login(new_user, account_users, pwd_hash):
     pwd = login_pwd.get()
     # If new user, create a new account
     if new_user:
-        status = client_conn.client_conn_create_account(user, pwd)
+        if config.PROTOCOL == 0:
+            status = client_conn.client_conn_create_account(user, pwd)
+        else:
+            status = client_conn_custom.client_conn_create_account(user, pwd)
         if not status:
            messagebox.showerror("Error", "Unable to create new user.  Try again")
         db_user_data = [0,[],[],[]]
@@ -134,18 +143,27 @@ def login(new_user, account_users, pwd_hash):
         messagebox.showerror("Error", "Invalid Username or Password")
     # If existing user and password lines up, login/load information
     else:
-        db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
+        if config.PROTOCOL == 0:
+            db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
+        else:
+            db_user_data = client_conn_custom.client_conn_login(user, pwd)
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
         
 def logout():
     """ Default message template and return to login frame. """
-    status = client_conn.client_conn_logout(login_username.get())
+    if config.PROTOCOL == 0:
+        status = client_conn.client_conn_logout(login_username.get())
+    else:
+        status = client_conn_custom.client_conn_logout(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to log out.")
     # Save all drafts to db
-    client_conn.client_conn_save_drafts(login_username.get(), db_user_data[3])
+    if config.PROTOCOL == 0:
+        client_conn.client_conn_save_drafts(login_username.get(), db_user_data[3])
+    else:
+        client_conn_custom.client_conn_save_drafts(login_username.get(), db_user_data[3])
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -156,7 +174,10 @@ def delete_account():
     global db_accounts, db_user_data
     db_accounts = []
     db_user_data = [0, [], [], []]
-    status = client_conn.client_conn_delete_account(login_username.get(), login_pwd.get())
+    if config.PROTOCOL == 0:
+        status = client_conn.client_conn_delete_account(login_username.get(), login_pwd.get())
+    else:
+        status = client_conn_custom.client_conn_delete_account(login_username.get(), login_pwd.get())
     if not status:
        messagebox.showerror("Error", "Unable to delete user.")
     load_main_frame()
@@ -180,7 +201,10 @@ def clicked_send():
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
         content = draft["msg"]
-        status = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
+        if config.PROTOCOL == 0:
+            status = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
+        else:
+            status = client_conn_custom.client_conn_send_message(draft_id, recipient, login_username.get(), content)
         if not status:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
            print(f"CLICKED_SEND {status}")
@@ -221,7 +245,10 @@ def clicked_open_inbox(num):
         if i >= inboxCount:
             break
         create_new_unread_msg(db_user_data[2][0])
-        client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
+        if config.PROTOCOL == 0:
+            client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
+        else:
+            client_conn_custom.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
         db_user_data[0] -= 1
         db_user_data[2] = db_user_data[2][1:]
     # Update the inbox Count automatically
@@ -234,7 +261,10 @@ def clicked_open_inbox(num):
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
-    client_conn.client_conn_check_message(user, msgId)
+    if config.PROTOCOL == 0:
+        client_conn.client_conn_check_message(user, msgId)
+    else:
+        client_conn_custom.client_conn_check_message(user, msgId)
     btn.config(text="Read") if check_var.get() == 1 else btn.config(text="Unread")
 
 def clicked_edit(row):
@@ -270,14 +300,20 @@ def clicked_new_button():
 def filter_recipients(event, row):
     """ Filters recipient dropdown list as user types. """
     typed_text = drafts_recipients[row].get().lower()
-    updated_accounts = client_conn.client_conn_list_accounts()
+    if config.PROTOCOL == 0:
+        updated_accounts = client_conn.client_conn_list_accounts()
+    else:
+        updated_accounts = client_conn_custom.client_conn_list_accounts()
     filtered_users = [user for user in updated_accounts if typed_text in user.lower()]
     drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
 def clicked_delete_msg(widget, user, msgId):
     """ When we click 'Delete' button, removes row and moves other rows up. """
-    status = client_conn.client_conn_delete_message(user, msgId)
+    if config.PROTOCOL == 0:
+        status = client_conn.client_conn_delete_message(user, msgId)
+    else:
+        status = client_conn_custom.client_conn_delete_message(user, msgId)
     if not status:
        messagebox.showerror("Error", "Deletion unsuccessful")
     # Delete specified cells that correspond to the message we want to delete
@@ -329,8 +365,10 @@ def create_new_draft(row_idx):
     save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
     # return num of drafts
     # TODO: SPECIFY DRAFT_ID
-    draft_id = client_conn.client_conn_add_draft(login_username.get(), "", "", 0)
-    print(f"GUI: DRAFT ID IS {draft_id}")
+    if config.PROTOCOL == 0:
+        draft_id = client_conn.client_conn_add_draft(login_username.get(), "", "", 0)
+    else:
+        draft_id = client_conn_custom.client_conn_add_draft(login_username.get(), "", "", 0)
     db_user_data[3].append({"draft_id": draft_id, "user": login_username.get(), "recipient": "", "message": "", "checked": 0})
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):

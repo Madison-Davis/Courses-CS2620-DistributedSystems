@@ -100,7 +100,7 @@ def process_request(message_type, payload, connection=None):
                 """, (user,))
                 old_messages = cursor.fetchall()
                 logging.info(f"OLD MESSAGES: {old_messages}")
-                old_message_list = [
+                old_msgs_list = [
                     {"msg_id": row[0], "user": row[1], "sender": row[2],
                     "msg": row[3], "checked": row[4], "inbox": row[5]}
                     for row in old_messages
@@ -114,7 +114,7 @@ def process_request(message_type, payload, connection=None):
                 """, (user,))
                 new_messages = cursor.fetchall()
                 logging.info(f"NEW MESSAGES: {new_messages}")
-                new_message_list = [
+                inbox_msgs_list = [
                     {"msg_id": row[0], "user": row[1], "sender": row[2],
                     "msg": row[3], "checked": row[4], "inbox": row[5]}
                     for row in new_messages
@@ -129,12 +129,13 @@ def process_request(message_type, payload, connection=None):
                 """, (user,))
                 drafts = cursor.fetchall()
                 logging.info(f"DRAFTS: {drafts}")
-                draft_list = [
+                drafts_list = [
                     {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                     for row in drafts
                 ]
 
-                response_payload = f"{len(new_message_list)}:{','.join(';'.join(f"{k}={v}" for k, v in old_message_list.items()))}:{','.join(';'.join(f"{k}={v}" for k, v in new_message_list.items()))}:{','.join(';'.join(f"{k}={v}" for k, v in draft_list.items()))}"
+                inboxCount = len(inbox_msgs_list)
+                response_payload = f"[{inboxCount},{old_msgs_list},{inbox_msgs_list},{drafts_list}]"
             else:
                 response_payload = "error:invalid"
         

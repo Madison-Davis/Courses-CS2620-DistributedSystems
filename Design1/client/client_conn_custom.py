@@ -7,6 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "c
 import config
 import logging
 import threading
+import re
+import ast
 
 # 0x0001: Login
 # 0x0002: Send Message
@@ -48,18 +50,41 @@ def client_conn_login(user, pwd):
     payload = f"{user}:{pwd}"
     send_request(0x0001, payload)
     response = receive_response()
-    return response.split(":") if response else [0, [], [], []]
+    if response == "error:invalid":
+        return [0, [], [], []]
+    else:
+        # Use regular expresisons to find and match groups
+        pattern = r"(\d+),\s*(\[\{.*\}\],\s*\[\{.*\}\],\s*\[\{.*\}\])"
+        match = re.match(pattern, response.strip())
+        inbox_count = int(match.group(1))
+        old_msgs_str = match.group(2)
+        inbox_msgs_str = match.group(3)
+        drafts_str = match.group(4)
+        # Evaluate strings into lists/dictionaries
+        try:
+            old_msgs_list = ast.literal_eval(old_msgs_str.replace("'", '"'))
+            inbox_msgs_list = ast.literal_eval(inbox_msgs_str.replace("'", '"'))
+            drafts_list = ast.literal_eval(drafts_str.replace("'", '"'))
+        except Exception as e:
+            print(f"ERROR: client_conn_login: {e}")
+            return [0, [], [], []]
+        return [inbox_count, old_msgs_list, inbox_msgs_list, drafts_list]
 
 def client_conn_list_accounts():
     """Returns list of all existing account usernames."""
     send_request(0x0004, "")
     response = receive_response()
-    return response.split(":") if response else []
+    if response: # turn "num_users:user1,user2,user3" into ["user1", "user2", "user3"]
+        split_response = response.split(":", 1)
+        if len(split_response) > 1: # edge case: if there are no users
+            return split_response[1].split(",") if split_response[1] else []
+    return []
 
 def client_conn_get_pwd(user):
     """Returns password hash of requested username."""
     send_request(0x0005, user)
-    return receive_response()
+    response = receive_response()
+    return "" if response == "error:exist" else response
 
 def client_conn_send_message(draft_id, user, sender, content):
     payload = f"{draft_id}:{user}:{sender}:{content}"

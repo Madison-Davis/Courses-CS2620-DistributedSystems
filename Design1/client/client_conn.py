@@ -129,7 +129,7 @@ def client_conn_get_pwd(user):
         else:
             return ""
     except json.JSONDecodeError:
-        return []
+        return ""
     
 def client_conn_list_accounts():
     """ JSON: listAccounts 
