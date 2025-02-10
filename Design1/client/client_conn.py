@@ -490,4 +490,4 @@ logging.basicConfig(
 # +++++++++++++++++++ Server +++++++++++++++++++ #
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))
-# threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()
+threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()

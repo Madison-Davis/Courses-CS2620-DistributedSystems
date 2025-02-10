@@ -168,9 +168,13 @@ def delete_account():
 def clicked_send():
     """ When we click 'Send', we send all drafts with checks and delete from GUI. """
     global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
+
+    for i in drafts_checkmarks:
+        print(drafts_checkmarks[i].get())
     
     # Send one-by-one user drafts that have checkmarks
-    drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i]]
+    drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
+    print("drafts with checkmarks", drafts_with_checkmarks)
     for draft in drafts_with_checkmarks:
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
@@ -191,11 +195,12 @@ def clicked_send():
                 w.destroy()
 
     # Delete all remaining drafts
-    db_user_data[3] = [draft for draft in db_user_data[3] if not draft["checked"]] # just double-checking
+    db_user_data[3] = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get() == False]
     drafts_rows = [key for key, var in drafts_checkmarks.items() if var.get()]
     drafts_msgs = {key: value for key, value in drafts_msgs.items() if key not in drafts_rows}
     drafts_checkmarks = {key: value for key, value in drafts_checkmarks.items() if key not in drafts_rows}
     drafts_recipients = {key: value for key, value in drafts_recipients.items() if key not in drafts_rows}
+
     # Re-load these drafts
     for row_idx in range(len(db_user_data[3])):
         recipient = db_user_data[3][row_idx]["recipient"]
