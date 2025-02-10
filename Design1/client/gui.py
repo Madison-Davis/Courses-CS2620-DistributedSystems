@@ -170,14 +170,15 @@ def clicked_send():
     global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
     
     # Send one-by-one user drafts that have checkmarks
-    drafts_with_checkmarks = [draft for draft in db_user_data[3] if draft["checked"] == 1]
+    drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i]]
     for draft in drafts_with_checkmarks:
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
         content = draft["msg"]
         status = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
-        if status != "ok":
+        if not status:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
+           print(f"CLICKED_SEND {status}")
         # Remove drafts that are sent
         db_user_data[3].remove(draft)
         print("draft(s) sent!")
@@ -213,7 +214,7 @@ def clicked_open_inbox(num):
         if i >= inboxCount:
             break
         create_new_unread_msg(db_user_data[2][0])
-        #client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])  # does this store message ID?
+        client_conn.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
         db_user_data[2] = db_user_data[2][1:]
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
@@ -262,7 +263,7 @@ def filter_recipients(event, row):
 def clicked_delete_msg(widget, user, msgId):
     """ When we click 'Delete' button, removes row and moves other rows up. """
     status = client_conn.client_conn_delete_message(user, msgId)
-    if status != "ok":
+    if not status:
        messagebox.showerror("Error", "Deletion unsuccessful")
     # Delete specified cells that correspond to the message we want to delete
     row = widget.grid_info()["row"]
@@ -313,7 +314,9 @@ def create_new_draft(row_idx):
     save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
     # return num of drafts
     # TODO: SPECIFY DRAFT_ID
-    db_user_data[3].append({"user": login_username.get(), "recipient": "", "message": "", "checked": 0})
+    draft_id = client_conn.client_conn_add_draft(login_username.get(), "", "", 0)
+    print(f"GUI: DRAFT ID IS {draft_id}")
+    db_user_data[3].append({"draft_id": draft_id, "user": login_username.get(), "recipient": "", "message": "", "checked": 0})
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft

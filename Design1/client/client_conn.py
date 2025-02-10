@@ -202,6 +202,43 @@ def client_conn_send_message(draft_id, user, sender, content):
     except json.JSONDecodeError:
         return False
 
+def client_conn_add_draft(user, recipient, content, checked):
+    """ JSON: addDraft
+    Return: T for success, F for no success """
+    # Set up request
+    request_id = str(uuid.uuid4())
+    request = {
+        "protocolVersion": 1,
+        "description": "Simple client-server chat application JSON wire protocol",
+        "actions": {
+            "addDraft": {
+                "request": {
+                    "requestId": request_id,
+                    "action": "addDraft",
+                    "data": {
+                        "user": user,
+                        "recipient": recipient,
+                        "content": content,
+                        "checked": checked
+                    }
+                }
+            }
+        }
+    }
+    # Send request
+    msg = json.dumps(request)
+    s.sendall(msg.encode("utf-8"))
+    # Receive response from server
+    data = s.recv(config.BUF_SIZE)
+    response = data.decode("utf-8")
+    logging.info(f"ADDED DRAFT ID RESPONSE: {response}")
+    # See if successfully sent message
+    try:
+        response_json = json.loads(response)
+        return True if response_json.get("status") == "ok" else False
+    except json.JSONDecodeError:
+        return False
+
 def client_conn_save_drafts(user, drafts):
     """ JSON: sendMessage
     Return: T for success, F for no success """
@@ -229,7 +266,7 @@ def client_conn_save_drafts(user, drafts):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    logging.info(f"SEND MESSAGE RESPONSE: {response}")
+    logging.info(f"SAVE DRAFTs RESPONSE: {response}")
     # See if successfully sent message
     try:
         response_json = json.loads(response)
@@ -238,7 +275,7 @@ def client_conn_save_drafts(user, drafts):
         return False
     
 def client_conn_check_message(user, msgId):
-    """ JSON: checkMesssage
+    """ JSON: checkMessage
     Return: T for success, F for no success """
     # Set up request
     request_id = str(uuid.uuid4())
@@ -272,7 +309,7 @@ def client_conn_check_message(user, msgId):
         return False
     
 def client_conn_download_message(user, msgId):
-    """ JSON: downloadMesssage
+    """ JSON: downloadMessage
     Return: T for success, F for no success """
     # Set up request
     request_id = str(uuid.uuid4())
@@ -280,10 +317,10 @@ def client_conn_download_message(user, msgId):
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
-            "downloadMesssage": {
+            "downloadMessage": {
                 "request": {
                     "requestId": request_id,
-                    "action": "downloadMesssage",
+                    "action": "downloadMessage",
                     "data": {
                         "username": user,
                         "msgId": msgId
@@ -306,7 +343,7 @@ def client_conn_download_message(user, msgId):
         return False
 
 def client_conn_delete_message(user, msgId):
-    """ JSON: checkMesssage
+    """ JSON: checkMessage
     Return: T for success, F for no success """
     # Set up request
     request_id = str(uuid.uuid4())
@@ -453,4 +490,4 @@ logging.basicConfig(
 # +++++++++++++++++++ Server +++++++++++++++++++ #
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))
-threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()
+# threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()

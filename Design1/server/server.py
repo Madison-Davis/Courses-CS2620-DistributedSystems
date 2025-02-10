@@ -291,6 +291,8 @@ def process_request(request, connection=None):
                         INSERT INTO messages (user, sender, msg, checked, inbox)
                         VALUES (?, ?, ?, ?, ?)
                     """, (user, sender, msg, 0, 1))
+                    cursor.execute("SELECT * FROM messages")
+                    logging.debug(cursor.fetchall())
                     response = {
                         "requestId": action["sendMessage"]["request"]["requestId"],
                         "status": "ok",
@@ -357,6 +359,36 @@ def process_request(request, connection=None):
                     "data": {}
                 }
         
+        elif "addDraft" in action:
+            logging.info("SERVER: starting addDraft")
+            user = action["addDraft"]["request"]["data"]["user"]
+            recipient = action["addDraft"]["request"]["data"]["recipient"]
+            msg = action["addDraft"]["request"]["data"]["content"]
+            checked = action["addDraft"]["request"]["data"]["checked"]
+            try:
+                # Add draft to drafts table
+                # Note: `user` is the sender
+                cursor.execute("""
+                    INSERT INTO drafts (user, recipient, msg, checked)
+                    VALUES (?, ?, ?, ?) RETURNING draft_id
+                """, (user, recipient, msg, checked,))
+                response = {
+                    "requestId": action["addDraft"]["request"]["requestId"],
+                    "status": "ok",
+                    "msg": "Draft added.",
+                    "data": {
+                        "draft_id": cursor.fetchone()
+                    }
+                }
+            except Exception as e:
+                logging.error(f"SERVER: cannot add draft - {str(e)}")
+                response = {
+                    "requestId": action["addDraft"]["request"]["requestId"],
+                    "status": "error",
+                    "msg": "Cannot add draft or other error.",
+                    "data": {}
+                }
+        
         elif "checkMessage" in action:
             logging.info("SERVER: starting checkMessage")
             user = action["checkMessage"]["request"]["data"]["username"]
@@ -387,7 +419,7 @@ def process_request(request, connection=None):
             try:
                 # Update checked status
                 cursor.execute("UPDATE messages SET inbox = 0 WHERE user = ? AND msg_id = ?", (user, msg_id,))
-                logging.info("SERVER: message downloaded from inbox")
+                logging.info(f"SERVER: message ID {msg_id} downloaded from inbox")
                 response = {
                     "requestId": action["downloadMessage"]["request"]["requestId"],
                     "status": "ok",
@@ -474,7 +506,7 @@ def process_request(request, connection=None):
                 }
         
         else:
-            logging.error("SERVER: error logging out")
+            logging.error("SERVER: UNKNOWN ERROR")
             response = {
                 "status": "error",
                 "msg": "Unknown error occurred.",
