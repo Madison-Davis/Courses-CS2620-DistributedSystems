@@ -70,7 +70,6 @@ def process_request(message_type, payload, connection=None):
     try:
         # Connect to database, or create if doesn't exist
         db = connection if connection else sqlite3.connect('chat_database.db')
-
         # Create cursor to interact with database
         cursor = db.cursor()
 
@@ -189,11 +188,12 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x0007:  # Save Drafts
             user, drafts = payload.split(":", 1)
+            # Edge case: when logging out, there are no drafts you made; just return ok
+            if not drafts.strip():
+                return "ok"
             drafts_dict = [dict(item.split('=') for item in entry.split(';')) for entry in drafts.split(',')]
-            
             # Reset drafts
             cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
-            
             # Add drafts to drafts table
             for draft in drafts_dict:
                 recipient, msg = draft["recipient"], draft["msg"]
@@ -258,29 +258,28 @@ def service_connection(key, mask):
     """Handle communication with client."""
     sock = key.fileobj
     data = key.data
-    
+
     if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(4096)
+        recv_data = sock.recv(config.BUF_SIZE)
         if recv_data:
             logging.info(f"Raw received data: {recv_data}")
             data.inb += recv_data
             
             while len(data.inb) >= 2:
-                # Extract message length from the first 2 bytes
-                msg_length = struct.unpack("!H", data.inb[:2])[0]
-                
-                if len(data.inb) < 2 + msg_length:
-                    break  # Wait for more data
-                
-                # Extract the full message
-                message = data.inb[2:2 + msg_length]
-                data.inb = data.inb[2 + msg_length:]  # Remove processed message
-                
-                logging.info(f"Processing message: {message}")
+                # Extract and unpack msg_type, payload_length
+                msg_type = struct.unpack("!H", data.inb[:2])[0]         # Unsigned short (2 bytes)
+                payload_length = struct.unpack("!I", data.inb[2:6])[0]  # Unsigned int (4 bytes)
+                # Extract payload data
+                payload_data = data.inb[6:6 + payload_length]
+                message = payload_data.decode("utf-8")    
+                # Remove processed data
+                data.inb = data.inb[6 + payload_length:]                # 2 + 4 + payload_length
+                logging.info(f"Processing message: {msg_type, message}")
                 try:
-                    response = process_request(message)
-                    response_length = struct.pack("!H", len(response))
-                    data.outb += response_length + response
+                    response = process_request(msg_type, message)
+                    response_bytes = response.encode("utf-8")
+                    # submit bytes over the wire       
+                    data.outb += response_bytes
                 except Exception as e:
                     logging.error(f"Error processing message: {e}")
         else:

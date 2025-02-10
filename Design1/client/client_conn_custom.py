@@ -32,30 +32,33 @@ def send_request(message_type, payload):
 
 def receive_response():
     """Receives a response from the server using the custom wire protocol."""
-    header = s.recv(6)
-    if len(header) < 6:
-        return None
-    message_type, payload_length = struct.unpack("!H I", header)
-    payload = s.recv(payload_length).decode("utf-8")
-    return payload
+    response_bytes = s.recv(config.BUF_SIZE)  # Read raw bytes from the socket
+    response = response_bytes.decode("utf-8")  # Decode bytes to string
+    return response
 
 def client_conn_create_account(user, pwd):
     payload = f"{user}:{pwd}"
     send_request(0x0003, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_create_account", response)
+    return True if response == "ok" else False
 
 def client_conn_login(user, pwd):
     """Returns inboxCount, old_msgs, inbox_msgs, drafts"""
     payload = f"{user}:{pwd}"
     send_request(0x0001, payload)
     response = receive_response()
+    print("client_conn_login", response)
     if response == "error:invalid":
         return [0, [], [], []]
     else:
         # Use regular expresisons to find and match groups
-        pattern = r"(\d+),\s*(\[\{.*\}\],\s*\[\{.*\}\],\s*\[\{.*\}\])"
-        match = re.match(pattern, response.strip())
+        pattern = r"\[(\d+),\s*(\[.*\])\,\s*(\[.*\])\,\s*(\[.*\])\]"
+        # - \[(\d+) -> Captures the inbox count (0)
+        # - (\[.*\]) -> Captures the 1st list
+        # - (\[.*\]) -> Captures the 2nd list
+        # - (\[.*\]) -> Captures the 3rd list
+        match = re.match(pattern, response)
         inbox_count = int(match.group(1))
         old_msgs_str = match.group(2)
         inbox_msgs_str = match.group(3)
@@ -74,6 +77,7 @@ def client_conn_list_accounts():
     """Returns list of all existing account usernames."""
     send_request(0x0004, "")
     response = receive_response()
+    print("client_conn_list_accounts:", response.split(":", 1)[1])
     if response: # turn "num_users:user1,user2,user3" into ["user1", "user2", "user3"]
         split_response = response.split(":", 1)
         if len(split_response) > 1: # edge case: if there are no users
@@ -84,6 +88,7 @@ def client_conn_get_pwd(user):
     """Returns password hash of requested username."""
     send_request(0x0005, user)
     response = receive_response()
+    print("client_conn_get_pwd:", response)
     return "" if response == "error:exist" else response
 
 def client_conn_send_message(draft_id, user, sender, content):
@@ -96,42 +101,54 @@ def client_conn_add_draft(user, recipient, content, checked):
     """Returns newly assigned draft ID of draft."""
     payload = f"{user}:{recipient}:{content}:{checked}"
     send_request(0x0006, payload)
-    return receive_response()
+    response = receive_response()
+    print("client_conn_add_draft:", response)
+    return response
 
 def client_conn_save_drafts(user, drafts):
-    payload = f"{user}:{','.join(';'.join(f"{k}={v}" for k, v in drafts.items()))}"
+    # user      = "asd"
+    # drafts    = [{'draft_id': 2, 'user': 'asd', 'recipient': '', 'msg': 'hello!', 'checked': 0},
+    #               {'draft_id': 3, 'user': 'asd', 'recipient': '', 'msg': 'hi!', 'checked': 0}]
+    # asd:draft_id=2;user=asd;recipient=;msg=hello!;checked=0,draft_id=3;user=asd;recipient=;msg=hi!;checked=0
+    payload = f"{user}:{','.join(';'.join(f"{k}={v}" for k, v in draft.items()) for draft in drafts)}"
     send_request(0x0007, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_save_drafts:", response)
+    return True if response == "ok" else False
 
 def client_conn_check_message(user, msgId):
     payload = f"{user}:{msgId}"
     send_request(0x0008, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_check_message:", response)
+    return True if response == "ok" else False
 
 def client_conn_download_message(user, msgId):
     payload = f"{user}:{msgId}"
     send_request(0x0009, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_download_message:", response)
+    return True if response == "ok" else False
 
 def client_conn_delete_message(user, msgId):
     payload = f"{user}:{msgId}"
     send_request(0x000A, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_delete_message:", response)
+    return True if response == "ok" else False
 
 def client_conn_delete_account(user, pwd):
     payload = f"{user}:{pwd}"
     send_request(0x000B, payload)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_delete_account:", response)
+    return True if response == "ok" else False
 
 def client_conn_logout(user):
     send_request(0x000C, user)
     response = receive_response()
-    return response == "ok"
+    print("client_conn_logout:", response)
+    return True if response == "ok" else False
 
 def client_conn_receive_message(s):
     while True:
