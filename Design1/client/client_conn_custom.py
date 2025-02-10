@@ -9,6 +9,7 @@ import logging
 import threading
 import re
 import ast
+import select
 
 # 0x0001: Login
 # 0x0002: Send Message
@@ -112,7 +113,7 @@ def client_conn_save_drafts(user, drafts):
     # drafts    = [{'draft_id': 2, 'user': 'asd', 'recipient': '', 'msg': 'hello!', 'checked': 0},
     #               {'draft_id': 3, 'user': 'asd', 'recipient': '', 'msg': 'hi!', 'checked': 0}]
     # asd:draft_id=2;user=asd;recipient=;msg=hello!;checked=0,draft_id=3;user=asd;recipient=;msg=hi!;checked=0
-    payload = f"{user}:{','.join(';'.join(f"{k}={v}" for k, v in draft.items()) for draft in drafts)}"
+    payload = f"{user}:{','.join([';'.join([f'{k}={v}' for k, v in draft.items()]) for draft in drafts])}"
     send_request(0x0007, payload)
     response = receive_response()
     print("client_conn_save_drafts:", response)
@@ -155,14 +156,21 @@ def client_conn_logout(user):
 def client_conn_receive_message(s):
     while True:
         try:
-            header = s.recv(6)
-            if len(header) < 6:
-                logging.warning("SERVER: Connection closed by server.")
-                break
-            message_type, payload_length = struct.unpack("!H I", header)
-            payload = s.recv(payload_length).decode("utf-8")
-            logging.info(f"CLIENT: Received message: {payload}")
-            print(f"Received: {payload}")
+            ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
+            if ready:
+                header = s.recv(config.BUF_SIZE)
+                if not header:
+                    logging.warning("SERVER: Connection closed by server.")
+                    break
+                message_type, payload_length = struct.unpack("!H I", header)
+                payload = s.recv(payload_length).decode("utf-8")
+                logging.info(f"CLIENT: Received message: {payload}")
+                print(f"Received: {payload}")
+                if message_type == "0x000D":
+                    incoming_msg = payload.split(":")
+                    print("Received message from {incoming_msg[2]}: {incoming_msg[3]}")
+        except socket.timeout:
+            pass
         except Exception as e:
             logging.error(f"CLIENT: Error receiving message: {e}")
 

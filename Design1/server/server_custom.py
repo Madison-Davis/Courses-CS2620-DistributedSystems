@@ -166,7 +166,7 @@ def process_request(message_type, payload, connection=None):
                 cursor.execute("""
                     INSERT INTO messages (user, sender, msg, checked, inbox)
                     VALUES (?, ?, ?, ?, ?)
-                """, (user, sender, msg, 0, 1))
+                """, (user, sender, content, 0, 1))
                 response_payload = "ok"
 
                 # We updated the user's database, now, can we immediately update inbox?
@@ -175,7 +175,7 @@ def process_request(message_type, payload, connection=None):
                 logged_in = cursor.fetchone()
 
                 if user in clients and logged_in:
-                    recipient_response = f"{sender}:{msg}"
+                    recipient_response = f"{sender}:{content}"
                     payload_bytes = recipient_response.encode("utf-8")
                     receive_message_type = 0x000D
                     header = struct.pack("!H I", receive_message_type, len(payload_bytes))
