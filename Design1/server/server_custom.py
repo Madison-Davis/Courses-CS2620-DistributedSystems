@@ -134,7 +134,7 @@ def process_request(message_type, payload, connection=None):
                     for row in drafts
                 ]
 
-                response_payload = f"{len(new_message_list)}:{';'.join(','.join(f"{k}={v}" for k, v in old_message_list.items()))}:{';'.join(','.join(f"{k}={v}" for k, v in new_message_list.items()))}:{';'.join(','.join(f"{k}={v}" for k, v in draft_list.items()))}"
+                response_payload = f"{len(new_message_list)}:{','.join(';'.join(f"{k}={v}" for k, v in old_message_list.items()))}:{','.join(';'.join(f"{k}={v}" for k, v in new_message_list.items()))}:{','.join(';'.join(f"{k}={v}" for k, v in draft_list.items()))}"
             else:
                 response_payload = "error:invalid"
         
@@ -188,7 +188,7 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x0007:  # Save Drafts
             user, drafts = payload.split(":", 1)
-            drafts_dict = [dict(item.split('=') for item in entry.split(',')) for entry in drafts.split(';')]
+            drafts_dict = [dict(item.split('=') for item in entry.split(';')) for entry in drafts.split(',')]
             
             # Reset drafts
             cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))

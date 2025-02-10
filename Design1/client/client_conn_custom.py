@@ -74,7 +74,7 @@ def client_conn_add_draft(user, recipient, content, checked):
     return receive_response()
 
 def client_conn_save_drafts(user, drafts):
-    payload = f"{user}:{';'.join(','.join(f"{k}={v}" for k, v in drafts.items()))}"
+    payload = f"{user}:{','.join(';'.join(f"{k}={v}" for k, v in drafts.items()))}"
     send_request(0x0007, payload)
     response = receive_response()
     return response == "ok"
