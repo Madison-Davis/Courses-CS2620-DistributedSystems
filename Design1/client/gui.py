@@ -11,6 +11,7 @@ import client_conn
 import client_conn_custom
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
+import threading
 
 
 
@@ -150,6 +151,7 @@ def login(new_user, account_users, pwd_hash):
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
+    client_conn.start_message_listener(update_inbox_ui)
         
 def logout():
     """ Default message template and return to login frame. """
@@ -432,6 +434,26 @@ def create_new_unread_msg(inbox_msg):
     tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
 
+def update_inbox_ui(incoming_msg):
+    """ Updates the GUI inbox dynamically when a new message arrives. """
+    global db_user_data
+    db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
+
+    # Update inbox count
+    update_inbox_count(len(db_user_data[2]))
+    gui.after(100, load_main_frame, db_user_data)
+
+def update_inbox_count(count):
+    """ Update the GUI inbox count dynamically when a new message arrives. """
+    for widget in main_frame.grid_slaves():
+        if widget.grid_info()["row"] == 2 and widget.grid_info()["column"] == col_incoming_message:
+            widget.destroy()
+            break
+
+    lbl_incoming = tk.Label(main_frame, text=f"Incoming: {count} Items", font=("Arial", 12, "bold"), width=30)
+    lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
+
+
 
 # ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
@@ -494,6 +516,9 @@ def load_main_frame(db_user_data=[0,[],[],[]]):
 
     if db_user_data != [0,[],[],[]]:
         load_main_frame_user_info(db_user_data)
+
+    # Start listening for incoming messages with a callback
+    threading.Thread(target=client_conn.start_message_listener, args=(update_inbox_ui,), daemon=True).start()
 
 def load_main_frame_user_info(db_user_data):
     """ Clears and resets the main frame to its initial state. 

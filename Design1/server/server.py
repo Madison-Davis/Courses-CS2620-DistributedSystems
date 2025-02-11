@@ -291,8 +291,7 @@ def process_request(request, connection=None):
                         INSERT INTO messages (user, sender, msg, checked, inbox)
                         VALUES (?, ?, ?, ?, ?)
                     """, (user, sender, msg, 0, 1))
-                    cursor.execute("SELECT * FROM messages")
-                    logging.debug(cursor.fetchall())
+
                     response = {
                         "requestId": action["sendMessage"]["request"]["requestId"],
                         "status": "ok",
@@ -301,21 +300,38 @@ def process_request(request, connection=None):
                     }
 
                     logging.info("SERVER: message delivered to user DB!")
-                    
-                    # We updated the user's database, now, can we immediately update inbox?
-                    # Check if recipient is logged in, and if so, send data
-                    cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
-                    logged_in = cursor.fetchone()
-                    if user in clients and logged_in:
-                        recipient_response = {
+                    logging.info(f"CLIENTS: {clients}")
+
+                    db.commit()
+
+                    # **Immediate Message Delivery**
+                    if user in clients:
+                        logging.info("SERVER: recipient is online, sending message immediately.")
+                        recipient_socket = clients[user]
+                        message_data = json.dumps({
                             "action": "receiveMessage",
+                            "msgId": draft_id,  # Not actually a draft, but keeps unique ID
+                            "user": user,
                             "sender": sender,
                             "msg": msg
-                        }
-                        client_socket = clients[user]
-                        message = json.dumps(recipient_response)     # Convert response to JSON
-                        client_socket.send(message.encode('utf-8'))  # Send the response to the client
-                        logging.info("SERVER: message sent to user immediately!")
+                        })
+                        recipient_socket.send(message_data.encode('utf-8'))
+                        logging.info("SERVER: message sent to recipient's active connection.")
+                    
+                    # # We updated the user's database, now, can we immediately update inbox?
+                    # # Check if recipient is logged in, and if so, send data
+                    # cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
+                    # logged_in = cursor.fetchone()
+                    # if user in clients and logged_in:
+                    #     recipient_response = {
+                    #         "action": "receiveMessage",
+                    #         "sender": sender,
+                    #         "msg": msg
+                    #     }
+                    #     client_socket = clients[user]
+                    #     message = json.dumps(recipient_response)     # Convert response to JSON
+                    #     client_socket.send(message.encode('utf-8'))  # Send the response to the client
+                    #     logging.info("SERVER: message sent to user immediately!")
             except:
                 logging.info("SERVER: sendMessage recipient does not exist or other error")
                 response = {
@@ -496,6 +512,11 @@ def process_request(request, connection=None):
                     "msg": "Logged out successfully.",
                     "data": {}
                 }
+
+                # Remove user from active clients
+                if user in clients:
+                    del clients[user]
+                    logging.info(f"SERVER: {user} removed from active clients.")
             except:
                 logging.error("SERVER; error logging out")
                 response = {
@@ -535,7 +556,7 @@ def accept_wrapper(sock):
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     sel.register(conn, events, data=data)
-    clients[addr] = conn
+    # clients[addr] = conn
 
 def service_connection(key, mask):
     """Accept connection from client."""
@@ -568,6 +589,12 @@ def service_connection(key, mask):
                 for request_json in requests:
                     logging.info(f"Processing request: {request_json}")
                     try:
+                        actions = json.loads(request_json).get("actions", {})
+                        # If this is a login request, store the socket with the username
+                        if "login" in actions:
+                            username = actions["login"]["request"]["data"]["username"]
+                            clients[username] = sock  # Store socket by username
+                            logging.info(f"SERVER: {username} logged in and added to active clients.")
                         return_data = process_request(request_json)
                         sock.send(return_data)
                     except Exception as e:

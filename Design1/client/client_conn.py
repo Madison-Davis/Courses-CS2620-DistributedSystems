@@ -12,7 +12,6 @@ import config
 import logging
 import threading
 import select
-#import gui
 
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
@@ -445,7 +444,8 @@ def client_conn_logout(user):
     except json.JSONDecodeError:
         return False
     
-def client_conn_receive_message(s):
+def client_conn_receive_message(s, update_inbox_callback):
+    """ Listens for new messages and updates the GUI via a callback function. """
     while True:
         try:
             ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
@@ -453,32 +453,45 @@ def client_conn_receive_message(s):
                 data = s.recv(config.BUF_SIZE)
                 if not data:
                     logging.warning("SERVER: Connection closed by server.")
-                    break  # Exit the loop if no data received, indicating server disconnected
+                    break  # Exit loop if no data received
                 data = data.decode("utf-8")
                 logging.info(f"CLIENT: Received message: {data}")
-                # Here we assume the message is JSON formatted
+
                 try:
                     server_msg = json.loads(data)
-                    # Handle the action from the server
+                    
                     if server_msg.get("action") == "receiveMessage":
-                        msgId = server_msg.get("msgId")
-                        user = server_msg.get("user")
-                        sender = server_msg.get("sender")
-                        msg = server_msg.get("msg")
-                        incoming_msg = {"msg_id":msgId, "user":user, "sender":sender, "content":msg, "checkbox":0, "inbox":True}
-                        #gui.db_user_data[1].append(incoming_msg)
-                        #gui.create_new_unread_msg(incoming_msg)
+                        msgId = server_msg["msgId"]
+                        user = server_msg["user"]
+                        sender = server_msg["sender"]
+                        msg = server_msg["msg"]
+
+                        incoming_msg = {
+                            "msg_id": msgId,
+                            "user": user,
+                            "sender": sender,
+                            "msg": msg,
+                            "checked": 0,
+                            "inbox": True
+                        }
+
+                        # Call the GUI update function using the callback
+                        update_inbox_callback(incoming_msg)
 
                         logging.info(f"CLIENT: Received message from {sender}: {msg}")
-                        print(f"Received message from {sender}: {msg}")
-                    else:
-                        logging.warning("CLIENT: Unknown action received.")
+
                 except json.JSONDecodeError:
                     logging.error("CLIENT: Failed to decode the JSON message.")
+
         except socket.timeout:
             pass
         except Exception as e:
             logging.error(f"CLIENT: Error receiving message: {e}")
+
+
+def start_message_listener(update_inbox_callback):
+    threading.Thread(target=client_conn_receive_message, args=(s, update_inbox_callback), daemon=True).start()
+
 
 
 # +++++++++++++++++++ Logging +++++++++++++++++++ #
@@ -495,4 +508,4 @@ logging.basicConfig(
 # +++++++++++++++++++ Server +++++++++++++++++++ #
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))
-threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()
+# Wait until GUI is ready, then start listening for messages
