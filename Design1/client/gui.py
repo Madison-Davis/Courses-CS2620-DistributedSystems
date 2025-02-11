@@ -438,10 +438,11 @@ def update_inbox_ui(incoming_msg):
     """ Updates the GUI inbox dynamically when a new message arrives. """
     global db_user_data
     db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
+    db_user_data[0] += 1
 
     # Update inbox count
     update_inbox_count(len(db_user_data[2]))
-    gui.after(100, load_main_frame, db_user_data)
+    #gui.after(100, load_main_frame, db_user_data)
 
 def update_inbox_count(count):
     """ Update the GUI inbox count dynamically when a new message arrives. """
