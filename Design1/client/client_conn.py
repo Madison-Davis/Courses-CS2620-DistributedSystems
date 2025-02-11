@@ -27,14 +27,12 @@ def client_conn_create_account(user, pwd_hash):
     """ JSON: createAccount
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "createAccount": {
                 "request": {
-                    "requestId": request_id,
                     "action": "createAccount",
                     "data": {
                         "username": user,
@@ -63,14 +61,12 @@ def client_conn_login(user, pwd_hash):
     """ JSON: login
     Return: [inboxCount, msgs, drafts] of user, else [] """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "login": {
                 "request": {
-                    "requestId": request_id,
                     "action": "login",
                     "data": {
                         "username": user,
@@ -104,14 +100,12 @@ def client_conn_get_pwd(user):
     """ JSON: listAccounts 
     Return: lists of account users, else []."""
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "getPwd": {
                 "request": {
-                    "requestId": request_id,
                     "action": "getPwd",
                     "data": {
                         "username": user
@@ -142,14 +136,12 @@ def client_conn_list_accounts():
     """ JSON: listAccounts 
     Return: lists of account users, else []."""
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "listAccounts": {
                 "request": {
-                    "requestId": request_id,
                     "action": "listAccounts",
                     "data": {}
                 }
@@ -179,14 +171,12 @@ def client_conn_send_message(draft_id, user, sender, content):
     """ JSON: sendMessage
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "sendMessage": {
                 "request": {
-                    "requestId": request_id,
                     "action": "sendMessage",
                     "data": {
                         "draft_id": draft_id,
@@ -218,14 +208,12 @@ def client_conn_add_draft(user, recipient, content, checked):
     """ JSON: addDraft
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "addDraft": {
                 "request": {
-                    "requestId": request_id,
                     "action": "addDraft",
                     "data": {
                         "user": user,
@@ -256,14 +244,12 @@ def client_conn_save_drafts(user, drafts):
     """ JSON: sendMessage
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "saveDrafts": {
                 "request": {
-                    "requestId": request_id,
                     "action": "saveDrafts",
                     "data": {
                         "user": user,
@@ -292,14 +278,12 @@ def client_conn_check_message(user, msgId):
     """ JSON: checkMessage
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "checkMessage": {
                 "request": {
-                    "requestId": request_id,
                     "action": "checkMessage",
                     "data": {
                         "username": user,
@@ -328,14 +312,12 @@ def client_conn_download_message(user, msgId):
     """ JSON: downloadMessage
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "downloadMessage": {
                 "request": {
-                    "requestId": request_id,
                     "action": "downloadMessage",
                     "data": {
                         "username": user,
@@ -364,14 +346,12 @@ def client_conn_delete_message(user, msgId):
     """ JSON: checkMessage
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "deleteMessage": {
                 "request": {
-                    "requestId": request_id,
                     "action": "deleteMessage",
                     "data": {
                         "username": user,
@@ -400,14 +380,12 @@ def client_conn_delete_account(user, pwd_hash):
     """ JSON: deleteAccount
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "deleteAccount": {
                 "request": {
-                    "requestId": request_id,
                     "action": "deleteAccount",
                     "data": {
                         "username": user,
@@ -436,14 +414,12 @@ def client_conn_logout(user):
     """ JSON: logout
     Return: T for success, F for no success """
     # Set up request
-    request_id = str(uuid.uuid4())
     request = {
         "protocolVersion": 1,
         "description": "Simple client-server chat application JSON wire protocol",
         "actions": {
             "logout": {
                 "request": {
-                    "requestId": request_id,
                     "action": "logout",
                     "data": {
                         "username": user,
