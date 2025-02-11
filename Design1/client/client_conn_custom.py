@@ -7,6 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "c
 import config
 import logging
 import threading
+import time
+import errno
 import re
 import ast
 import select
@@ -23,6 +25,7 @@ import select
 # 0x000A: Delete Message
 # 0x000B: Delete Account
 # 0x000C: Logout
+# 0x000D: Receive Message
 
 
 def send_request(message_type, payload):
@@ -153,26 +156,64 @@ def client_conn_logout(user):
     print("client_conn_logout:", response)
     return True if response == "ok" else False
 
-def client_conn_receive_message(s):
+import struct
+
+def client_conn_receive_message(update_inbox_callback):
+    """ Listens for new messages and updates the GUI via a callback function. """
     while True:
         try:
+            # Use select to check for socket readiness with a 2-second timeout
             ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
             if ready:
-                header = s.recv(config.BUF_SIZE)
-                if not header:
-                    logging.warning("SERVER: Connection closed by server.")
-                    break
-                message_type, payload_length = struct.unpack("!H I", header)
-                payload = s.recv(payload_length).decode("utf-8")
-                logging.info(f"CLIENT: Received message: {payload}")
-                print(f"Received: {payload}")
-                if message_type == "0x000D":
-                    incoming_msg = payload.split(":")
-                    print("Received message from {incoming_msg[2]}: {incoming_msg[3]}")
+                try:
+                    # Grab header (6 bytes: 2 for type, 4 for length)
+                    header = s.recv(6)
+                    if not header:
+                        logging.info("CLIENT: Connection closed by server.")
+                        break
+                    receive_message_type, payload_length = struct.unpack("!H I", header)
+                    if receive_message_type != 0x000D:
+                        logging.warning(f"CLIENT: client_conn_receive_message: unexpected message type {receive_message_type}")
+                        continue  # Ignore unexpected message types
+
+                    # Grab payload based on length
+                    payload_bytes = s.recv(payload_length)
+                    if not payload_bytes:
+                        logging.warning("CLIENT: client_conn_receive_message: empty payload received.")
+                        continue
+                    data = payload_bytes.decode("utf-8")
+                    logging.info(f"CLIENT: client_conn_receive_message: received message data: {data}")
+
+                    # Extract message details from payload (format: "sender:msg:draft_id:user")
+                    if ":" in data:
+                        sender, msg, msg_id, user = data.split(":", 3) # grabs 4 parts
+                    else:
+                        logging.warning("CLIENT: client_conn_receive_message: malformed message received.")
+                        continue
+                    
+                    # Construct argument for update_inbox_callback and call function
+                    incoming_msg = {
+                        "msg_id": msg_id.strip(), 
+                        "user": user.strip(), 
+                        "sender": sender.strip(),
+                        "msg": msg.strip(),
+                        "checked": 0,
+                        "inbox": True
+                    }
+                    update_inbox_callback(incoming_msg)
+
+                except socket.error as e:
+                    # Handle non-blocking socket error
+                    if e.errno in {errno.EAGAIN, errno.EWOULDBLOCK}:
+                        time.sleep(0.1)  # Sleep briefly before retrying
+                    else:
+                        logging.error(f"CLIENT: Socket error {e}")
         except socket.timeout:
-            pass
+            pass  # Handle timeout if necessary
         except Exception as e:
-            logging.error(f"CLIENT: Error receiving message: {e}")
+            logging.error(f"CLIENT: Unexpected Exception {e}")
+            break  # Exit on unexpected errors
+
 
 # +++++++++++++++++++ Logging +++++++++++++++++++ #
 logging.basicConfig(
@@ -188,4 +229,3 @@ logging.basicConfig(
 # +++++++++++++++++++ Server +++++++++++++++++++ #
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))
-threading.Thread(target=client_conn_receive_message, args=(s,), daemon=True).start()

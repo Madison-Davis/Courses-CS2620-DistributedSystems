@@ -173,14 +173,14 @@ def process_request(message_type, payload, connection=None):
                 # Check if recipient is logged in, and if so, send data
                 cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
                 logged_in = cursor.fetchone()
-
+                
                 if user in clients and logged_in:
-                    recipient_response = f"{sender}:{content}"
+                    recipient_response = f"{sender}:{content}:{draft_id}:{user}"
                     payload_bytes = recipient_response.encode("utf-8")
                     receive_message_type = 0x000D
                     header = struct.pack("!H I", receive_message_type, len(payload_bytes))
-                    client_socket = clients[user]
-                    client_socket.send(header + payload_bytes)  # Send the response to the client
+                    recipient_socket = clients[user]
+                    recipient_socket.send(header + payload_bytes)  # Send the response to the client
                     logging.info("SERVER: message sent to user immediately!")
         
         elif message_type == 0x0006:  # Add Draft
@@ -233,7 +233,8 @@ def process_request(message_type, payload, connection=None):
             user = payload
             cursor.execute("UPDATE accounts SET logged_in = 0 WHERE user = ?", (user,))
             response_payload = "ok"
-
+            if user in clients:
+                del clients[user]
         else:
             response_payload = "error:unknown"
         
@@ -254,7 +255,7 @@ def accept_wrapper(sock):
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     sel.register(conn, events, data=data)
-    clients[addr] = conn
+    # clients[addr] = conn
 
 def service_connection(key, mask):
     """Handle communication with client."""
@@ -277,6 +278,16 @@ def service_connection(key, mask):
                 # Remove processed data
                 data.inb = data.inb[6 + payload_length:]                # 2 + 4 + payload_length
                 logging.info(f"Processing message: {msg_type, message}")
+
+                # Determine if login/create account request, and if so, store socket connection for this user
+                if msg_type == 0x0001 or msg_type == 0x0003:
+                    try:
+                        user, _ = message.split(":", 1)
+                        clients[user] = sock
+                        logging.info(f"SERVER: {user} logged in and added to active clients.")
+                    except ValueError:
+                        logging.error("SERVER: Malformed login payload, expected 'user:pwd'")
+
                 try:
                     response = process_request(msg_type, message)
                     response_bytes = response.encode("utf-8")
