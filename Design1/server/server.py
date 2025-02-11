@@ -86,7 +86,7 @@ def process_request(request, connection=None):
 
         if "createAccount" in action:
             user = action["createAccount"]["request"]["data"]["username"]
-            pwd = action["createAccount"]["request"]["data"]["passwordHash"]
+            pwd_hash = action["createAccount"]["request"]["data"]["passwordHash"]
             try:
                 # Check that user does not already exist
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
@@ -100,7 +100,7 @@ def process_request(request, connection=None):
                     }
                 # Are users logged in once they register?
                 else:
-                    cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd, 1))
+                    cursor.execute("INSERT INTO accounts (user, pwd, logged_in) VALUES (?, ?, ?)", (user, pwd_hash, 1))
                     logging.info("SERVER: createAccount: account created successfully")
                     response = {
                         "requestId": action["createAccount"]["request"]["requestId"],
@@ -119,10 +119,10 @@ def process_request(request, connection=None):
         
         elif "login" in action:
             user = action["login"]["request"]["data"]["username"]
-            pwd = action["login"]["request"]["data"]["passwordHash"]
+            pwd_hash = action["login"]["request"]["data"]["passwordHash"]
             try:
                 # Check that username and password combo exists
-                cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd_hash))
                 account = cursor.fetchone()
                 if account is not None:
                     cursor.execute("UPDATE accounts SET logged_in = 1 WHERE user = ?", (user,))
@@ -462,12 +462,12 @@ def process_request(request, connection=None):
         
         elif "deleteAccount" in action:
             user = action["deleteAccount"]["request"]["data"]["username"]
-            pwd = action["deleteAccount"]["request"]["data"]["passwordHash"]
+            pwd_hash = action["deleteAccount"]["request"]["data"]["passwordHash"]
             try:
                 # Remove messages sent to the user, user's drafts, and user's account information
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
-                cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd_hash))
                 response = {
                     "requestId": action["deleteAccount"]["request"]["requestId"],
                     "status": "ok",

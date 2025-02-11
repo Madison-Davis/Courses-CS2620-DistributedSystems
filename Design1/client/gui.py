@@ -13,6 +13,7 @@ import client_conn_custom
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import threading
+import hashlib
 
 
 
@@ -98,6 +99,21 @@ sending_cols = [col_sending_checkbox, col_sending_message,
                  col_sending_recipient]
 
 
+# ++++++++++ Helper Functions: Security ++++++++++ #
+
+def hash_password(password: str) -> str:
+    """Hashes a password with a randomly generated salt using SHA-256."""
+    salt = os.urandom(16)  # Generate a 16-byte salt
+    hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    return salt.hex() + ":" + hashed_password.hex()
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    """Verifies a password against a stored hash."""
+    salt, hashed_password = stored_hash.split(":")
+    salt = bytes.fromhex(salt)
+    new_hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    return new_hashed_password.hex() == hashed_password
+
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
@@ -131,25 +147,26 @@ def login(new_user, account_users, pwd_hash):
     global login_username, login_pwd, db_user_data, db_accounts
     user = login_username.get()
     pwd = login_pwd.get()
+    entered_pwd_hashed = hash_password(pwd)
     # If new user, create a new account
     if new_user:
         if config.PROTOCOL == 0:
-            status = client_conn.client_conn_create_account(user, pwd)
+            status = client_conn.client_conn_create_account(user, entered_pwd_hashed)
         else:
-            status = client_conn_custom.client_conn_create_account(user, pwd)
+            status = client_conn_custom.client_conn_create_account(user, entered_pwd_hashed)
         if not status:
            messagebox.showerror("Error", "Unable to create new user.  Try again")
         db_user_data = [0,[],[],[]]
     # If existing user, verify password lines up
-    elif pwd_hash != pwd:
+    elif not verify_password(pwd, pwd_hash):
         messagebox.showerror("Error", "Invalid Username or Password")
         return
     # If existing user and password lines up, login/load information
     else:
         if config.PROTOCOL == 0:
-            db_user_data = client_conn.client_conn_login(user, pwd) # [inboxCount, old_msgs, inbox_msgs, drafts]
+            db_user_data = client_conn.client_conn_login(user, pwd_hash) # [inboxCount, old_msgs, inbox_msgs, drafts]
         else:
-            db_user_data = client_conn_custom.client_conn_login(user, pwd)
+            db_user_data = client_conn_custom.client_conn_login(user, pwd_hash)
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)

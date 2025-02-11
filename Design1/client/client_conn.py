@@ -23,7 +23,7 @@ message_queue = queue.Queue()
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
 
-def client_conn_create_account(user, pwd):
+def client_conn_create_account(user, pwd_hash):
     """ JSON: createAccount
     Return: T for success, F for no success """
     # Set up request
@@ -38,7 +38,7 @@ def client_conn_create_account(user, pwd):
                     "action": "createAccount",
                     "data": {
                         "username": user,
-                        "passwordHash": pwd
+                        "passwordHash": pwd_hash
                     }
                 }
             }
@@ -59,7 +59,7 @@ def client_conn_create_account(user, pwd):
         logging.error(f"CLIENT: client_conn_create_account: JSONDecode {e}")
         return False
     
-def client_conn_login(user, pwd):
+def client_conn_login(user, pwd_hash):
     """ JSON: login
     Return: [inboxCount, msgs, drafts] of user, else [] """
     # Set up request
@@ -74,7 +74,7 @@ def client_conn_login(user, pwd):
                     "action": "login",
                     "data": {
                         "username": user,
-                        "passwordHash": pwd
+                        "passwordHash": pwd_hash
                     }
                 }
             }
@@ -396,7 +396,7 @@ def client_conn_delete_message(user, msgId):
         logging.error(f"CLIENT: client_conn_delete_message: JSONDecode {e}")
         return False
     
-def client_conn_delete_account(user, pwd):
+def client_conn_delete_account(user, pwd_hash):
     """ JSON: deleteAccount
     Return: T for success, F for no success """
     # Set up request
@@ -411,7 +411,7 @@ def client_conn_delete_account(user, pwd):
                     "action": "deleteAccount",
                     "data": {
                         "username": user,
-                        "passwordHash": pwd
+                        "passwordHash": pwd_hash
                     }
                 }
             }
