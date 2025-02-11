@@ -336,8 +336,10 @@ def filter_recipients(event, row):
     drafts_recipients[row]['values'] = filtered_users   # Update dropdown options
     drafts_recipients[row].event_generate('<Down>')     # Open dropdown after filtering
 
-def clicked_delete_msg(widget, user, msgId):
+def clicked_delete_msg(widget, msg):
     """ When we click 'Delete' button, removes row and moves other rows up. """
+    user = msg["user"]
+    msgId = msg["msg_id"]
     if config.PROTOCOL == 0:
         status = client_conn.client_conn_delete_message(user, msgId)
     else:
@@ -359,7 +361,6 @@ def clicked_delete_msg(widget, user, msgId):
                 widget.grid(row=grid_info["row"] - 1)   
         next_row += 1
         widgets_below = [widget for widget in main_frame.grid_slaves(row=next_row)]
-        
 
 
 
@@ -450,7 +451,7 @@ def create_new_unread_msg(inbox_msg):
     msg_formatted = sender + ": " + content
     btn_del = tk.Button(main_frame, text="Delete")
     btn_del.grid(row=i+1, column=col_incoming_delete)
-    btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, user, msgId))
+    btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, inbox_msg))
     check_var = tk.IntVar()
     check_btn = tk.Checkbutton(main_frame, text="Unread", variable=check_var)
     check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
@@ -548,7 +549,7 @@ def load_main_frame_user_info(db_user_data):
         msg_formatted = sender + ": " + content
         btn_del = tk.Button(main_frame, text="Delete")
         btn_del.grid(row=i+1, column=col_incoming_delete)
-        btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, user, msgId))
+        btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, msg))
         check_var = tk.IntVar()
         check_btn = tk.Checkbutton(main_frame, text=checkbox_text, variable=check_var)
         check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))

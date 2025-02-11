@@ -443,7 +443,7 @@ def process_request(request, connection=None):
             msg_id = action["deleteMessage"]["request"]["data"]["msgId"]
             try:
                 # Remove message from messages table
-                cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id,))
+                cursor.execute("DELETE FROM messages WHERE msg_id = ?", (msg_id,))
                 response = {
                     "requestId": action["deleteMessage"]["request"]["requestId"],
                     "status": "ok",
