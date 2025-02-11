@@ -198,7 +198,6 @@ def clicked_send():
     
     # Send one-by-one user drafts that have checkmarks
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
-    print("drafts with checkmarks", drafts_with_checkmarks)
     for draft in drafts_with_checkmarks:
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
@@ -209,10 +208,6 @@ def clicked_send():
             status = client_conn_custom.client_conn_send_message(draft_id, recipient, login_username.get(), content)
         if not status:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
-           print(f"CLICKED_SEND {status}")
-        # Remove drafts that are sent
-        db_user_data[3].remove(draft)
-        print("draft(s) sent!")
 
     # Delete all checked-drafts from GUI and move up remaining GUI items
     total_num_drafts = len(db_user_data[3])
@@ -221,7 +216,7 @@ def clicked_send():
             if w.grid_info()["row"] == row and w.grid_info()["column"] in sending_cols:
                 w.destroy()
 
-    # Delete all remaining drafts
+    # Delete all remaining drafts in the database
     db_user_data[3] = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get() == False]
     drafts_rows = [key for key, var in drafts_checkmarks.items() if var.get()]
     drafts_msgs = {key: value for key, value in drafts_msgs.items() if key not in drafts_rows}
@@ -371,7 +366,7 @@ def create_new_draft(row_idx):
         draft_id = client_conn.client_conn_add_draft(login_username.get(), "", "", 0)
     else:
         draft_id = client_conn_custom.client_conn_add_draft(login_username.get(), "", "", 0)
-    db_user_data[3].append({"draft_id": draft_id, "user": login_username.get(), "recipient": "", "message": "", "checked": 0})
+    db_user_data[3].append({"draft_id": draft_id, "user": login_username.get(), "recipient": "", "msg": "", "checked": 0})
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
@@ -433,13 +428,11 @@ def create_new_unread_msg(inbox_msg):
     check_var.set(checkbox)
     tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
-
 def update_inbox_ui(incoming_msg):
     """ Updates the GUI inbox dynamically when a new message arrives. """
     global db_user_data
     db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
     db_user_data[0] += 1
-
     # Update inbox count
     update_inbox_count(len(db_user_data[2]))
     #gui.after(100, load_main_frame, db_user_data)
