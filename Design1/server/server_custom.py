@@ -165,9 +165,10 @@ def process_request(message_type, payload, connection=None):
                 # TODO: this exeuction part is not finishing
                 cursor.execute("""
                     INSERT INTO messages (user, sender, msg, checked, inbox)
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?) RETURNING msg_id
                 """, (user, sender, content, 0, 1))
-                response_payload = "ok"
+                msgId = cursor.fetchone()
+                response_payload = msgId[0]
 
                 # We updated the user's database, now, can we immediately update inbox?
                 # Check if recipient is logged in, and if so, send data
@@ -175,7 +176,7 @@ def process_request(message_type, payload, connection=None):
                 logged_in = cursor.fetchone()
                 
                 if user in clients and logged_in:
-                    recipient_response = f"{sender}:{content}:{draft_id}:{user}"
+                    recipient_response = f"{sender}:{content}:{msgId[0]}:{user}"
                     payload_bytes = recipient_response.encode("utf-8")
                     receive_message_type = 0x000D
                     header = struct.pack("!H I", receive_message_type, len(payload_bytes))
@@ -186,7 +187,8 @@ def process_request(message_type, payload, connection=None):
         elif message_type == 0x0006:  # Add Draft
             user, recipient, content, checked = payload.split(":")
             cursor.execute("INSERT INTO drafts (user, recipient, msg, checked) VALUES (?, ?, ?, ?) RETURNING draft_id", (user, recipient, content, checked))
-            response_payload = f"{cursor.fetchone()}"
+            draft_id = cursor.fetchone()[0]
+            response_payload = f"{draft_id}"
         
         elif message_type == 0x0007:  # Save Drafts
             user, drafts = payload.split(":", 1)
@@ -214,7 +216,7 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x000A:  # Delete Message
             user, msg_id = payload.split(":")
-            cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id))
+            cursor.execute("DELETE FROM messages WHERE AND msg_id = ?", (msg_id))
             response_payload = "ok"
         
         elif message_type == 0x000B:  # Delete Account

@@ -1,3 +1,7 @@
+# client_conn_custom.py
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import sys
 import os
 import socket
@@ -27,6 +31,7 @@ import select
 # 0x000C: Logout
 # 0x000D: Receive Message
 
+# +++++++++++++++++++ Functions +++++++++++++++++++ #
 
 def send_request(message_type, payload):
     """Sends a request using the custom wire protocol."""
@@ -101,7 +106,7 @@ def client_conn_send_message(draft_id, user, sender, content):
     send_request(0x0002, payload)
     response = receive_response()
     print("client_conn_send_message:", response)
-    return True if response == "ok" else False
+    return response
 
 def client_conn_add_draft(user, recipient, content, checked):
     """Returns newly assigned draft ID of draft."""
@@ -167,6 +172,7 @@ def client_conn_receive_message(update_inbox_callback):
             if ready:
                 try:
                     # Grab header (6 bytes: 2 for type, 4 for length)
+                    # TODO: change this?
                     header = s.recv(6)
                     if not header:
                         logging.info("CLIENT: Connection closed by server.")
