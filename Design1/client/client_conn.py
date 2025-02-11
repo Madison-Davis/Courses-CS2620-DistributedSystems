@@ -39,17 +39,17 @@ def client_conn_create_account(user, pwd):
     }
     # Send request
     msg = json.dumps(request)
-    logging.info(msg)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    logging.info(response)
+    logging.info(f"CLIENT: client_conn_create_account: response {response}")
     # See if successfully created account
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_create_account: JSONDecode {e}")
         return False
     
 def client_conn_login(user, pwd):
@@ -79,7 +79,6 @@ def client_conn_login(user, pwd):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    print(response)
     # See if successfully logged in
     try:
         response_json = json.loads(response)
@@ -90,7 +89,8 @@ def client_conn_login(user, pwd):
             drafts = response_json.get("data")["drafts"]
             return [inboxCount, old_msgs, inbox_msgs, drafts]
         return [0, [], [], []]
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_login: JSONDecode {e}")
         return [0, [], [], []]
     
 def client_conn_get_pwd(user):
@@ -127,7 +127,8 @@ def client_conn_get_pwd(user):
             return pwd_hash.get("passwordHash")
         else:
             return ""
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_get_pwd: JSONDecode {e}")
         return ""
     
 def client_conn_list_accounts():
@@ -154,7 +155,7 @@ def client_conn_list_accounts():
     # Receive response form server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    print(response)
+    logging.info(f"CLIENT: client_conn_list_accounts: response {response}")
     # Parse response from server
     try:
         response_json = json.loads(response)
@@ -163,7 +164,8 @@ def client_conn_list_accounts():
             return []
         else:
             return account_users.get("accounts_users", [])
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_list_accounts: JSONDecode {e}")
         return []
 
 def client_conn_send_message(draft_id, user, sender, content):
@@ -195,11 +197,13 @@ def client_conn_send_message(draft_id, user, sender, content):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"CLIENT: client_conn_send_message: response {response}")
     # See if successfully sent message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_send_message: JSONDecode {e}")
         return False
 
 def client_conn_add_draft(user, recipient, content, checked):
@@ -231,12 +235,13 @@ def client_conn_add_draft(user, recipient, content, checked):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    logging.info(f"ADDED DRAFT ID RESPONSE: {response}")
+    logging.info(f"CLIENT: client_conn_add_draft: response {response}")
     # See if successfully sent message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_add_draft: JSONDecode {e}")
         return False
 
 def client_conn_save_drafts(user, drafts):
@@ -266,12 +271,13 @@ def client_conn_save_drafts(user, drafts):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    logging.info(f"SAVE DRAFTs RESPONSE: {response}")
+    logging.info(f"CLIENT: client_conn_save_drafts: response {response}")
     # See if successfully sent message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_save_drafts: JSONDecode {e}")
         return False
     
 def client_conn_check_message(user, msgId):
@@ -301,11 +307,13 @@ def client_conn_check_message(user, msgId):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"CLIENT: client_conn_check_message: response {response}")
     # See if successfully checked message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_check_message: JSONDecode {e}")
         return False
     
 def client_conn_download_message(user, msgId):
@@ -335,11 +343,13 @@ def client_conn_download_message(user, msgId):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"CLIENT: client_conn_download_message: response {response}")
     # See if successfully downloaded message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_download_message: JSONDecode {e}")
         return False
 
 def client_conn_delete_message(user, msgId):
@@ -369,11 +379,13 @@ def client_conn_delete_message(user, msgId):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"CLIENT: client_conn_delete_message: response {response}")
     # See if successfully deleted message
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_delete_message: JSONDecode {e}")
         return False
     
 def client_conn_delete_account(user, pwd):
@@ -403,11 +415,13 @@ def client_conn_delete_account(user, pwd):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
+    logging.info(f"CLIENT: client_conn_delete_account: response {response}")
     # See if successfully deleted account
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_delete_account: JSONDecode {e}")
         return False
     
 def client_conn_logout(user):
@@ -436,12 +450,13 @@ def client_conn_logout(user):
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
     response = data.decode("utf-8")
-    print(response)
+    logging.info(f"CLIENT: client_conn_logout: response {response}")
     # See if successfully logged out
     try:
         response_json = json.loads(response)
         return True if response_json.get("status") == "ok" else False
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logging.error(f"CLIENT: client_conn_logout: JSONDecode {e}")
         return False
     
 def client_conn_receive_message(s, update_inbox_callback):
@@ -452,10 +467,10 @@ def client_conn_receive_message(s, update_inbox_callback):
             if ready:
                 data = s.recv(config.BUF_SIZE)
                 if not data:
-                    logging.warning("SERVER: Connection closed by server.")
-                    break  # Exit loop if no data received
+                    logging.info("CLIENT: client_conn_receive_message: no data, connection closed by server.")
+                    break
                 data = data.decode("utf-8")
-                logging.info(f"CLIENT: Received message: {data}")
+                logging.info(f"CLIENT: client_conn_receive_message: data {data}")
 
                 try:
                     server_msg = json.loads(data)
@@ -478,15 +493,13 @@ def client_conn_receive_message(s, update_inbox_callback):
                         # Call the GUI update function using the callback
                         update_inbox_callback(incoming_msg)
 
-                        logging.info(f"CLIENT: Received message from {sender}: {msg}")
-
-                except json.JSONDecodeError:
-                    logging.error("CLIENT: Failed to decode the JSON message.")
+                except json.JSONDecodeError as e:
+                    logging.error(f"CLIENT: client_conn_receive_message: JSONDecodeError {e}")
 
         except socket.timeout:
             pass
         except Exception as e:
-            logging.error(f"CLIENT: Error receiving message: {e}")
+            logging.error(f"CLIENT: client_conn_receive_message: Exception {e}")
 
 
 def start_message_listener(update_inbox_callback):

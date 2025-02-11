@@ -192,9 +192,6 @@ def delete_account():
 def clicked_send():
     """ When we click 'Send', we send all drafts with checks and delete from GUI. """
     global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
-
-    for i in drafts_checkmarks:
-        print(drafts_checkmarks[i].get())
     
     # Send one-by-one user drafts that have checkmarks
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
@@ -208,6 +205,7 @@ def clicked_send():
             status = client_conn_custom.client_conn_send_message(draft_id, recipient, login_username.get(), content)
         if not status:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
+           return
 
     # Delete all checked-drafts from GUI and move up remaining GUI items
     total_num_drafts = len(db_user_data[3])
