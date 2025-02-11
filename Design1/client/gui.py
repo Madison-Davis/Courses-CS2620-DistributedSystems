@@ -1,6 +1,7 @@
 # gui.py
 
 
+
 # +++++++++++++ Imports and Installs +++++++++++++ #
 import sys
 import os
@@ -151,9 +152,36 @@ def login(new_user, account_users, pwd_hash):
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
-    client_conn.start_message_listener(update_inbox_ui)
-        
+
+
+
+# +++++++++++++ Helper Functions: Event Listener +++++++++++++ #
+
+def update_inbox_callback(incoming_msg):
+    """ Updates the GUI inbox dynamically when a new message arrives. """
+    global db_user_data
+    db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
+    db_user_data[0] += 1
+    # Update inbox count
+    update_inbox_count(len(db_user_data[2]))
+    gui.after(100, load_main_frame, db_user_data)
+
+def update_inbox_count(count):
+    """ Update the GUI inbox count dynamically when a new message arrives. """
+    for widget in main_frame.grid_slaves():
+        if widget.grid_info()["row"] == 2 and widget.grid_info()["column"] == col_incoming_message:
+            widget.destroy()
+            break
+    lbl_incoming = tk.Label(main_frame, text=f"Incoming: {count} Items", font=("Arial", 12, "bold"), width=30)
+    lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
+    
+
+
+# +++++++++++++ Helper Functions: GUI Update +++++++++++++ #
+
 def logout():
+    #client_conn.stop_message_listener_thread()
+    #client_conn.stop_message_listener_thread()
     """ Default message template and return to login frame. """
     if config.PROTOCOL == 0:
         status = client_conn.client_conn_logout(login_username.get())
@@ -187,6 +215,7 @@ def delete_account():
     load_login_frame()
 
 
+
 # ++++++++++ Helper Functions: Main Page Buttons ++++++++++ #
 
 def clicked_send():
@@ -195,6 +224,7 @@ def clicked_send():
     
     # Send one-by-one user drafts that have checkmarks
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
+
     for draft in drafts_with_checkmarks:
         draft_id = draft["draft_id"]
         recipient = draft["recipient"]
@@ -245,7 +275,9 @@ def clicked_open_inbox(num):
         else:
             client_conn_custom.client_conn_download_message(login_username.get(), inbox_msgs[i]["msg_id"])
         db_user_data[0] -= 1
+        opened_msg = db_user_data[2][0]
         db_user_data[2] = db_user_data[2][1:]
+        db_user_data[1].append(opened_msg)
     # Update the inbox Count automatically
     for w in main_frame.grid_slaves():
         if w.grid_info()["row"] == 2 and w.grid_info()["column"] == col_incoming_message:
@@ -426,26 +458,6 @@ def create_new_unread_msg(inbox_msg):
     check_var.set(checkbox)
     tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
 
-def update_inbox_ui(incoming_msg):
-    """ Updates the GUI inbox dynamically when a new message arrives. """
-    global db_user_data
-    db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
-    db_user_data[0] += 1
-    # Update inbox count
-    update_inbox_count(len(db_user_data[2]))
-    #gui.after(100, load_main_frame, db_user_data)
-
-def update_inbox_count(count):
-    """ Update the GUI inbox count dynamically when a new message arrives. """
-    for widget in main_frame.grid_slaves():
-        if widget.grid_info()["row"] == 2 and widget.grid_info()["column"] == col_incoming_message:
-            widget.destroy()
-            break
-
-    lbl_incoming = tk.Label(main_frame, text=f"Incoming: {count} Items", font=("Arial", 12, "bold"), width=30)
-    lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
-
-
 
 # ++++++++++++++ Helper Functions: Load Pages ++++++++++++++ #
 
@@ -510,7 +522,7 @@ def load_main_frame(db_user_data=[0,[],[],[]]):
         load_main_frame_user_info(db_user_data)
 
     # Start listening for incoming messages with a callback
-    threading.Thread(target=client_conn.start_message_listener, args=(update_inbox_ui,), daemon=True).start()
+    # threading.Thread(target=client_conn.start_message_listener, args=(update_inbox_ui,), daemon=True).start()
 
 def load_main_frame_user_info(db_user_data):
     """ Clears and resets the main frame to its initial state. 
@@ -548,6 +560,10 @@ def load_main_frame_user_info(db_user_data):
 
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
-# Create Main GUI By Starting Up Login Frame
-load_login_frame()
-gui.mainloop()
+if __name__ == "__main__":
+    listener_thread = threading.Thread(target=client_conn.client_conn_receive_message, 
+                                       args=(update_inbox_callback,),
+                                       daemon=True)
+    listener_thread.start()
+    load_login_frame()
+    gui.mainloop()

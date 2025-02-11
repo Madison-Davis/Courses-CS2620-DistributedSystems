@@ -3,8 +3,10 @@
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
 import sys
+import errno
 import os
 import socket
+import time
 import uuid
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
@@ -12,6 +14,11 @@ import config
 import logging
 import threading
 import select
+import queue
+
+listener_thread = None
+listener_running = True
+message_queue = queue.Queue()
 
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
@@ -193,6 +200,7 @@ def client_conn_send_message(draft_id, user, sender, content):
     }
     # Send request
     msg = json.dumps(request)
+    print(msg)
     s.sendall(msg.encode("utf-8"))
     # Receive response from server
     data = s.recv(config.BUF_SIZE)
@@ -459,51 +467,58 @@ def client_conn_logout(user):
         logging.error(f"CLIENT: client_conn_logout: JSONDecode {e}")
         return False
     
-def client_conn_receive_message(s, update_inbox_callback):
+def client_conn_receive_message(update_inbox_callback):
     """ Listens for new messages and updates the GUI via a callback function. """
-    while True:
+    #s.setblocking(True)  # issue: when set to true, we have freezing, and when false, resource issues
+    while listener_running:
         try:
+            # Use select to check for socket readiness with a 2-second timeout
             ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
             if ready:
-                data = s.recv(config.BUF_SIZE)
-                if not data:
-                    logging.info("CLIENT: client_conn_receive_message: no data, connection closed by server.")
-                    break
-                data = data.decode("utf-8")
-                logging.info(f"CLIENT: client_conn_receive_message: data {data}")
-
                 try:
-                    server_msg = json.loads(data)
-                    
-                    if server_msg.get("action") == "receiveMessage":
-                        msgId = server_msg["msgId"]
-                        user = server_msg["user"]
-                        sender = server_msg["sender"]
-                        msg = server_msg["msg"]
+                    data = s.recv(config.BUF_SIZE)
+                    if not data:  # If no data, the server closed the connection
+                        logging.info("CLIENT: client_conn_receive_message: no data, connection closed by server.")
+                        break
+                    data = data.decode("utf-8")
+                    logging.info(f"CLIENT: client_conn_receive_message: data {data}")
 
-                        incoming_msg = {
-                            "msg_id": msgId,
-                            "user": user,
-                            "sender": sender,
-                            "msg": msg,
-                            "checked": 0,
-                            "inbox": True
-                        }
+                    # Process the message if it's in the expected format
+                    try:
+                        server_msg = json.loads(data)
 
-                        # Call the GUI update function using the callback
-                        update_inbox_callback(incoming_msg)
+                        if server_msg.get("action") == "receiveMessage":
+                            msgId = server_msg["msgId"]
+                            user = server_msg["user"]
+                            sender = server_msg["sender"]
+                            msg = server_msg["msg"]
 
-                except json.JSONDecodeError as e:
-                    logging.error(f"CLIENT: client_conn_receive_message: JSONDecodeError {e}")
+                            incoming_msg = {
+                                "msg_id": msgId,
+                                "user": user,
+                                "sender": sender,
+                                "msg": msg,
+                                "checked": 0,
+                                "inbox": True
+                            }
 
+                            # update the GUI
+                            update_inbox_callback(incoming_msg)
+
+                    except json.JSONDecodeError as e:
+                        logging.error(f"CLIENT: client_conn_receive_message: JSONDecodeError {e}")
+                except socket.error as e:
+                    # Handle non-blocking socket error, this error is expected when no data is available
+                    if e.errno == errno.EAGAIN or e.errno == errno.EWOULDBLOCK:
+                        time.sleep(0.1)  # Sleep briefly before trying again (avoid busy loop)
+                    else:
+                        logging.error(f"CLIENT: client_conn_receive_message: socket error {e}")
         except socket.timeout:
+            # Handle socket timeout if necessary, otherwise just pass
             pass
         except Exception as e:
-            logging.error(f"CLIENT: client_conn_receive_message: Exception {e}")
-
-
-def start_message_listener(update_inbox_callback):
-    threading.Thread(target=client_conn_receive_message, args=(s, update_inbox_callback), daemon=True).start()
+            logging.error(f"CLIENT: client_conn_receive_message: Unexpected Exception {e}")
+            break  # Exit the loop in case of an unexpected error
 
 
 
@@ -521,4 +536,3 @@ logging.basicConfig(
 # +++++++++++++++++++ Server +++++++++++++++++++ #
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))
-# Wait until GUI is ready, then start listening for messages

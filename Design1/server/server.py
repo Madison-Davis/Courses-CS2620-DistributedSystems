@@ -305,9 +305,9 @@ def process_request(request, connection=None):
                             "msg": msg
                         })
                         recipient_socket.send(message_data.encode('utf-8'))
-                        logging.error("SERVER: sendMessage: recipient logged in, sent immediately")
+                        logging.info("SERVER: sendMessage: recipient logged in, sent immediately")
                     
-                    # # We updated the user's database, now, can we immediately update inbox?
+                    # # We updated the user's database, now, can we immediately update inbox
                     # # Check if recipient is logged in, and if so, send data
                     # cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
                     # logged_in = cursor.fetchone()
@@ -524,6 +524,7 @@ def process_request(request, connection=None):
 
 
 # ++++++++++ Main Functions: Handling Connections ++++++++++ #
+
 def accept_wrapper(sock):
     """Accept connection from client."""
     conn, addr = sock.accept()
