@@ -209,7 +209,7 @@ def client_conn_send_message(draft_id, user, sender, content):
     # See if successfully sent message
     try:
         response_json = json.loads(response)
-        return True if response_json.get("status") == "ok" else False
+        return response_json["data"]["msgId"] if response_json.get("status") == "ok" else False
     except json.JSONDecodeError as e:
         logging.error(f"CLIENT: client_conn_send_message: JSONDecode {e}")
         return False
@@ -247,7 +247,7 @@ def client_conn_add_draft(user, recipient, content, checked):
     # See if successfully sent message
     try:
         response_json = json.loads(response)
-        return True if response_json.get("status") == "ok" else False
+        return response_json["data"]["draft_id"] if response_json.get("status") == "ok" else False
     except json.JSONDecodeError as e:
         logging.error(f"CLIENT: client_conn_add_draft: JSONDecode {e}")
         return False
@@ -487,7 +487,7 @@ def client_conn_receive_message(update_inbox_callback):
                     try:
                         server_msg = json.loads(data)
 
-                        if server_msg.get("action") == "receiveMessage":
+                        if "action" in server_msg and server_msg.get("action") == "receiveMessage":
                             msgId = server_msg["msgId"]
                             user = server_msg["user"]
                             sender = server_msg["sender"]

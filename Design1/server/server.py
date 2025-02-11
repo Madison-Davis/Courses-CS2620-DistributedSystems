@@ -265,6 +265,7 @@ def process_request(request, connection=None):
             msg = action["sendMessage"]["request"]["data"]["content"]
             try:
                 # Check if recipient exists
+                print(f"SEND MESSAGE USER RECIPIENT: {user}")
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is None:
                     logging.error("SERVER: sendMessage: recipient does not exist")
@@ -281,14 +282,17 @@ def process_request(request, connection=None):
                     # Note: `user` is the recipient
                     cursor.execute("""
                         INSERT INTO messages (user, sender, msg, checked, inbox)
-                        VALUES (?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?) RETURNING msg_id
                     """, (user, sender, msg, 0, 1))
+                    msgId = cursor.fetchone()
 
                     response = {
                         "requestId": action["sendMessage"]["request"]["requestId"],
                         "status": "ok",
                         "msg": "Message sent (and delivered/stored).",
-                        "data": {}
+                        "data": {
+                            "msgId": msgId[0]
+                        }
                     }
 
                     logging.info("SERVER: sendMessage: delivered to user DB")
@@ -299,7 +303,7 @@ def process_request(request, connection=None):
                         recipient_socket = clients[user]
                         message_data = json.dumps({
                             "action": "receiveMessage",
-                            "msgId": draft_id,  # Not actually a draft, but keeps unique ID
+                            "msgId": msgId[0],
                             "user": user,
                             "sender": sender,
                             "msg": msg
@@ -378,7 +382,7 @@ def process_request(request, connection=None):
                     "status": "ok",
                     "msg": "Draft added.",
                     "data": {
-                        "draft_id": cursor.fetchone()
+                        "draft_id": cursor.fetchone()[0]
                     }
                 }
             except Exception as e:

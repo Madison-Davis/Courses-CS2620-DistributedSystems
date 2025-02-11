@@ -143,6 +143,7 @@ def login(new_user, account_users, pwd_hash):
     # If existing user, verify password lines up
     elif pwd_hash != pwd:
         messagebox.showerror("Error", "Invalid Username or Password")
+        return
     # If existing user and password lines up, login/load information
     else:
         if config.PROTOCOL == 0:
@@ -230,10 +231,10 @@ def clicked_send():
         recipient = draft["recipient"]
         content = draft["msg"]
         if config.PROTOCOL == 0:
-            status = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
+            msgId = client_conn.client_conn_send_message(draft_id, recipient, login_username.get(), content)
         else:
-            status = client_conn_custom.client_conn_send_message(draft_id, recipient, login_username.get(), content)
-        if not status:
+            msgId = client_conn_custom.client_conn_send_message(draft_id, recipient, login_username.get(), content)
+        if not msgId:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
            return
 
@@ -489,6 +490,10 @@ def load_main_frame(db_user_data=[0,[],[],[]]):
     for widget in main_frame.winfo_children():
         widget.destroy()
 
+    global login_username
+    greeting_label = tk.Label(main_frame, text=f"Hello, {login_username.get()}!", font=("Arial", 14, "bold"))
+    greeting_label.grid(row=0, column=3, columnspan=3, padx=10, pady=10)
+
     # Part 1: Account Options
     tk.Button(main_frame, text="Logout", command=logout).grid(row=0, column=1, sticky="e", padx=5)
     tk.Button(main_frame, text="Delete Account", bg="red", command=delete_account).grid(row=0, column=2, sticky="e", padx=5)
@@ -553,7 +558,8 @@ def load_main_frame_user_info(db_user_data):
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     i = 0
     for draft in db_user_data[3]: 
-        create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
+        if draft["msg"]:
+            create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
         i += 1
 
 
