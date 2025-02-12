@@ -1,6 +1,9 @@
 Documentation.txt
 
 
+To see the version written in Google Docs, visit here:
+https://docs.google.com/document/d/1GXQrAyj79GTzeqagSdFr4_hKF2uppkP0Q7CNnq8aewQ/edit?usp=sharing
+
 
 -------------------------------------------
 DESIGN REQUIREMENTS:
