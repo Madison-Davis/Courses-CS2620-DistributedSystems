@@ -50,9 +50,16 @@ Drafts Database
 
 -------------------------------------------
 RUNNING 
+
+JSON WIRE PROTOCOL
+Make sure PROTOCOL is set to 0 in `config.py`
 Start server: `py .\server\server.py`
 Run GUI: `py .\client\gui.py`
 
+CUSTOM WIRE PROTOCOL
+Make sure PROTOCOL is set to 1 in `config.py`
+Start server: `py .\server\server_custom.py`
+Run GUI: `py .\client\gui.py`
 
 
 -------------------------------------------

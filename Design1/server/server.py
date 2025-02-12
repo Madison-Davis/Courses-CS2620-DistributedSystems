@@ -2,6 +2,7 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
+
 import sys
 import os
 import socket
@@ -16,11 +17,13 @@ import logging
 
 
 # +++++++++++++++ Variables: +++++++++++++++ #
+
 clients = {} # keep track of all clients and their connections subscribed via selector
 
 
 
 # ++++++++++++ Database: Set Up ++++++++++++ #
+
 def db_init(connection=None):
     logging.info("SERVER: db_init: initializing database")
 
@@ -67,11 +70,13 @@ def db_init(connection=None):
 
 
 # +++++++++++++++++++  Variables  +++++++++++++++++++ #
+
 sel = selectors.DefaultSelector()
 
 
 
 # ++++++++++++ Functions: Processing Requests ++++++++++++ #
+
 def process_request(request, connection=None):
     """Process JSON request from client and return response."""
     try:
@@ -123,6 +128,7 @@ def process_request(request, connection=None):
                 account = cursor.fetchone()
                 if account is not None:
                     cursor.execute("UPDATE accounts SET logged_in = 1 WHERE user = ?", (user,))
+
                     # Populate data of user
                     # Not newly received messages
                     cursor.execute("""
@@ -195,7 +201,7 @@ def process_request(request, connection=None):
         elif "getPwd" in action:
             user = action["getPwd"]["request"]["data"]["username"]
             try:
-                # Get password for user
+                # Get password hash for user
                 cursor.execute("SELECT pwd FROM accounts WHERE user = ?", (user,))
                 pwd_hash = cursor.fetchone()[0]
                 if pwd_hash is None:
@@ -206,7 +212,7 @@ def process_request(request, connection=None):
                         "data": {}
                     }
                 else:
-                    logging.info(f"SERVER: getPwd: pwd found")
+                    logging.info(f"SERVER: getPwd: pwd hash found")
                     response = {
                         "status": "ok",
                         "msg": "",
@@ -245,16 +251,12 @@ def process_request(request, connection=None):
                 }
         
         elif "sendMessage" in action:
-            info = action["sendMessage"]["request"]["data"]
-
-            # TODO: Client Outbound Connection
             draft_id = action["sendMessage"]["request"]["data"]["draft_id"]
             user = action["sendMessage"]["request"]["data"]["recipient"]
             sender = action["sendMessage"]["request"]["data"]["sender"]
             msg = action["sendMessage"]["request"]["data"]["content"]
             try:
                 # Check if recipient exists
-                print(f"SEND MESSAGE USER RECIPIENT: {user}")
                 cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
                 if cursor.fetchone() is None:
                     logging.error("SERVER: sendMessage: recipient does not exist")
@@ -297,21 +299,7 @@ def process_request(request, connection=None):
                         })
                         recipient_socket.send(message_data.encode('utf-8'))
                         logging.info("SERVER: sendMessage: recipient logged in, sent immediately")
-                    
-                    # # We updated the user's database, now, can we immediately update inbox
-                    # # Check if recipient is logged in, and if so, send data
-                    # cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
-                    # logged_in = cursor.fetchone()
-                    # if user in clients and logged_in:
-                    #     recipient_response = {
-                    #         "action": "receiveMessage",
-                    #         "sender": sender,
-                    #         "msg": msg
-                    #     }
-                    #     client_socket = clients[user]
-                    #     message = json.dumps(recipient_response)     # Convert response to JSON
-                    #     client_socket.send(message.encode('utf-8'))  # Send the response to the client
-                    #     logging.info("SERVER: message sent to user immediately!")
+
             except Exception as e:
                 logging.info(f"SERVER: sendMessage: user does not exist, or exception {e}")
                 response = {
@@ -326,6 +314,7 @@ def process_request(request, connection=None):
             try:
                 # Reset drafts
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
+                
                 # Add draft to drafts table
                 # Note: `user` is the sender
                 for draft in drafts:
@@ -510,7 +499,6 @@ def accept_wrapper(sock):
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     sel.register(conn, events, data=data)
-    # clients[addr] = conn
 
 def service_connection(key, mask):
     """Accept connection from client."""

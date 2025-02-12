@@ -2,6 +2,7 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
+
 import sys
 import errno
 import os
@@ -52,7 +53,7 @@ def client_conn_create_account(user, pwd_hash):
     
 def client_conn_login(user, pwd_hash):
     """ JSON: login
-    Return: [inboxCount, msgs, drafts] of user, else [] """
+    Return: [inboxCount, old_msgs, new_msgs, drafts] of user, else [0, [], [], []] """
     # Set up request
     request = {
         "protocolVersion": 1,
@@ -91,7 +92,7 @@ def client_conn_login(user, pwd_hash):
     
 def client_conn_get_pwd(user):
     """ JSON: listAccounts 
-    Return: lists of account users, else []."""
+    Return: hashed password for given username."""
     # Set up request
     request = {
         "protocolVersion": 1,
@@ -162,7 +163,7 @@ def client_conn_list_accounts():
 
 def client_conn_send_message(draft_id, user, sender, content):
     """ JSON: sendMessage
-    Return: T for success, F for no success """
+    Return: sent message ID for success, F for no success """
     # Set up request
     request = {
         "protocolVersion": 1,
@@ -199,7 +200,7 @@ def client_conn_send_message(draft_id, user, sender, content):
 
 def client_conn_add_draft(user, recipient, content, checked):
     """ JSON: addDraft
-    Return: T for success, F for no success """
+    Return: saved draft ID for success, F for no success """
     # Set up request
     request = {
         "protocolVersion": 1,
@@ -437,7 +438,6 @@ def client_conn_logout(user):
     
 def client_conn_receive_message(update_inbox_callback):
     """ Listens for new messages and updates the GUI via a callback function. """
-    #s.setblocking(True)  # issue: when set to true, we have freezing, and when false, resource issues
     while True:
         try:
             # Use select to check for socket readiness with a 2-second timeout
@@ -491,6 +491,7 @@ def client_conn_receive_message(update_inbox_callback):
 
 
 # +++++++++++++++++++ Logging +++++++++++++++++++ #
+
 logging.basicConfig(
     level=logging.DEBUG,  # Change to logging.INFO to reduce verbosity
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -502,5 +503,6 @@ logging.basicConfig(
 
 
 # +++++++++++++++++++ Server +++++++++++++++++++ #
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))

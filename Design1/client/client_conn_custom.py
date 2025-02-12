@@ -2,6 +2,7 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
+
 import sys
 import os
 import socket
@@ -14,6 +15,8 @@ import errno
 import re
 import ast
 import select
+
+# +++++++++++++++++++ Functions +++++++++++++++++++ #
 
 # 0x0001: Login
 # 0x0002: Send Message
@@ -29,8 +32,6 @@ import select
 # 0x000C: Logout
 # 0x000D: Receive Message
 
-# +++++++++++++++++++ Functions +++++++++++++++++++ #
-
 def send_request(message_type, payload):
     """Sends a request using the custom wire protocol."""
     payload_bytes = payload.encode("utf-8")
@@ -44,6 +45,7 @@ def receive_response():
     return response
 
 def client_conn_create_account(user, pwd):
+    """Creates an account with specified username and password, returns T for success and F if failure"""
     payload = f"{user}:{pwd}"
     send_request(0x0003, payload)
     response = receive_response()
@@ -100,6 +102,7 @@ def client_conn_get_pwd(user):
     return "" if response == "error:exist" else response
 
 def client_conn_send_message(draft_id, user, sender, content):
+    """Returns message ID of sent message."""
     payload = f"{draft_id}:{user}:{sender}:{content}"
     send_request(0x0002, payload)
     response = receive_response()
@@ -115,6 +118,7 @@ def client_conn_add_draft(user, recipient, content, checked):
     return response
 
 def client_conn_save_drafts(user, drafts):
+    """Returns T if drafts successfully saved, F if failure."""
     # user      = "asd"
     # drafts    = [{'draft_id': 2, 'user': 'asd', 'recipient': '', 'msg': 'hello!', 'checked': 0},
     #               {'draft_id': 3, 'user': 'asd', 'recipient': '', 'msg': 'hi!', 'checked': 0}]
@@ -126,6 +130,7 @@ def client_conn_save_drafts(user, drafts):
     return True if response == "ok" else False
 
 def client_conn_check_message(user, msgId):
+    """Returns T if successfully set message to read/checked, F if failure."""
     payload = f"{user}:{msgId}"
     send_request(0x0008, payload)
     response = receive_response()
@@ -133,6 +138,7 @@ def client_conn_check_message(user, msgId):
     return True if response == "ok" else False
 
 def client_conn_download_message(user, msgId):
+    """Returns T if successfully downloaded message from inbox, F if failure."""
     payload = f"{user}:{msgId}"
     send_request(0x0009, payload)
     response = receive_response()
@@ -140,6 +146,7 @@ def client_conn_download_message(user, msgId):
     return True if response == "ok" else False
 
 def client_conn_delete_message(user, msgId):
+    """Returns T if successfully deleted message, F if failure."""
     payload = f"{user}:{msgId}"
     send_request(0x000A, payload)
     response = receive_response()
@@ -147,6 +154,7 @@ def client_conn_delete_message(user, msgId):
     return True if response == "ok" else False
 
 def client_conn_delete_account(user):
+    """Returns T if successfully deleted account, F if failure."""
     payload = f"{user}"
     send_request(0x000B, payload)
     response = receive_response()
@@ -154,14 +162,11 @@ def client_conn_delete_account(user):
     return True if response == "ok" else False
 
 def client_conn_logout(user):
+    """Returns T if successfully logged out, F if failure."""
     send_request(0x000C, user)
     response = receive_response()
     print("client_conn_logout:", response)
     return True if response == "ok" else False
-
-
-
-
 
 def client_conn_receive_message(update_inbox_callback):
     """ Listens for new messages and updates the GUI via a callback function. """
@@ -240,6 +245,7 @@ def client_conn_receive_message(update_inbox_callback):
 
 
 # +++++++++++++++++++ Logging +++++++++++++++++++ #
+
 logging.basicConfig(
     level=logging.DEBUG,  # Change to logging.INFO to reduce verbosity
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -251,5 +257,6 @@ logging.basicConfig(
 
 
 # +++++++++++++++++++ Server +++++++++++++++++++ #
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((config.HOST, config.PORT))

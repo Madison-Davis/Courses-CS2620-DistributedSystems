@@ -3,6 +3,7 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
+
 import sys
 import os
 import tkinter as tk
@@ -18,7 +19,7 @@ import hashlib
 
 
 # ++++++++++++  Variables: Client Data  ++++++++++++ #
-# Vars: User's Data
+
 """
 SQL DB Setup: 3 databases
 Accounts database: uuid, user, pwd, logged_in
@@ -40,12 +41,6 @@ db_user_data            = [0,
                            [],
                            [],
                            []]
-                                    # NOTE: we will take this and update it on our side
-                                    # then, when we send over this data to server, SQL will:
-                                        # DB data: select ALL from DB
-                                        # determine rows to delete: DB data - modified data
-                                        # determine rows to insert: modified data row if row not in DB data
-                                        # determine rows to update: for each row, val in DB: see if cell = modified data cell
 
 # These are for edits we make to the drafts, but are yet to be "queued" up for DB 
 # For example, we can edit a message as many times as we want, but only when we save do we
@@ -123,7 +118,6 @@ def check_username(username):
     Gives different textual response based if new/returning."""
     global login_username, login_pwd, db_user_data, db_accounts
     username = username.get()
-    # NOTE: should not pull passwords for security
     if config.PROTOCOL == 0:
         account_users = client_conn.client_conn_list_accounts()
         pwd_hash = client_conn.client_conn_get_pwd(username)
@@ -138,9 +132,9 @@ def check_username(username):
     login_pwd = tk.Entry(login_frame, show='*')
     login_pwd.grid(row=5, column=0, padx=5)
     # Create enter button
-    tk.Button(login_frame, text="Enter", command=lambda:login(new_user, account_users, pwd_hash)).grid(row=6, column=0, padx=5)
+    tk.Button(login_frame, text="Enter", command=lambda:login(new_user, pwd_hash)).grid(row=6, column=0, padx=5)
 
-def login(new_user, account_users, pwd_hash):
+def login(new_user, pwd_hash):
     """ If new user, create an account.
     If returning user, verify correct username/password.
     Determine if good login, and if so, load main frame. """
@@ -199,8 +193,6 @@ def update_inbox_count(count):
 # +++++++++++++ Helper Functions: GUI Update +++++++++++++ #
 
 def logout():
-    #client_conn.stop_message_listener_thread()
-    #client_conn.stop_message_listener_thread()
     """ Default message template and return to login frame. """
     if config.PROTOCOL == 0:
         status = client_conn.client_conn_logout(login_username.get())
@@ -244,7 +236,6 @@ def clicked_send():
     global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
     
     # Send one-by-one user drafts that have checkmarks
-    print("DRAFTS", drafts_checkmarks, db_user_data[3])
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
 
     for draft in drafts_with_checkmarks:
@@ -418,7 +409,6 @@ def create_new_draft(row_idx):
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
     # return num of drafts
-    # TODO: SPECIFY DRAFT_ID
     if config.PROTOCOL == 0:
         draft_id = client_conn.client_conn_add_draft(login_username.get(), "", "", 0)
     else:
@@ -551,9 +541,6 @@ def load_main_frame(db_user_data=[0,[],[],[]]):
 
     if db_user_data != [0,[],[],[]]:
         load_main_frame_user_info(db_user_data)
-
-    # Start listening for incoming messages with a callback
-    # threading.Thread(target=client_conn.start_message_listener, args=(update_inbox_ui,), daemon=True).start()
 
 def load_main_frame_user_info(db_user_data):
     """ Clears and resets the main frame to its initial state. 

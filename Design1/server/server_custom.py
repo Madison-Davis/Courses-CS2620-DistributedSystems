@@ -1,3 +1,8 @@
+# server_custom.py
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
+
 import sys
 import os
 import socket
@@ -11,11 +16,13 @@ import logging
 
 
 # +++++++++++++++ Variables: +++++++++++++++ #
+
 clients = {} # keep track of all clients and their connections subscribed via selector
 
 
 
 # ++++++++++++ Database: Set Up ++++++++++++ #
+
 def db_init(connection=None):
     logging.info("SERVER: initializing database")
 
@@ -62,6 +69,7 @@ def db_init(connection=None):
 
 
 # +++++++++++++++++++  Variables  +++++++++++++++++++ #
+
 sel = selectors.DefaultSelector()
 
 # ++++++++++++ Functions: Processing Requests ++++++++++++ #
@@ -98,7 +106,6 @@ def process_request(message_type, payload, connection=None):
                     ORDER BY msg_id DESC
                 """, (user,))
                 old_messages = cursor.fetchall()
-                logging.info(f"OLD MESSAGES: {old_messages}")
                 old_msgs_list = [
                     {"msg_id": row[0], "user": row[1], "sender": row[2],
                     "msg": row[3], "checked": row[4], "inbox": row[5]}
@@ -112,7 +119,6 @@ def process_request(message_type, payload, connection=None):
                     ORDER BY msg_id DESC
                 """, (user,))
                 new_messages = cursor.fetchall()
-                logging.info(f"NEW MESSAGES: {new_messages}")
                 inbox_msgs_list = [
                     {"msg_id": row[0], "user": row[1], "sender": row[2],
                     "msg": row[3], "checked": row[4], "inbox": row[5]}
@@ -127,7 +133,6 @@ def process_request(message_type, payload, connection=None):
                     ORDER BY draft_id
                 """, (user,))
                 drafts = cursor.fetchall()
-                logging.info(f"DRAFTS: {drafts}")
                 drafts_list = [
                     {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                     for row in drafts
@@ -162,7 +167,6 @@ def process_request(message_type, payload, connection=None):
 
                 # Add message to messages table
                 # Note: `user` is the recipient
-                # TODO: this exeuction part is not finishing
                 cursor.execute("""
                     INSERT INTO messages (user, sender, msg, checked, inbox)
                     VALUES (?, ?, ?, ?, ?) RETURNING msg_id
@@ -182,7 +186,6 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x0006:  # Add Draft
             user, recipient, content, checked = payload.split(":",3)
-            print("NEW", user, recipient, content, checked)
             cursor.execute("INSERT INTO drafts (user, recipient, msg, checked) VALUES (?, ?, ?, ?) RETURNING draft_id", (user, recipient, content, checked))
             draft_id = cursor.fetchone()[0]
             response_payload = f"{str(draft_id)}"
@@ -287,7 +290,6 @@ def service_connection(key, mask):
                         logging.error("SERVER: Malformed login payload, expected 'user:pwd'")
                 try:
                     response = process_request(msg_type, message)
-                    print("RESPONSE", response)
                     response_bytes = response.encode("utf-8")
                     # submit bytes over the wire       
                     data.outb += response_bytes
