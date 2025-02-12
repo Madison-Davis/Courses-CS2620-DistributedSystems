@@ -11,6 +11,7 @@ from tkinter import messagebox, ttk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import client_conn
 import client_conn_custom
+import server_security
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import threading
@@ -94,21 +95,6 @@ sending_cols = [col_sending_checkbox, col_sending_message,
                  col_sending_recipient]
 
 
-# ++++++++++ Helper Functions: Security ++++++++++ #
-
-def hash_password(password: str) -> str:
-    """Hashes a password with a randomly generated salt using SHA-256."""
-    salt = os.urandom(16)  # Generate a 16-byte salt
-    hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
-    return salt.hex() + ":" + hashed_password.hex()
-
-def verify_password(password: str, stored_hash: str) -> bool:
-    """Verifies a password against a stored hash."""
-    salt, hashed_password = stored_hash.split(":")
-    salt = bytes.fromhex(salt)
-    new_hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
-    return new_hashed_password.hex() == hashed_password
-
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
@@ -141,7 +127,7 @@ def login(new_user, pwd_hash):
     global login_username, login_pwd, db_user_data, db_accounts
     user = login_username.get()
     pwd = login_pwd.get()
-    entered_pwd_hashed = hash_password(pwd)
+    entered_pwd_hashed = server_security.hash_password(pwd)
     # If new user, create a new account
     if new_user:
         if config.PROTOCOL == 0:
@@ -153,7 +139,7 @@ def login(new_user, pwd_hash):
            return
         db_user_data = [0,[],[],[]]
     # If existing user, verify password lines up
-    elif not verify_password(pwd, pwd_hash):
+    elif not server_security.verify_password(pwd, pwd_hash):
         messagebox.showerror("Error", "Invalid Username or Password")
         return
     # If existing user and password lines up, login/load information

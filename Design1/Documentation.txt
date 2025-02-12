@@ -67,6 +67,7 @@ server
 	/server.py		⇐ listens, receives, and responds to requests via JSON and SQL
 	/server_custom.py	⇐ same as above, but for our custom protocol, not JSON
 	/chat_database.db	⇐ SQL for three databases: accounts, messages, and drafts
+    /server_security.py  ⇐ for hashing security
 config
 	/config.py		⇐ set variables such as HOST/PORT and chosen wire protocol
 tests
