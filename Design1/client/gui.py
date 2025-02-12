@@ -156,6 +156,7 @@ def login(new_user, account_users, pwd_hash):
             status = client_conn_custom.client_conn_create_account(user, entered_pwd_hashed)
         if not status:
            messagebox.showerror("Error", "Unable to create new user.  Try again")
+           return
         db_user_data = [0,[],[],[]]
     # If existing user, verify password lines up
     elif not verify_password(pwd, pwd_hash):
@@ -207,6 +208,7 @@ def logout():
         status = client_conn_custom.client_conn_logout(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to log out.")
+       return
     # Save all drafts to db
     if config.PROTOCOL == 0:
         client_conn.client_conn_save_drafts(login_username.get(), db_user_data[3])
@@ -228,6 +230,7 @@ def delete_account():
         status = client_conn_custom.client_conn_delete_account(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to delete user.")
+       return
     load_main_frame()
     main_frame.pack_forget()
     load_login_frame()
@@ -326,6 +329,7 @@ def clicked_saved(row, msg, recipient, checked):
     drafts_msgs[row].config(state=tk.DISABLED)
     if row >= len(db_user_data[3]):
         messagebox.showerror("Error", "Unable to save.")
+        return
     # Once we have entry, update its values
     db_user_data[3][row]["recipient"] = recipient
     db_user_data[3][row]["msg"] = msg

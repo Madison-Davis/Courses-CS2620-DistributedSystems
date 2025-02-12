@@ -66,6 +66,7 @@ def client_conn_login(user, pwd):
         # - (\[.*\]) -> Captures the 2nd list
         # - (\[.*\]) -> Captures the 3rd list
         match = re.match(pattern, response)
+        print("MATCH", match)
         inbox_count = int(match.group(1))
         old_msgs_str = match.group(2)
         inbox_msgs_str = match.group(3)
@@ -100,7 +101,6 @@ def client_conn_get_pwd(user):
 
 def client_conn_send_message(draft_id, user, sender, content):
     payload = f"{draft_id}:{user}:{sender}:{content}"
-    print(payload)
     send_request(0x0002, payload)
     response = receive_response()
     print("client_conn_send_message:", response)
@@ -159,23 +159,43 @@ def client_conn_logout(user):
     print("client_conn_logout:", response)
     return True if response == "ok" else False
 
-import struct
+
+
+
 
 def client_conn_receive_message(update_inbox_callback):
     """ Listens for new messages and updates the GUI via a callback function. """
+        
+    #timeout_duration = 5  # Timeout in seconds for the entire receiving loop
+    #sleep_duration = 2  # Duration to pause the loop when no data is received
+    #running = True  # Control flag for the main loop
+    #start_time = time.time()
+
     while True:
         try:
+            # Use select to check for socket readiness with a 2-second timeout
+            #if not running:
+            #    logging.info("CLIENT: Paused, waiting to resume.")
+            #    time.sleep(sleep_duration)  # Pause for a set duration
+            #    running = True  # Reset the loop to continue
+
+            # Check if timeout is exceeded for the loop
+            #if time.time() - start_time > timeout_duration:
+            #    logging.info("CLIENT: Timeout reached, exiting the receive loop.")
+            #    break  # Exit after timeout
+
             # Use select to check for socket readiness with a 2-second timeout
             ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
             if ready:
                 try:
-                    # Grab header (6 bytes: 2 for type, 4 for length)
-                    # TODO: change this?
                     header = s.recv(6)
+                    
                     if not header:
                         logging.info("CLIENT: Connection closed by server.")
                         break
+
                     receive_message_type, payload_length = struct.unpack("!H I", header)
+
                     if receive_message_type != 0x000D:
                         logging.warning(f"CLIENT: client_conn_receive_message: unexpected message type {receive_message_type}")
                         continue  # Ignore unexpected message types

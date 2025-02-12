@@ -168,11 +168,11 @@ def process_request(message_type, payload, connection=None):
                     VALUES (?, ?, ?, ?, ?) RETURNING msg_id
                 """, (user, sender, content, 0, 1))
                 msgId = cursor.fetchone()
-                response_payload = msgId[0]
+                response_payload = str(msgId[0])
                 
                 # **Immediate Message Delivery**
                 if user in clients:
-                    recipient_response = f"{sender}:{content}:{msgId[0]}:{user}"
+                    recipient_response = f"{sender}:{content}:{str(msgId[0])}:{user}"
                     payload_bytes = recipient_response.encode("utf-8")
                     receive_message_type = 0x000D
                     header = struct.pack("!H I", receive_message_type, len(payload_bytes))
@@ -182,9 +182,10 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x0006:  # Add Draft
             user, recipient, content, checked = payload.split(":",3)
+            print("NEW", user, recipient, content, checked)
             cursor.execute("INSERT INTO drafts (user, recipient, msg, checked) VALUES (?, ?, ?, ?) RETURNING draft_id", (user, recipient, content, checked))
             draft_id = cursor.fetchone()[0]
-            response_payload = f"{draft_id}"
+            response_payload = f"{str(draft_id)}"
         
         elif message_type == 0x0007:  # Save Drafts
             user, drafts = payload.split(":", 1)
@@ -286,6 +287,7 @@ def service_connection(key, mask):
                         logging.error("SERVER: Malformed login payload, expected 'user:pwd'")
                 try:
                     response = process_request(msg_type, message)
+                    print("RESPONSE", response)
                     response_bytes = response.encode("utf-8")
                     # submit bytes over the wire       
                     data.outb += response_bytes
