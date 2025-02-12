@@ -545,7 +545,11 @@ def service_connection(key, mask):
                     try:
                         actions = json.loads(request_json).get("actions", {})
                         # If this is a login request, store the socket with the username
-                        if "login" in actions:
+                        if "createAccount" in actions:
+                            username = actions["createAccount"]["request"]["data"]["username"]
+                            clients[username] = sock  # Store socket by username
+                            logging.info(f"SERVER: {username} logged in and added to active clients.")
+                        elif "login" in actions:
                             username = actions["login"]["request"]["data"]["username"]
                             clients[username] = sock  # Store socket by username
                             logging.info(f"SERVER: {username} logged in and added to active clients.")
