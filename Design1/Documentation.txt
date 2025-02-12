@@ -1,7 +1,7 @@
 Documentation.txt
 
 
-To see the version written in Google Docs, visit here:
+To see the version written in Google Docs, visit here.  It is recommended to use this one for better legibility and the fact that this .txt is a shortened version of the docs:
 https://docs.google.com/document/d/1GXQrAyj79GTzeqagSdFr4_hKF2uppkP0Q7CNnq8aewQ/edit?usp=sharing
 
 
@@ -45,16 +45,18 @@ Run GUI: `py .\client\gui.py`
 
 -------------------------------------------
 TESTING
-To run unit tests, run: `py -m unittest .\tests\tests_server.py`
+TESTS
+Automatic tests were grouped using the server and the client. Manual tests were also conducted by simulating 2+ clients and a server on three terminals for a single computer. These manual tests were replicated on two computers to ensure proper scaling.
 
-- We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections.
-- We wrote a couple tests for each functionality, each accomplishing the following: 
-    - Create a mock connection and SQL cursor
-    - Create mock return values from the database requests
-    - Create a sample JSON or custom wire protocol request
-    - Send the request to the appropriate server to process the request
-    - Decode the response that is received from the server
-    - Assert that the received response is the same as what is expected
+Unit tests were written and conducted to test individual process requests and compare against our expected results.
+We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections.
+We wrote a couple tests for each functionality, each accomplishing the following: 
+Create a mock connection and SQL cursor
+Create mock return values from the database requests
+Create a sample JSON or custom wire protocol request
+Send the request to the appropriate server to process the request
+Decode the response that is received from the server
+Assert that the received response is the same as what is expected
 
 
 -------------------------------------------
