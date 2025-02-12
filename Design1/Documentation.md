@@ -1,12 +1,11 @@
-Documentation.txt
+# CS 2620 Design Exercise 1: Wire Protocols
 
 
-To see the version written in Google Docs, visit here.  It is recommended to use this one for better legibility and the fact that this .txt is a shortened version of the docs:
-https://docs.google.com/document/d/1GXQrAyj79GTzeqagSdFr4_hKF2uppkP0Q7CNnq8aewQ/edit?usp=sharing
+To see the version written in Google Docs, visit [here](https://docs.google.com/document/d/1GXQrAyj79GTzeqagSdFr4_hKF2uppkP0Q7CNnq8aewQ/edit?usp=sharing).
 
 
 -------------------------------------------
-DESIGN REQUIREMENTS:
+## Design Requirements
 
 Simple, client-server chat application. 
 GUI required.
@@ -22,7 +21,7 @@ Connection information as config.
 
 
 -------------------------------------------
-ASSUMPTIONS
+## Assumptions
 - We assume no requirements for persistent storage, that is, if the server shuts down and reboots, it does not need to keep the information it had prior to the shutdown.  
 - We assume no grouping of messages.  In other words, messages are stand-alone with no history-attached, similar to a Gmail-styled application.
 - We assume “undelivered messages” refers to messages that have yet to be delivered by a sender.  We will often refer to these as “drafts” which are displayed on the sender’s side.
@@ -30,99 +29,100 @@ ASSUMPTIONS
 
 
 -------------------------------------------
-RUNNING 
+## Running 
 
-JSON WIRE PROTOCOL
-Make sure PROTOCOL is set to 0 in `config.py`
-Start server: `py .\server\server.py`
-Run GUI: `py .\client\gui.py`
+### JSON Wire Protocol
+- Make sure PROTOCOL is set to 0 in `config.py`
+- Start server: `py .\server\server.py`
+- Run GUI: `py .\client\gui.py`
 
-CUSTOM WIRE PROTOCOL
-Make sure PROTOCOL is set to 1 in `config.py`
-Start server: `py .\server\server_custom.py`
-Run GUI: `py .\client\gui.py`
+### Custom Wire Protocol
+- Make sure PROTOCOL is set to 1 in `config.py`
+- Start server: `py .\server\server_custom.py`
+- Run GUI: `py .\client\gui.py`
 
 
 -------------------------------------------
-TESTING
-TESTS
+## Testing
 Automatic tests were grouped using the server and the client. Manual tests were also conducted by simulating 2+ clients and a server on three terminals for a single computer. These manual tests were replicated on two computers to ensure proper scaling.
 
 Unit tests were written and conducted to test individual process requests and compare against our expected results.
 We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections.
 We wrote a couple tests for each functionality, each accomplishing the following: 
-Create a mock connection and SQL cursor
-Create mock return values from the database requests
-Create a sample JSON or custom wire protocol request
-Send the request to the appropriate server to process the request
-Decode the response that is received from the server
-Assert that the received response is the same as what is expected
+- Create a mock connection and SQL cursor
+- Create mock return values from the database requests
+- Create a sample JSON or custom wire protocol request
+- Send the request to the appropriate server to process the request
+- Decode the response that is received from the server
+- Assert that the received response is the same as what is expected
 
 
 -------------------------------------------
-CODE STRUCTURE
+## Code Structure
 client
-	/gui.py				⇐ set up the GUI for the client to interact with
-	/client_conn.py		⇐ funcs. to set up communication with server via JSON
-	/client_conn_custom.py 	⇐ same as above, but for our custom protocol
+- /gui.py				⇐ set up the GUI for the client to interact with
+- /client_conn.py		⇐ funcs. to set up communication with server via JSON
+- /client_conn_custom.py 	⇐ same as above, but for our custom protocol
+
 server
-	/server.py		⇐ listens, receives, and responds to requests via JSON and SQL
-	/server_custom.py	⇐ same as above, but for our custom protocol, not JSON
-	/chat_database.db	⇐ SQL for three databases: accounts, messages, and drafts
-    /server_security.py  ⇐ for hashing security
+- /server.py		⇐ listens, receives, and responds to requests via JSON and SQL
+- /server_custom.py	⇐ same as above, but for our custom protocol, not JSON
+- /chat_database.db	⇐ SQL for three databases: accounts, messages, and drafts
+- /server_security.py  ⇐ for hashing security
+
 config
-	/config.py		⇐ set variables such as HOST/PORT and chosen wire protocol
+- /config.py		⇐ set variables such as HOST/PORT and chosen wire protocol
+
 tests
-	/tests_server.py	⇐ verify server properly works
-	/tests_client.py	⇐ verify client properly works
+- /tests_server.py	⇐ verify server properly works
+- /tests_client.py	⇐ verify client properly works
 
 
 -------------------------------------------
-SQL DB:
+## SQL Database
+
+Format: [COLUMN]: [TYPE], [DEFAULT]
 
 Accounts Database
-    [COLUMN]        [TYPE]      [DEFAULT]
-    uuid:           int         N/A (no default; should not be in DB)
-    user:           str         N/A (no default; should not be in DB)
-    pwd:            str         N/A (no default; should not be in DB)
-    logged_in:      bool        0
+- uuid: int, N/A (no default; should not be in DB)
+- user: str, N/A (no default; should not be in DB)
+- pwd: str, N/A (no default; should not be in DB)
+- logged_in: bool, 0
 
 Messages Database
-    [COLUMN]        [TYPE]      [DEFAULT]
-    msg_id:         int         N/A (no default; should not be in DB)
-    user:           str         N/A (no default; should not be in DB)
-    sender:         str         N/A (no default; should not be in DB)
-    msg:            str         N/A (no default; should not be in DB)
-    checked:        bool        0
-    inbox:          bool        1
+- msg_id: int, N/A (no default; should not be in DB)
+- user: str, N/A (no default; should not be in DB)
+- sender: str, N/A (no default; should not be in DB)
+- msg: str, N/A (no default; should not be in DB)
+- checked: bool, 0
+- inbox: bool, 1
 
 Drafts Database
-    [COLUMN]        [TYPE]      [DEFAULT]
-    draft_id:       int         N/A (no default; should not be in DB)
-    user:           str         N/A (no default; should not be in DB)
-    recipient:      str         ""
-    msg:            str         ""
-    checked:        bool        0
+- draft_id: int, N/A (no default; should not be in DB)
+- user: str, N/A (no default; should not be in DB)
+- recipient: str, ""
+- msg: str, ""
+- checked: bool, 0
 
 
 -------------------------------------------
-GUI DESIGN
-Login Frame: provides entries for username input and password input, as well as a button to submit the information.  Initially, only the username entry is displayed.  Upon entering a name, the client makes a request to the server to determine if they are a new user or not.  This then displays the password input along with a textual message specific to whether the user is new (“Welcome, new user!”) or not (“Welcome back!”).  Upon entering the password and clicking enter, the user is brought to the main frame.  If the user is returning, additional data about past drafts or messages are displayed.
-Main Frame: The top area is reserved for a logout button, delete account button, and greeting message specifying the current username.  The rest of the area is split into two main sections: received messages and drafts.
-Inbox: a title that states “inbox” with the number of emails currently in the inbox, and an “open inbox” button with a specification for the number of emails desired to be opened (this number can be edited by the user via a dropdown menu).  Upon clicking the button, new messages pop up at the top of the “messages” area.  Messages are sent to the inbox whenever a user receives a message.
-Messages: rows of messages, where each message has a delete button, an unchecked mark/unread, and the message displayed as [Sender: Message].  Messages are sent here if they have already been opened but not deleted before logging out, or if the user is logged in and receives a new message. Messages can also be checked as read, which persist even if the user logs out and logs back in.
-Drafts: A list of drafts yet to be sent, along with a “Send” button and “Select All” button.  Each draft contains a select button, an entry field to type in the message, edit button, save button, and a dropdown list for accounts.
+## GUI Design
+- Login Frame: provides entries for username input and password input, as well as a button to submit the information.  Initially, only the username entry is displayed.  Upon entering a name, the client makes a request to the server to determine if they are a new user or not.  This then displays the password input along with a textual message specific to whether the user is new (“Welcome, new user!”) or not (“Welcome back!”).  Upon entering the password and clicking enter, the user is brought to the main frame.  If the user is returning, additional data about past drafts or messages are displayed.
+- Main Frame: The top area is reserved for a logout button, delete account button, and greeting message specifying the current username.  The rest of the area is split into two main sections: received messages and drafts.
+    - Inbox: a title that states “inbox” with the number of emails currently in the inbox, and an “open inbox” button with a specification for the number of emails desired to be opened (this number can be edited by the user via a dropdown menu).  Upon clicking the button, new messages pop up at the top of the “messages” area.  Messages are sent to the inbox whenever a user receives a message.
+    - Messages: rows of messages, where each message has a delete button, an unchecked mark/unread, and the message displayed as [Sender: Message].  Messages are sent here if they have already been opened but not deleted before logging out, or if the user is logged in and receives a new message. Messages can also be checked as read, which persist even if the user logs out and logs back in.
+    - Drafts: A list of drafts yet to be sent, along with a “Send” button and “Select All” button.  Each draft contains a select button, an entry field to type in the message, edit button, save button, and a dropdown list for accounts.
 
 
 -------------------------------------------
-CLIENT DATA
+## Client Data
 The server works with a SQL database, but the client also deals with local data.  The client deals with (1) caching the results of the SQL database as well as (2) keeping tabs on information that will eventually be sent back to the database to update, insert, or delete items in the database.  Specifically, for each client, the following data structures are used:
 - db_user_data: used to hold information from the SQL database.  
     - inboxCount: the number of items in the inbox
     - old_msgs: all database entries of messages that have been downloaded and are shown visibly in the “Messages” section of the GUI.
     - inbox_msgs: all database entries of messages that have not been downloaded and are hidden in the “Inbox” section of the GUI.
     - drafts: all database entries of drafts that are shown visibly in the “Drafts” section of the GUI.
-db_accounts: used to hold account usernames from the SQL database.
+- db_accounts: used to hold account usernames from the SQL database.
     - drafts_XXX: used for drafts.  Drafts are saved to the SQL database upon creation and can be edited when the user explicitly pushes “Save”.  We would like a complete list of all the drafts and their information at any given time, even if some are not meant to be sent to the server quite yet. These data structures accomplish this function of holding this information. Values are strings separated by commas, where their index represents the row they show up in in the GUI.
     - drafts_msgs: stores draft message content
     - drafts_recipients: stores draft message recipients
@@ -130,12 +130,12 @@ db_accounts: used to hold account usernames from the SQL database.
 
 
 -------------------------------------------
-PASSWORD SECURITY
+## Password Security
 To ensure password security, we store all password information as hashed passwords. We use a randomly generated salt using SHA-256 via hashlib to generate hashed passwords and verify hashes against user-inputted passwords.
 
 
 -------------------------------------------
-COMMUNICATION
+## Communication
 - Creating an account: createAccount
     - Request parameters: username, password hash
     - Action: check that username doesn’t already exist, then insert user information into accounts table
@@ -168,13 +168,14 @@ COMMUNICATION
     - Action: check if recipient exists, add message characteristics in messages table
 
 We keep track of the sockets of all clients that are currently connected to the server, and if one user is trying to send a message to another user that is currently logged in, then we trigger a live message sending mechanism by sending the message information to the recipient’s socket.
+
 In client_conn.py, we defined a function called client_conn_receive_message, which uses a selector to listen for incoming messages. If the received message is of type “receiveMessage,” then we call a method called update_inbox_callback to immediately update the recipient’s GUI and notify them of an incoming message by incrementing the counter on their inbox. 
 
 
 -------------------------------------------
-WIRE PROTOCOLS
+## Wire Protocols
 
-JSON
+### JSON
 When config.PROTOCOL = 0, we use JSON and call server.py to start a server dedicated to JSON. JSON responses are made as a dictionary. We generally utilized the following structure, (in the code, this is in proper JSON format, but it is displayed here for understanding):
 
 {	 protocolVersion: #,
@@ -193,15 +194,15 @@ error_response: 	{ status:, msg:, data:}
 }
 
 
-CUSTOM
+### Custom
 When config.PROTOCOL = 1, we use a custom wire protocol and call server_custom.py to start a server dedicated to this protocol.
 
 We use a custom wire protocol format of a header and payload, which follows a big-endian network byte order.  Specifically, we use: 
-struct.pack("!H I", message_type, len(payload_bytes))
+- struct.pack("!H I", message_type, len(payload_bytes))
     - !: specifies big-endian network byte order
     - H: unsigned short (2 bytes, 16-bit integer)
     - I: unsigned int (4 bytes, 32-bit integer)
-The message type follows this encoding scheme:
+- The message type follows this encoding scheme:
     - 0x0001: Login
     - 0x0002: Send Message
     - 0x0003: Create Account
@@ -215,7 +216,7 @@ The message type follows this encoding scheme:
     - 0x000B: Delete Account
     - 0x000C: Logout
 The payload contains the information needed to complete a request or desired to return in a response, and it has variable length. 
-    - Different pieces of information are colon-separated.
-    - Elements of a list are comma-separated.
-    - Key-value pairs in a dictionary are semicolon-separated.
-    - Keys and values in a dictionary are equal sign-separated.
+- Different pieces of information are colon-separated.
+- Elements of a list are comma-separated.
+- Key-value pairs in a dictionary are semicolon-separated.
+- Keys and values in a dictionary are equal sign-separated.
