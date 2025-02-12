@@ -366,6 +366,7 @@ def clicked_delete_msg(widget, msg):
         status = client_conn_custom.client_conn_delete_message(user, msgId)
     if not status:
        messagebox.showerror("Error", "Deletion unsuccessful")
+       return
     # Delete specified cells that correspond to the message we want to delete
     row = widget.grid_info()["row"]
     for w in main_frame.grid_slaves():

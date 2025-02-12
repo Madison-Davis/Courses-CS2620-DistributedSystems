@@ -212,7 +212,7 @@ def process_request(message_type, payload, connection=None):
         
         elif message_type == 0x000A:  # Delete Message
             user, msg_id = payload.split(":",1)
-            cursor.execute("DELETE FROM messages WHERE AND msg_id = ?", (msg_id))
+            cursor.execute("DELETE FROM messages WHERE user = ? AND msg_id = ?", (user, msg_id))
             response_payload = "ok"
         
         elif message_type == 0x000B:  # Delete Account
