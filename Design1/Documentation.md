@@ -60,22 +60,22 @@ We wrote a couple tests for each functionality, each accomplishing the following
 -------------------------------------------
 ## Code Structure
 client
-- /gui.py				⇐ set up the GUI for the client to interact with
-- /client_conn.py		⇐ funcs. to set up communication with server via JSON
-- /client_conn_custom.py 	⇐ same as above, but for our custom protocol
+- `/gui.py`				⇐ set up the GUI for the client to interact with
+- `/client_conn.py`		⇐ funcs. to set up communication with server via JSON
+- `/client_conn_custom.py` 	⇐ same as above, but for our custom protocol
 
 server
-- /server.py		⇐ listens, receives, and responds to requests via JSON and SQL
-- /server_custom.py	⇐ same as above, but for our custom protocol, not JSON
-- /chat_database.db	⇐ SQL for three databases: accounts, messages, and drafts
-- /server_security.py  ⇐ for hashing security
+- `/server.py`		⇐ listens, receives, and responds to requests via JSON and SQL
+- `/server_custom.py`	⇐ same as above, but for our custom protocol, not JSON
+- `/chat_database.db`	⇐ SQL for three databases: accounts, messages, and drafts
+- `/server_security.py`  ⇐ for hashing security
 
 config
-- /config.py		⇐ set variables such as HOST/PORT and chosen wire protocol
+- `/config.py`		⇐ set variables such as HOST/PORT and chosen wire protocol
 
 tests
-- /tests_server.py	⇐ verify server properly works
-- /tests_client.py	⇐ verify client properly works
+- `/tests_server.py`	⇐ verify server properly works
+- `/tests_client.py`	⇐ verify client properly works
 
 
 -------------------------------------------
@@ -84,25 +84,25 @@ tests
 Format: [COLUMN]: [TYPE], [DEFAULT]
 
 Accounts Database
-- uuid: int, N/A (no default; should not be in DB)
-- user: str, N/A (no default; should not be in DB)
-- pwd: str, N/A (no default; should not be in DB)
-- logged_in: bool, 0
+- `uuid`: int, N/A (no default; should not be in DB)
+- `user`: str, N/A (no default; should not be in DB)
+- `pwd`: str, N/A (no default; should not be in DB)
+- `logged_in`: bool, 0
 
 Messages Database
-- msg_id: int, N/A (no default; should not be in DB)
-- user: str, N/A (no default; should not be in DB)
-- sender: str, N/A (no default; should not be in DB)
-- msg: str, N/A (no default; should not be in DB)
-- checked: bool, 0
+- `msg_id`: int, N/A (no default; should not be in DB)
+- `user`: str, N/A (no default; should not be in DB)
+- `sender`: str, N/A (no default; should not be in DB)
+- `msg`: str, N/A (no default; should not be in DB)
+- `checked`: bool, 0
 - inbox: bool, 1
 
 Drafts Database
-- draft_id: int, N/A (no default; should not be in DB)
-- user: str, N/A (no default; should not be in DB)
-- recipient: str, ""
-- msg: str, ""
-- checked: bool, 0
+- `draft_id`: int, N/A (no default; should not be in DB)
+- `user`: str, N/A (no default; should not be in DB)
+- `recipient`: str, ""
+- `msg`: str, ""
+- `checked`: bool, 0
 
 
 -------------------------------------------
@@ -117,16 +117,16 @@ Drafts Database
 -------------------------------------------
 ## Client Data
 The server works with a SQL database, but the client also deals with local data.  The client deals with (1) caching the results of the SQL database as well as (2) keeping tabs on information that will eventually be sent back to the database to update, insert, or delete items in the database.  Specifically, for each client, the following data structures are used:
-- db_user_data: used to hold information from the SQL database.  
-    - inboxCount: the number of items in the inbox
-    - old_msgs: all database entries of messages that have been downloaded and are shown visibly in the “Messages” section of the GUI.
-    - inbox_msgs: all database entries of messages that have not been downloaded and are hidden in the “Inbox” section of the GUI.
-    - drafts: all database entries of drafts that are shown visibly in the “Drafts” section of the GUI.
-- db_accounts: used to hold account usernames from the SQL database.
-    - drafts_XXX: used for drafts.  Drafts are saved to the SQL database upon creation and can be edited when the user explicitly pushes “Save”.  We would like a complete list of all the drafts and their information at any given time, even if some are not meant to be sent to the server quite yet. These data structures accomplish this function of holding this information. Values are strings separated by commas, where their index represents the row they show up in in the GUI.
-    - drafts_msgs: stores draft message content
-    - drafts_recipients: stores draft message recipients
-    - drafts_checkmarks: stores all draft messages that are checked to be sent
+- `db_user_data`: used to hold information from the SQL database.  
+    - `inboxCount`: the number of items in the inbox
+    - `old_msgs`: all database entries of messages that have been downloaded and are shown visibly in the “Messages” section of the GUI.
+    - `inbox_msgs`: all database entries of messages that have not been downloaded and are hidden in the “Inbox” section of the GUI.
+    - `drafts`: all database entries of drafts that are shown visibly in the “Drafts” section of the GUI.
+- `db_accounts`: used to hold account usernames from the SQL database.
+- `drafts_XXX`: used for drafts.  Drafts are saved to the SQL database upon creation and can be edited when the user explicitly pushes “Save”.  We would like a complete list of all the drafts and their information at any given time, even if some are not meant to be sent to the server quite yet. These data structures accomplish this function of holding this information. Values are strings separated by commas, where their index represents the row they show up in in the GUI.
+    - `drafts_msgs`: stores draft message content
+    - `drafts_recipients`: stores draft message recipients
+    - `drafts_checkmarks`: stores all draft messages that are checked to be sent
 
 
 -------------------------------------------
@@ -136,49 +136,49 @@ To ensure password security, we store all password information as hashed passwor
 
 -------------------------------------------
 ## Communication
-- Creating an account: createAccount
+- Creating an account: `createAccount`
     - Request parameters: username, password hash
     - Action: check that username doesn’t already exist, then insert user information into accounts table
-- Log in to an account: login
+- Log in to an account: `login`
     - Request parameters: username, password hash
     - Action: determine whether the username and password hash matches an existing account, set the user’s status to logged in, get user’s newly received messages in their inbox, get user’s old messages, get user’s drafts
-- List accounts: listAccounts
+- List accounts: `listAccounts`
     - Request parameters: none
     - Action: get list of all usernames currently in accounts table
-- Read messages: checkMessage
+- Read messages: `checkMessage`
     - Request parameters: username, message ID
     - Action: set message status to checked
-- Delete a message: deleteMessage
+- Delete a message: `deleteMessage`
     - Request parameters: username, message ID
     - Action: remove message from messages table
-- Delete an account: deleteAccount
+- Delete an account: `deleteAccount`
     - Request parameters: username, password hash
     - Action: delete user’s received messages, delete user’s drafts, delete user’s account information
-- Log out: logout
+- Log out: `logout`
     - Request parameters: username
     - Action: set user’s status to logged out
-- Store drafts: addDrafts
+- Store drafts: `addDrafts`
     - Request parameters: username, list of recipient and content of each draft message
     - Action: delete all old drafts, insert all new drafts
-- Download message from inbox to main page: downloadMessage
+- Download message from inbox to main page: `downloadMessage`
     - Request parameters: username, message ID
     - Action: updates inbox property to be 1
-- Send a message to a recipient: sendMessage
+- Send a message to a recipient: `sendMessage`
     - Request parameters: username, sender username, message text content
     - Action: check if recipient exists, add message characteristics in messages table
 
 We keep track of the sockets of all clients that are currently connected to the server, and if one user is trying to send a message to another user that is currently logged in, then we trigger a live message sending mechanism by sending the message information to the recipient’s socket.
 
-In client_conn.py, we defined a function called client_conn_receive_message, which uses a selector to listen for incoming messages. If the received message is of type “receiveMessage,” then we call a method called update_inbox_callback to immediately update the recipient’s GUI and notify them of an incoming message by incrementing the counter on their inbox. 
+In `client_conn.py`, we defined a function called `client_conn_receive_message`, which uses a selector to listen for incoming messages. If the received message is of type “receiveMessage,” then we call a method called update_inbox_callback to immediately update the recipient’s GUI and notify them of an incoming message by incrementing the counter on their inbox. 
 
 
 -------------------------------------------
 ## Wire Protocols
 
 ### JSON
-When config.PROTOCOL = 0, we use JSON and call server.py to start a server dedicated to JSON. JSON responses are made as a dictionary. We generally utilized the following structure, (in the code, this is in proper JSON format, but it is displayed here for understanding):
+When `config.PROTOCOL = 0`, we use JSON and call server.py to start a server dedicated to JSON. JSON responses are made as a dictionary. We generally utilized the following structure, (in the code, this is in proper JSON format, but it is displayed here for understanding):
 
-{	 protocolVersion: #,
+`{	 protocolVersion: #,
 description: “ “,
 	actions: {
 		action_name_one: {
@@ -191,14 +191,14 @@ action_name_two: {
 			success_response: 	{ status:, msg:, data:}
 error_response: 	{ status:, msg:, data:}
 		}
-}
+}`
 
 
 ### Custom
-When config.PROTOCOL = 1, we use a custom wire protocol and call server_custom.py to start a server dedicated to this protocol.
+When `config.PROTOCOL = 1`, we use a custom wire protocol and call server_custom.py to start a server dedicated to this protocol.
 
 We use a custom wire protocol format of a header and payload, which follows a big-endian network byte order.  Specifically, we use: 
-- struct.pack("!H I", message_type, len(payload_bytes))
+- `struct.pack("!H I", message_type, len(payload_bytes))`
     - !: specifies big-endian network byte order
     - H: unsigned short (2 bytes, 16-bit integer)
     - I: unsigned int (4 bytes, 32-bit integer)
