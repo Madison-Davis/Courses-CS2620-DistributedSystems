@@ -169,13 +169,9 @@ def process_request(message_type, payload, connection=None):
                 """, (user, sender, content, 0, 1))
                 msgId = cursor.fetchone()
                 response_payload = msgId[0]
-
-                # We updated the user's database, now, can we immediately update inbox?
-                # Check if recipient is logged in, and if so, send data
-                cursor.execute("SELECT logged_in FROM accounts WHERE user = ?", (user,))
-                logged_in = cursor.fetchone()
                 
-                if user in clients and logged_in:
+                # **Immediate Message Delivery**
+                if user in clients:
                     recipient_response = f"{sender}:{content}:{msgId[0]}:{user}"
                     payload_bytes = recipient_response.encode("utf-8")
                     receive_message_type = 0x000D

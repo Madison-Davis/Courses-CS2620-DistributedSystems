@@ -5,12 +5,10 @@
 import sys
 import os
 import socket
-import uuid
 import struct
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import logging
-import threading
 import time
 import errno
 import re

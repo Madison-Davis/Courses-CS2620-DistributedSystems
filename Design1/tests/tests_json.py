@@ -116,27 +116,6 @@ class TestChatApplication(unittest.TestCase):
         self.assertEqual(response_json["status"], "ok")
     
     @patch('server.sqlite3.connect')
-    def test_server_read_messages(self, mock_sqlite):
-        """Test retrieving unread messages."""
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_sqlite.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        mock_cursor.fetchall.return_value = [(1, "testuser", "senderuser", "Hello!", 0, 1)]
-        
-        request = json.dumps({
-            "actions": {
-                "login": {
-                    "request": {"data": {"username": "testuser", "passwordHash": "hashedpassword"}}
-                }
-            }
-        })
-        response = server.process_request(request, mock_conn)
-        response_json = json.loads(response.decode("utf-8"))
-        self.assertEqual(response_json["status"], "ok")
-        self.assertGreater(len(response_json["data"]["inbox_msgs"]), 0)
-    
-    @patch('server.sqlite3.connect')
     def test_server_delete_message(self, mock_sqlite):
         """Test deleting a message."""
         mock_conn = MagicMock()

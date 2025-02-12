@@ -7,18 +7,11 @@ import errno
 import os
 import socket
 import time
-import uuid
 import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
 import config
 import logging
-import threading
 import select
-import queue
-
-listener_thread = None
-listener_running = True
-message_queue = queue.Queue()
 
 
 # +++++++++++++++++++ Functions +++++++++++++++++++ #
@@ -445,7 +438,7 @@ def client_conn_logout(user):
 def client_conn_receive_message(update_inbox_callback):
     """ Listens for new messages and updates the GUI via a callback function. """
     #s.setblocking(True)  # issue: when set to true, we have freezing, and when false, resource issues
-    while listener_running:
+    while True:
         try:
             # Use select to check for socket readiness with a 2-second timeout
             ready, _, _ = select.select([s], [], [], 2)  # 2-second timeout
