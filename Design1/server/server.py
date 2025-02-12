@@ -438,12 +438,11 @@ def process_request(request, connection=None):
         
         elif "deleteAccount" in action:
             user = action["deleteAccount"]["request"]["data"]["username"]
-            pwd_hash = action["deleteAccount"]["request"]["data"]["passwordHash"]
             try:
                 # Remove messages sent to the user, user's drafts, and user's account information
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
-                cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd_hash))
+                cursor.execute("DELETE FROM accounts WHERE user = ?", (user,))
                 response = {
                     "status": "ok",
                     "msg": "Account and all messages have been deleted.",

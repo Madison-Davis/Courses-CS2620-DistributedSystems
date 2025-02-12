@@ -223,9 +223,9 @@ def delete_account():
     db_accounts = []
     db_user_data = [0, [], [], []]
     if config.PROTOCOL == 0:
-        status = client_conn.client_conn_delete_account(login_username.get(), login_pwd.get())
+        status = client_conn.client_conn_delete_account(login_username.get())
     else:
-        status = client_conn_custom.client_conn_delete_account(login_username.get(), login_pwd.get())
+        status = client_conn_custom.client_conn_delete_account(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to delete user.")
     load_main_frame()
@@ -585,7 +585,12 @@ def load_main_frame_user_info(db_user_data):
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
 if __name__ == "__main__":
-    listener_thread = threading.Thread(target=client_conn.client_conn_receive_message, 
+    if config.PROTOCOL == 0:
+        listener_thread = threading.Thread(target=client_conn.client_conn_receive_message, 
+                                       args=(update_inbox_callback,),
+                                       daemon=True)
+    else:
+        listener_thread = threading.Thread(target=client_conn_custom.client_conn_receive_message, 
                                        args=(update_inbox_callback,),
                                        daemon=True)
     listener_thread.start()

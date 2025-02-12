@@ -148,8 +148,8 @@ def client_conn_delete_message(user, msgId):
     print("client_conn_delete_message:", response)
     return True if response == "ok" else False
 
-def client_conn_delete_account(user, pwd):
-    payload = f"{user}:{pwd}"
+def client_conn_delete_account(user):
+    payload = f"{user}"
     send_request(0x000B, payload)
     response = receive_response()
     print("client_conn_delete_account:", response)

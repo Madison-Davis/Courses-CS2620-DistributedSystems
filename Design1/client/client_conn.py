@@ -376,7 +376,7 @@ def client_conn_delete_message(user, msgId):
         logging.error(f"CLIENT: client_conn_delete_message: JSONDecode {e}")
         return False
     
-def client_conn_delete_account(user, pwd_hash):
+def client_conn_delete_account(user):
     """ JSON: deleteAccount
     Return: T for success, F for no success """
     # Set up request
@@ -388,8 +388,7 @@ def client_conn_delete_account(user, pwd_hash):
                 "request": {
                     "action": "deleteAccount",
                     "data": {
-                        "username": user,
-                        "passwordHash": pwd_hash
+                        "username": user
                     }
                 }
             }

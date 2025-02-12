@@ -75,7 +75,7 @@ def process_request(message_type, payload, connection=None):
 
         response_payload = "error"
         if message_type == 0x0003:  # Create Account
-            user, pwd = payload.split(":")
+            user, pwd = payload.split(":", 1)
             cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
             if cursor.fetchone() is not None:
                 response_payload = "error:exists"
@@ -84,7 +84,7 @@ def process_request(message_type, payload, connection=None):
                 response_payload = "ok"
         
         elif message_type == 0x0001:  # Login
-            user, pwd = payload.split(":")
+            user, pwd = payload.split(":", 1)
             cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
             account = cursor.fetchone()
             if account is not None:
@@ -152,7 +152,7 @@ def process_request(message_type, payload, connection=None):
                 response_payload = pwd_hash
         
         elif message_type == 0x0002:  # Send Message
-            draft_id, user, sender, content = payload.split(":")
+            draft_id, user, sender, content = payload.split(":",3)
             cursor.execute("SELECT 1 FROM accounts WHERE user = ?", (user,))
             if cursor.fetchone() is None:
                 response_payload = "error:norecipient"
@@ -185,7 +185,7 @@ def process_request(message_type, payload, connection=None):
                     logging.info("SERVER: message sent to user immediately!")
         
         elif message_type == 0x0006:  # Add Draft
-            user, recipient, content, checked = payload.split(":")
+            user, recipient, content, checked = payload.split(":",3)
             cursor.execute("INSERT INTO drafts (user, recipient, msg, checked) VALUES (?, ?, ?, ?) RETURNING draft_id", (user, recipient, content, checked))
             draft_id = cursor.fetchone()[0]
             response_payload = f"{draft_id}"
@@ -205,28 +205,28 @@ def process_request(message_type, payload, connection=None):
             response_payload = "ok"
         
         elif message_type == 0x0008:  # Check Message
-            user, msg_id = payload.split(":")
+            user, msg_id = payload.split(":",1)
             cursor.execute("UPDATE messages SET checked = 1 WHERE user = ? AND msg_id = ?", (user, msg_id))
             response_payload = "ok"
         
         elif message_type == 0x0009:  # Download Message
-            user, msg_id = payload.split(":")
+            user, msg_id = payload.split(":",1)
             cursor.execute("UPDATE messages SET inbox = 0 WHERE user = ? AND msg_id = ?", (user, msg_id))
             response_payload = "ok"
         
         elif message_type == 0x000A:  # Delete Message
-            user, msg_id = payload.split(":")
+            user, msg_id = payload.split(":",1)
             cursor.execute("DELETE FROM messages WHERE AND msg_id = ?", (msg_id))
             response_payload = "ok"
         
         elif message_type == 0x000B:  # Delete Account
-            user, pwd = payload.split(":")
-            cursor.execute("SELECT uuid FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+            user = payload
+            cursor.execute("SELECT uuid FROM accounts WHERE user = ?", (user))
             account = cursor.fetchone()
             if account is not None:
                 cursor.execute("DELETE FROM messages WHERE user = ?", (user,))
                 cursor.execute("DELETE FROM drafts WHERE user = ?", (user,))
-                cursor.execute("DELETE FROM accounts WHERE user = ? AND pwd = ?", (user, pwd))
+                cursor.execute("DELETE FROM accounts WHERE user = ?", (user))
                 response_payload = "ok"
             else:
                 response_payload = "error:invalid"
@@ -269,7 +269,6 @@ def service_connection(key, mask):
         if recv_data:
             logging.info(f"Raw received data: {recv_data}")
             data.inb += recv_data
-            
             while len(data.inb) >= 2:
                 # Extract and unpack msg_type, payload_length
                 msg_type = struct.unpack("!H", data.inb[:2])[0]         # Unsigned short (2 bytes)
@@ -289,7 +288,6 @@ def service_connection(key, mask):
                         logging.info(f"SERVER: {user} logged in and added to active clients.")
                     except ValueError:
                         logging.error("SERVER: Malformed login payload, expected 'user:pwd'")
-
                 try:
                     response = process_request(msg_type, message)
                     response_bytes = response.encode("utf-8")
