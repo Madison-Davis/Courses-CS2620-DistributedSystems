@@ -241,6 +241,7 @@ def clicked_send():
     global db_user_data, drafts_rows, drafts_msgs, drafts_checkmarks, drafts_recipients, drafts_all_checkmarked
     
     # Send one-by-one user drafts that have checkmarks
+    print("DRAFTS", drafts_checkmarks, db_user_data[3])
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
 
     for draft in drafts_with_checkmarks:
@@ -321,6 +322,7 @@ def clicked_saved(row, msg, recipient, checked):
     """ When we click 'Saved' button, draft is not editable. 
     Update server DB with new information."""
     global db_user_data
+    
     drafts_msgs[row].config(state=tk.DISABLED)
     if row >= len(db_user_data[3]):
         messagebox.showerror("Error", "Unable to save.")
@@ -328,6 +330,7 @@ def clicked_saved(row, msg, recipient, checked):
     db_user_data[3][row]["recipient"] = recipient
     db_user_data[3][row]["msg"] = msg
     db_user_data[3][row]["checked"] = checked
+    print("ROW", row, db_user_data)
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -522,8 +525,8 @@ def load_main_frame(db_user_data=[0,[],[],[]]):
     # Part 2.5: Open Inbox
     inbox_control_frame = tk.Frame(main_frame)
     inbox_control_frame.grid(row=3, column=col_incoming_message, sticky="ew")
-    view_options = [5, 10, 15, 20, 25, 50]
-    selected_val = tk.IntVar(value=5)
+    view_options = [1, 2, 5, 10]
+    selected_val = tk.IntVar(value=1)
     tk.OptionMenu(inbox_control_frame, selected_val, *view_options, command=lambda value: selected_val.set(value)).pack(side="right")
     tk.Button(inbox_control_frame, text="Open Inbox Items", command=lambda:clicked_open_inbox(selected_val.get())).pack(side="right")
     # Part 3: Column and Sub-Column Titles for Sending Messages
@@ -576,8 +579,7 @@ def load_main_frame_user_info(db_user_data):
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     i = 0
     for draft in db_user_data[3]: 
-        if draft["msg"]:
-            create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
+        create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
         i += 1
 
 
