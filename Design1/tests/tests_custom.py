@@ -1,11 +1,19 @@
+# tests_custom.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
+
 import unittest
 from unittest.mock import patch, MagicMock
-import json
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import server_custom
 
+
+
+# +++++++++++++++++ Main Tests +++++++++++++++++ #
 
 class TestChatApplication(unittest.TestCase):
     
@@ -73,7 +81,7 @@ class TestChatApplication(unittest.TestCase):
         request = "1:testuser:senderuser:Hello!"
         
         response = server_custom.process_request(0x0002, request, mock_conn)
-        self.assertEqual(response, 1)
+        self.assertEqual(response, "1")
     
     @patch('server.sqlite3.connect')
     def test_server_delete_message(self, mock_sqlite):

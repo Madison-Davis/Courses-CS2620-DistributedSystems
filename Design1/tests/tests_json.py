@@ -1,3 +1,9 @@
+# tests_json.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
+
 import unittest
 from unittest.mock import patch, MagicMock
 import json
@@ -6,6 +12,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 import server
 
+
+
+# +++++++++++++++++ Main Tests +++++++++++++++++ #
 
 class TestChatApplication(unittest.TestCase):
     
