@@ -56,6 +56,10 @@ We wrote a couple tests for each functionality, each accomplishing the following
 - Decode the response that is received from the server
 - Assert that the received response is the same as what is expected
 
+To execute the unit tests, run:
+- JSON: `py .\tests\tests_json.py`
+- Custom: `py .\tests\tests_custom.py`
+
 
 -------------------------------------------
 ## Code Structure
