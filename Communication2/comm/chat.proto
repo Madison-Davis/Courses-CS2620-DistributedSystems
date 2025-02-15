@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package chat;
+
+service ChatService {
+    rpc CreateAccount(CreateAccountRequest) returns (GenericResponse);
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc GetPassword(GetPasswordRequest) returns (GetPasswordResponse);
+    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+    rpc AddDraft(AddDraftRequest) returns (AddDraftResponse);
+    rpc SaveDrafts(SaveDraftsRequest) returns (GenericResponse);
+    rpc CheckMessage(CheckMessageRequest) returns (GenericResponse);
+    rpc DownloadMessage(DownloadMessageRequest) returns (GenericResponse);
+    rpc DeleteMessage(DeleteMessageRequest) returns (GenericResponse);
+    rpc DeleteAccount(DeleteAccountRequest) returns (GenericResponse);
+    rpc Logout(LogoutRequest) returns (GenericResponse);
+    rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
+}
+
+message CreateAccountRequest {
+    string username = 1;
+    string password_hash = 2;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password_hash = 2;
+}
+
+message LoginResponse {
+    bool success = 1;
+    string message = 2;
+    int32 inbox_count = 3;
+    repeated Message old_messages = 4;
+    repeated Message inbox_messages = 5;
+    repeated Draft drafts = 6;
+}
+
+message GetPasswordRequest {
+    string username = 1;
+}
+
+message GetPasswordResponse {
+    string password_hash = 1;
+}
+
+message ListAccountsRequest {}
+
+message ListAccountsResponse {
+    repeated string usernames = 1;
+}
+
+message SendMessageRequest {
+    int32 draft_id = 1;
+    string recipient = 2;
+    string sender = 3;
+    string content = 4;
+}
+
+message SendMessageResponse {
+    int32 msg_id = 1;
+}
+
+message AddDraftRequest {
+    string user = 1;
+    string recipient = 2;
+    string content = 3;
+    bool checked = 4;
+}
+
+message AddDraftResponse {
+    int32 draft_id = 1;
+}
+
+message SaveDraftsRequest {
+    string user = 1;
+    repeated Draft drafts = 2;
+}
+
+message CheckMessageRequest {
+    string username = 1;
+    int32 msg_id = 2;
+}
+
+message DownloadMessageRequest {
+    string username = 1;
+    int32 msg_id = 2;
+}
+
+message DeleteMessageRequest {
+    string username = 1;
+    int32 msg_id = 2;
+}
+
+message DeleteAccountRequest {
+    string username = 1;
+}
+
+message LogoutRequest {
+    string username = 1;
+}
+
+message ReceiveMessageRequest {
+    string username = 1;
+}
+
+message ReceiveMessageResponse {
+    int32 msg_id = 1;
+    string user = 2;
+    string sender = 3;
+    string msg = 4;
+}
+
+message Message {
+    int32 msg_id = 1;
+    string user = 2;
+    string sender = 3;
+    string msg = 4;
+    bool checked = 5;
+    bool inbox = 6;
+}
+
+message Draft {
+    int32 draft_id = 1;
+    string user = 2;
+    string recipient = 3;
+    string msg = 4;
+    bool checked = 5;
+}
+
+message GenericResponse {
+    bool success = 1;
+    string message = 2;
+}
