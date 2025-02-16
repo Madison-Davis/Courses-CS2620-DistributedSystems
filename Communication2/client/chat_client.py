@@ -67,7 +67,7 @@ class ChatClient:
         response = self.stub.GetPassword(request)
         return response.password_hash
     
-    def receive_messages(self, username, callback):
-        request = chat_pb2.ReceiveMessageRequest(username=username)
+    def receive_messages(self, callback):
+        request = chat_pb2.ReceiveMessageRequest()
         for message in self.stub.ReceiveMessageStream(request):
             callback(message)
