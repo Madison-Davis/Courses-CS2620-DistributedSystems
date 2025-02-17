@@ -525,12 +525,7 @@ def load_main_frame_user_info(db_user_data):
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
 if __name__ == "__main__":
-    if config.PROTOCOL == 0:
-        listener_thread = threading.Thread(target=client.receive_messages, 
-                                       args=(update_inbox_callback,),
-                                       daemon=True)
-    else:
-        listener_thread = threading.Thread(target=client.receive_messages, 
+    listener_thread = threading.Thread(target=client.receive_messages, 
                                        args=(update_inbox_callback,),
                                        daemon=True)
     listener_thread.start()

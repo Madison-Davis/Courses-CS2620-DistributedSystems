@@ -4,8 +4,7 @@
 -------------------------------------------
 ## Setup
 
-Generate Python gRPC files from .proto definition:
-`py -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto`
+Generate Python gRPC files from .proto definition: Navigate to comm/ and run `py -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto`
 
 Run server:
 `py -m server.server`

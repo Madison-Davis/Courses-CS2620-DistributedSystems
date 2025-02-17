@@ -42,13 +42,17 @@ message GetPasswordRequest {
 }
 
 message GetPasswordResponse {
-    string password_hash = 1;
+    bool success = 1;
+    string message = 2;
+    string password_hash = 3;
 }
 
 message ListAccountsRequest {}
 
 message ListAccountsResponse {
-    repeated string usernames = 1;
+    bool success = 1;
+    string message = 2;
+    repeated string usernames = 3;
 }
 
 message SendMessageRequest {
@@ -59,18 +63,22 @@ message SendMessageRequest {
 }
 
 message SendMessageResponse {
-    int32 msg_id = 1;
+    bool success = 1;
+    string message = 2;
+    int32 msg_id = 3;
 }
 
 message AddDraftRequest {
     string user = 1;
     string recipient = 2;
-    string content = 3;
+    string message = 3;
     bool checked = 4;
 }
 
 message AddDraftResponse {
-    int32 draft_id = 1;
+    bool success = 1;
+    string message = 2;
+    int32 draft_id = 3;
 }
 
 message SaveDraftsRequest {
