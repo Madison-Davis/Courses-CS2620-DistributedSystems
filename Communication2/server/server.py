@@ -242,8 +242,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         recipient = request.recipient
         msg = request.message
         checked = request.checked
-
-        print(username, recipient, msg, checked)
         
         try:
             # Add draft to drafts table

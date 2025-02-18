@@ -20,7 +20,6 @@ class ChatClient:
     def login(self, username, password_hash):
         request = chat_pb2.LoginRequest(username=username, password_hash=password_hash)
         response = self.stub.Login(request)
-        print("CLIENT RESPONSE", response.success, response.message)
         return response.inbox_count, response.old_messages, response.inbox_messages, response.drafts
     
     def send_message(self, draft_id, recipient, sender, content):
@@ -44,14 +43,11 @@ class ChatClient:
         return response.success
     
     def add_draft(self, username, recipient, message, checked):
-        print("ADD DRAFT", username, recipient, message, checked)
         request = chat_pb2.AddDraftRequest(username=username, recipient=recipient, message=message, checked=checked)
         response = self.stub.AddDraft(request)
-        print("ADD RESPONSE", response)
         return response.draft_id
     
     def save_drafts(self, username, drafts):
-        print("SAVING DRAFTS", drafts)
         request = chat_pb2.SaveDraftsRequest(username=username, drafts=drafts)
         response = self.stub.SaveDrafts(request)
         return response.success

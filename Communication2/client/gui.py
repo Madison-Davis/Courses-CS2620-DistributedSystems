@@ -175,7 +175,6 @@ def logout():
        messagebox.showerror("Error", "Unable to log out.")
        return
     # Save all drafts to db
-    print("LOGGING OUT...", db_user_data[3])
     client.save_drafts(login_username.get(), db_user_data[3])
     load_main_frame()
     main_frame.pack_forget()
@@ -369,7 +368,6 @@ def create_new_draft(row_idx):
         msg = "_",
         checked = 0,
     )
-    print("CREATING NEW DRAFT", add_draft)
     db_user_data[3].append(add_draft)
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
