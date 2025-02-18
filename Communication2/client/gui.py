@@ -206,9 +206,9 @@ def clicked_send():
     drafts_with_checkmarks = [draft for i, draft in enumerate(db_user_data[3]) if drafts_checkmarks[i].get()]
 
     for draft in drafts_with_checkmarks:
-        draft_id = draft["draft_id"]
-        recipient = draft["recipient"]
-        content = draft["msg"]
+        draft_id = draft.draft_id
+        recipient = draft.recipient
+        content = draft.msg
         msgId = client.send_message(draft_id, recipient, login_username.get(), content)
         if not msgId:
            messagebox.showerror("Error", "Delivery of some messages unsuccessful")
@@ -230,9 +230,9 @@ def clicked_send():
 
     # Re-load these drafts
     for row_idx in range(len(db_user_data[3])):
-        recipient = db_user_data[3][row_idx]["recipient"]
-        msg = db_user_data[3][row_idx]["msg"]
-        checked = db_user_data[3][row_idx]["checked"]
+        recipient = db_user_data[3][row_idx].recipient
+        msg = db_user_data[3][row_idx].msg
+        checked = db_user_data[3][row_idx].checked
         create_existing_draft(row_idx, recipient, msg, checked)
 
 def clicked_open_inbox(num):
@@ -247,7 +247,10 @@ def clicked_open_inbox(num):
         if i >= inboxCount:
             break
         create_new_unread_msg(db_user_data[2][0])
-        client.download_message(login_username.get(), inbox_msgs[i]["msg_id"])
+        status = client.download_message(login_username.get(), inbox_msgs[i].msg_id)
+        if not status:
+            messagebox.showerror("Error", "Unable to download some messages.")
+            return
         db_user_data[0] -= 1
         opened_msg = db_user_data[2][0]
         db_user_data[2] = db_user_data[2][1:]
@@ -280,9 +283,9 @@ def clicked_saved(row, msg, recipient, checked):
         messagebox.showerror("Error", "Unable to save.")
         return
     # Once we have entry, update its values
-    db_user_data[3][row]["recipient"] = recipient
-    db_user_data[3][row]["msg"] = msg
-    db_user_data[3][row]["checked"] = checked
+    db_user_data[3][row].recipient = recipient
+    db_user_data[3][row].msg = msg
+    db_user_data[3][row].checked = checked
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -307,8 +310,8 @@ def filter_recipients(event, row):
 
 def clicked_delete_msg(widget, msg):
     """ When we click 'Delete' button, removes row and moves other rows up. """
-    user = msg["username"]
-    msgId = msg["msg_id"]
+    user = msg.username
+    msgId = msg.msg_id
     status = client.delete_message(user, msgId)
     if not status:
        messagebox.showerror("Error", "Deletion unsuccessful")
@@ -401,11 +404,11 @@ def create_existing_draft(row_idx, recipient="", msg="", checked=0):
 def create_new_unread_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""
     # Set up variables
-    sender = inbox_msg["sender"]
+    sender = inbox_msg.sender
     checkbox = 0 # default
-    content = inbox_msg["msg"]
-    user = inbox_msg["username"]
-    msgId = inbox_msg["msg_id"]
+    content = inbox_msg.msg
+    user = inbox_msg.username
+    msgId = inbox_msg.msg_id
     i = start_row_messages
     last_row = max([int(widget.grid_info()["row"]) for widget in main_frame.grid_slaves()], default=i)
     # Move all widgets **bottom to top** to avoid overwriting
@@ -506,11 +509,11 @@ def load_main_frame_user_info(db_user_data):
     for i, msg in enumerate(db_user_data[1]): 
         # user, msgId, sender user, msg, checked, inbox
         # db_user_data[1] are non-inbox messages
-        sender = msg["sender"]
-        checkbox = msg["checked"]
-        content = msg["msg"]
-        user = msg["username"]
-        msgId = msg["msg_id"]
+        sender = msg.sender
+        checkbox = msg.checked
+        content = msg.msg
+        user = msg.username
+        msgId = msg.msg_id
         checkbox_text = "Read" if checkbox else "Unread"
         i = i + start_row_messages
         msg_formatted = sender + ": " + content

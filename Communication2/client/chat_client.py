@@ -30,7 +30,7 @@ class ChatClient:
     def download_message(self, username, msg_id):
         request = chat_pb2.DownloadMessageRequest(username=username, msg_id=msg_id)
         response = self.stub.DownloadMessage(request)
-        return response.msg_id
+        return response.success
     
     def check_message(self, username, msg_id):
         request = chat_pb2.CheckMessageRequest(username=username, msg_id=msg_id)
