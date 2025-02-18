@@ -118,6 +118,7 @@ message ReceiveMessageResponse {
     string username = 2;
     string sender = 3;
     string msg = 4;
+    int32 inbox_count = 5;
 }
 
 message Message {

@@ -3,6 +3,7 @@
 import sys
 import os
 import threading
+import asyncio
 import tkinter as tk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tkinter import messagebox, ttk
@@ -91,6 +92,15 @@ sending_cols = [col_sending_checkbox, col_sending_message,
                  col_sending_recipient]
 
 
+asyncio_loop = asyncio.new_event_loop()
+
+def start_asyncio_loop():
+    """Start an asyncio event loop in a separate thread."""
+    asyncio.set_event_loop(asyncio_loop)
+    asyncio_loop.run_forever()
+
+# Start the asyncio loop in a separate thread
+threading.Thread(target=start_asyncio_loop, daemon=True).start()
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
@@ -138,6 +148,9 @@ def login(new_user, pwd_hash):
         db_user_data[1] = result[1] 
         db_user_data[2] = result[2] 
         db_user_data[3] = result[3] 
+    # Start listening for messages asynchronously
+    asyncio.run_coroutine_threadsafe(client.receive_messages(update_inbox_callback, user), asyncio_loop)
+    # Load main GUI frame
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
@@ -150,9 +163,10 @@ def update_inbox_callback(incoming_msg):
     """ Updates the GUI inbox dynamically when a new message arrives. """
     global db_user_data
     db_user_data[2].insert(0, incoming_msg)  # Insert into inbox
-    db_user_data[0] += 1
+    db_user_data[0] = incoming_msg.inbox_count  # Update inbox count
+    print(f"[GUI] New message from {incoming_msg.sender}: {incoming_msg.msg} (Inbox: {incoming_msg.inbox_count})")
     # Update inbox count
-    update_inbox_count(len(db_user_data[2]))
+    update_inbox_count(db_user_data[0])
     gui.after(100, load_main_frame, db_user_data)
 
 def update_inbox_count(count):
@@ -537,9 +551,11 @@ def load_main_frame_user_info(db_user_data):
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
 if __name__ == "__main__":
-    listener_thread = threading.Thread(target=client.receive_messages, 
-                                       args=(update_inbox_callback,),
-                                       daemon=True)
-    listener_thread.start()
+    # listener_thread = threading.Thread(
+    #     target=client.receive_messages, 
+    #     args=(update_inbox_callback, login_username.get()), 
+    #     daemon=True
+    # )
+    # listener_thread.start()
     load_login_frame()
     gui.mainloop()

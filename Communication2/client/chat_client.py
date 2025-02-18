@@ -1,6 +1,7 @@
 import grpc
 import os
 import sys
+import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
@@ -72,8 +73,17 @@ class ChatClient:
         response = self.stub.GetPassword(request)
         return response.password_hash
     
-    def receive_messages(self, callback):
-        request = chat_pb2.ReceiveMessageRequest()
-        for message in self.stub.ReceiveMessageStream(request):
-            # might need to format message into incoming_msg (msg_id, user, sender, msg, checked, inbox) depending on what format it's received
-            callback(message)
+    async def receive_messages(self, callback, username):
+        """Listens for incoming messages from the server and updates GUI."""
+        request = chat_pb2.ReceiveMessageRequest(username=username)
+
+        print(f"[CLIENT] Listening for incoming messages for {username}...")
+        
+        while True:  # Keep the stream open indefinitely
+            try:
+                async for message in self.stub.ReceiveMessageStream(request):
+                    print(f"[CLIENT] Received live message from {message.sender}: {message.msg} (Inbox: {message.inbox_count})")
+                    callback(message)  # Call GUI update function
+            except grpc.RpcError as e:
+                print(f"[CLIENT] ERROR: Stream closed unexpectedly. Reconnecting in 3 seconds... ({e})")
+                await asyncio.sleep(3)  # Wait before retrying
