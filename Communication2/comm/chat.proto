@@ -69,7 +69,7 @@ message SendMessageResponse {
 }
 
 message AddDraftRequest {
-    string user = 1;
+    string username = 1;
     string recipient = 2;
     string message = 3;
     bool checked = 4;
@@ -115,14 +115,14 @@ message ReceiveMessageRequest {
 
 message ReceiveMessageResponse {
     int32 msg_id = 1;
-    string user = 2;
+    string username = 2;
     string sender = 3;
     string msg = 4;
 }
 
 message Message {
     int32 msg_id = 1;
-    string user = 2;
+    string username = 2;
     string sender = 3;
     string msg = 4;
     bool checked = 5;
@@ -131,7 +131,7 @@ message Message {
 
 message Draft {
     int32 draft_id = 1;
-    string user = 2;
+    string username = 2;
     string recipient = 3;
     string msg = 4;
     bool checked = 5;

@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tkinter import messagebox, ttk
 from server import server_security
 from client import chat_client
+from comm import chat_pb2
 
 
 
@@ -18,9 +19,9 @@ client = chat_client.ChatClient()
 
 """
 SQL DB Setup: 3 databases
-Accounts database: uuid, user, pwd, logged_in
-Msgs     database: msg_id, user, sender, msg, checked, inbox
-Drafts   database: draft_id, user, recipient, msg, checked
+Accounts database: uuid, username, pwd, logged_in
+Msgs     database: msg_id, username, sender, msg, checked, inbox
+Drafts   database: draft_id, username, recipient, msg, checked
 """
 # These are for retrieving information from DB, as well as 
 # creating edits/changes that we'll send to the DB.
@@ -30,9 +31,9 @@ db_accounts             = []
 
 # list of all (un)downloaded and drafted msgs, updated to/from DB
 # # inboxCount
-# # old_msgs: msg_id, user, sender, msg, checked, inbox
-# # inbox_msgs: msg_id, user, sender, msg, checked, inbox
-# # drafts: draft_id, user, recipient, msg, checked
+# # old_msgs: msg_id, username, sender, msg, checked, inbox
+# # inbox_msgs: msg_id, username, sender, msg, checked, inbox
+# # drafts: draft_id, username, recipient, msg, checked
 db_user_data            = [0, 
                            [],
                            [],
@@ -132,7 +133,11 @@ def login(new_user, pwd_hash):
         return
     # If existing user and password lines up, login/load information
     else:
-        db_user_data = client.login(user, pwd_hash)
+        result = client.login(user, pwd_hash)
+        db_user_data[0] = result[0] 
+        db_user_data[1] = result[1] 
+        db_user_data[2] = result[2] 
+        db_user_data[3] = result[3] 
     login_frame.pack_forget()
     load_main_frame(db_user_data)
     main_frame.pack(fill='both', expand=True)
@@ -170,6 +175,7 @@ def logout():
        messagebox.showerror("Error", "Unable to log out.")
        return
     # Save all drafts to db
+    print("LOGGING OUT...", db_user_data[3])
     client.save_drafts(login_username.get(), db_user_data[3])
     load_main_frame()
     main_frame.pack_forget()
@@ -278,7 +284,6 @@ def clicked_saved(row, msg, recipient, checked):
     db_user_data[3][row]["recipient"] = recipient
     db_user_data[3][row]["msg"] = msg
     db_user_data[3][row]["checked"] = checked
-    print("ROW", row, db_user_data)
     # When we're ready to send, we'll use this data to format our JSON!
 
 def clicked_select_all():
@@ -303,7 +308,7 @@ def filter_recipients(event, row):
 
 def clicked_delete_msg(widget, msg):
     """ When we click 'Delete' button, removes row and moves other rows up. """
-    user = msg["user"]
+    user = msg["username"]
     msgId = msg["msg_id"]
     status = client.delete_message(user, msgId)
     if not status:
@@ -355,9 +360,17 @@ def create_new_draft(row_idx):
     save_btn = tk.Button(main_frame, text="Save")
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+start_row_messages+1, column=col_sending_save, padx=5)
-    # return num of drafts
-    draft_id = client.add_draft(login_username.get(), "", "", 0)
-    db_user_data[3].append({"draft_id": draft_id, "user": login_username.get(), "recipient": "", "msg": "", "checked": 0})
+    # add the draft to SQL and db_user_data
+    draft_id = client.add_draft(login_username.get(), "_", "_", 0)
+    add_draft = chat_pb2.Draft(
+        draft_id = draft_id,
+        username = login_username.get(),
+        recipient = "_",
+        msg = "_",
+        checked = 0,
+    )
+    print("CREATING NEW DRAFT", add_draft)
+    db_user_data[3].append(add_draft)
 
 def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     """ Creates a pre-existing draft
@@ -393,7 +406,7 @@ def create_new_unread_msg(inbox_msg):
     sender = inbox_msg["sender"]
     checkbox = 0 # default
     content = inbox_msg["msg"]
-    user = inbox_msg["user"]
+    user = inbox_msg["username"]
     msgId = inbox_msg["msg_id"]
     i = start_row_messages
     last_row = max([int(widget.grid_info()["row"]) for widget in main_frame.grid_slaves()], default=i)
@@ -498,7 +511,7 @@ def load_main_frame_user_info(db_user_data):
         sender = msg["sender"]
         checkbox = msg["checked"]
         content = msg["msg"]
-        user = msg["user"]
+        user = msg["username"]
         msgId = msg["msg_id"]
         checkbox_text = "Read" if checkbox else "Unread"
         i = i + start_row_messages
@@ -515,7 +528,7 @@ def load_main_frame_user_info(db_user_data):
         tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
     i = 0
     for draft in db_user_data[3]: 
-        create_existing_draft(i, draft["recipient"], draft["msg"], draft["checked"])
+        create_existing_draft(i, draft.recipient, draft.msg, draft.checked)
         i += 1
 
 
