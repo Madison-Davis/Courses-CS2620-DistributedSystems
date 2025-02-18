@@ -1,9 +1,12 @@
 import grpc
+import os
+import sys
+import sqlite3
+import logging
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from concurrent import futures
 from comm import chat_pb2
 from comm import chat_pb2_grpc
-import sqlite3
-import logging
 from config import config
 
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
@@ -119,10 +122,11 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     {"draft_id": row[0], "user": row[1], "recipient": row[2], "msg": row[3], "checked": row[4]}
                     for row in drafts
                 ]
-                chat_pb2.LoginResponse(success=True, message="Login successful", inbox_count=len(new_message_list), old_messages=old_message_list, inbox_messages=new_message_list, drafts=draft_list)
+                
                 
                 self.cursor.execute("UPDATE accounts SET logged_in = 1 WHERE user = ?", (username,))
                 self.db_connection.commit()
+                return chat_pb2.LoginResponse(success=True, message="Login successful", inbox_count=len(new_message_list), old_messages=old_message_list, inbox_messages=new_message_list, drafts=draft_list)
             
             else:
                 return chat_pb2.LoginResponse(success=False, message="Invalid credentials")

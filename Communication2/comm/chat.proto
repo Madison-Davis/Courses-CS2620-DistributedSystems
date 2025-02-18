@@ -82,7 +82,7 @@ message AddDraftResponse {
 }
 
 message SaveDraftsRequest {
-    string user = 1;
+    string username = 1;
     repeated Draft drafts = 2;
 }
 

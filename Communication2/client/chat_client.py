@@ -1,7 +1,11 @@
 import grpc
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
 from config import config
+
 
 class ChatClient:
     def __init__(self, server_address=f'localhost:{config.PORT}'):

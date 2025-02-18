@@ -2,14 +2,12 @@
 
 import sys
 import os
-import tkinter as tk
-from tkinter import messagebox, ttk
 import threading
+import tkinter as tk
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from tkinter import messagebox, ttk
+from server import server_security
 from client import chat_client
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
-import server_security
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config")))
-import config
 
 
 
