@@ -409,7 +409,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(ChatService(), server)
-    server.add_insecure_port(f'[::]:{config.PORT}')
+    server.add_insecure_port(f'{config.HOST}:{config.PORT}')
     server.start()
     logging.info(f"Server started on port {config.PORT}")
     server.wait_for_termination()
