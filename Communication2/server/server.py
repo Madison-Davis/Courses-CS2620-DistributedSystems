@@ -3,7 +3,8 @@ import os
 import sys
 import sqlite3
 import logging
-import asyncio
+import queue
+import threading
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from concurrent import futures
 from comm import chat_pb2
@@ -16,6 +17,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.initialize_database()
         self.active_users = {}  # Dictionary to store active user streams
         self.message_queues = {}  # Store queues for active users
+        self.lock = threading.Lock()
 
     def initialize_database(self):
         """Creates necessary tables if they do not exist."""
@@ -51,32 +53,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             )
             ''')
 
-    async def ReceiveMessageStream(self, request, context):
-        """ Async stream: Send real-time messages to online users. """
-        username = request.username
-        print(f"[SERVER] {username} connected to message stream.")
-
-        queue = self.message_queues.get(username, asyncio.Queue())  # Get existing queue or create one
-        self.message_queues[username] = queue  # Store queue
-        self.active_users[username] = context  # Store active connection
-
-        try:
-            while not context.done():
-                print(f"[SERVER] Waiting for messages for {username}...")
-                try:
-                    message = await asyncio.wait_for(queue.get(), timeout=60)  # Wait up to 60s for messages
-                    print(f"[SERVER] Delivering message to {username}: {message.msg} (Inbox count: {message.inbox_count})")
-                    await context.write(message)  # Send message to client
-                except asyncio.TimeoutError:
-                    print(f"[SERVER] No new messages for {username}, keeping stream alive.")
-                    continue  # Prevents the function from exiting
-        except asyncio.CancelledError:
-            print(f"[SERVER] {username} stream cancelled.")
-        finally:
-            print(f"[SERVER] {username} disconnected from message stream.")
-            self.active_users.pop(username, None)  # Remove user
-            self.message_queues.pop(username, None)  # Remove queue
-
     def CreateAccount(self, request, context):
         """
         Creates account for new username.
@@ -104,6 +80,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         username = request.username
         password_hash = request.password_hash
+
+        self.active_users[username] = context
+        if username not in self.message_queues:
+            self.message_queues[username] = queue.Queue()
         
         try:
             with self.db_connection: # ensures commit or rollback
@@ -185,65 +165,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         except Exception as e:
             print(f"GetPassword Exception:, {e}")
             return chat_pb2.GetPasswordResponse(success=False, message="Get password error")
-    
-    async def SendMessage(self, request, context):
-        """
-        Check if recipient exists, delete draft, add message
-        Return: message ID of newly sent message
-        """
-        draft_id = request.draft_id
-        recipient = request.recipient
-        sender = request.sender
-        content = request.content
-
-        print(f"[SERVER] Received SendMessage request: {sender} -> {recipient} : {content}")
-
-        try:
-            with self.db_connection: # ensures commit or rollback
-                cursor = self.db_connection.cursor()
-                # Check if recipient exists
-                cursor.execute("SELECT 1 FROM accounts WHERE username = ?", (recipient,))
-                if cursor.fetchone() is None:
-                    return chat_pb2.SendMessageResponse(success=False, message="Recipient does not exist")
-                
-                # Delete draft from sender
-                cursor.execute("DELETE FROM drafts WHERE draft_id = ?", (draft_id,))
-
-                # Add message to messages table
-                cursor.execute("""
-                    INSERT INTO messages (username, sender, msg, checked, inbox)
-                    VALUES (?, ?, ?, ?, ?) RETURNING msg_id
-                """, (recipient, sender, content, 0, 1))
-                msg_id = cursor.fetchone()
-
-                # Get the recipient's new inbox count
-                cursor.execute("SELECT COUNT(*) FROM messages WHERE username = ? AND inbox = 1", (recipient,))
-                new_inbox_count = cursor.fetchone()
-
-                print(f"[SERVER] Message stored for {recipient}. New inbox count: {new_inbox_count[0]}")
-
-                # If recipient is online, send message immediately
-                if recipient in self.active_users:
-                    print(f"[SERVER] Sending live message to {recipient}")
-
-                    live_message = chat_pb2.ReceiveMessageResponse(
-                        msg_id=msg_id,
-                        username=recipient,
-                        sender=sender,
-                        msg=content,
-                        inbox_count=new_inbox_count[0]
-                    )
-
-                    # If recipient is online, send message via their queue
-                    if recipient in self.message_queues:
-                        print(f"[SERVER] Sending live message to {recipient} (Inbox: {new_inbox_count})")
-                        await self.message_queues[recipient].put(live_message)  # Add to recipient queue
-                    else:
-                        print(f"[SERVER] {recipient} is offline. Message will be retrieved on next login.")
-                
-                return chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id[0])
-        except Exception as e:
-            return chat_pb2.SendMessageResponse(success=False, message="Send message error")
 
     def ListAccounts(self, request, context):
         """
@@ -395,15 +316,95 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         except Exception as e:
             print(f"Logout Exception:, {e}")
             return chat_pb2.GenericResponse(success=False, message="Unable to log out")
+        
+    def SendMessage(self, request, context):
+        """
+        Check if recipient exists, delete draft, add message, and notify if online.
+        """
+        draft_id = request.draft_id
+        recipient = request.recipient
+        sender = request.sender
+        content = request.content
 
-async def serve():
-    server = grpc.aio.server()
+        print(f"[SERVER] Received SendMessage request: {sender} -> {recipient} : {content}")
+
+        try:
+            with self.db_connection:
+                cursor = self.db_connection.cursor()
+
+                # Check if recipient exists
+                cursor.execute("SELECT 1 FROM accounts WHERE username = ?", (recipient,))
+                if cursor.fetchone() is None:
+                    return chat_pb2.SendMessageResponse(success=False, message="Recipient does not exist")
+                
+                # Delete draft
+                cursor.execute("DELETE FROM drafts WHERE draft_id = ?", (draft_id,))
+
+                # Store the message
+                cursor.execute("""
+                    INSERT INTO messages (username, sender, msg, checked, inbox)
+                    VALUES (?, ?, ?, ?, ?) RETURNING msg_id
+                """, (recipient, sender, content, 0, 1))
+                msg_id = cursor.fetchone()[0]
+
+                # Get the recipient's new inbox count
+                cursor.execute("SELECT COUNT(*) FROM messages WHERE username = ? AND inbox = 1", (recipient,))
+                new_inbox_count = cursor.fetchone()[0]
+
+                print(f"[SERVER] Message stored for {recipient}. New inbox count: {new_inbox_count}")
+
+                # If recipient is online, push message to their queue
+                with self.lock:
+                    print(recipient, self.active_users)
+                    if recipient in self.active_users:
+                        self.message_queues[recipient].put(chat_pb2.ReceiveMessageResponse(
+                            msg_id=msg_id,
+                            username=recipient,
+                            sender=sender,
+                            msg=content,
+                            inbox_count=new_inbox_count
+                        ))
+
+                return chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id)
+        except Exception as e:
+            print(f"[SERVER] Error sending message: {e}")
+            return chat_pb2.SendMessageResponse(success=False, message="Send message error")
+
+    def ReceiveMessageStream(self, request, context):
+        username = request.username
+        print(f"[SERVER] {username} connected to message stream.")
+
+        # Ensure the user has a queue
+        with self.lock:
+            if username not in self.message_queues:
+                self.message_queues[username] = queue.Queue()
+            self.active_users[username] = True
+
+        try:
+            while context.is_active():
+                try:
+                    # Block until a message is available, then send it
+                    message = self.message_queues[username].get(timeout=5)  # 5s timeout to check if still active
+                    yield message
+                except queue.Empty:
+                    continue  # No message yet, keep waiting
+        except Exception as e:
+            print(f"[SERVER] Error in message stream for {username}: {e}")
+        finally:
+            with self.lock:
+                del self.active_users[username]  # Mark user as offline when they disconnect
+                del self.message_queues[username]  # Clean up queue
+            print(f"[SERVER] {username} disconnected from message stream.")
+        
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(ChatService(), server)
     server.add_insecure_port(f'[::]:{config.PORT}')
-    await server.start()
+    server.start()
     logging.info(f"Server started on port {config.PORT}")
-    await server.wait_for_termination()
+    server.wait_for_termination()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(serve())  # Run the server asynchronously
+    serve()
+    

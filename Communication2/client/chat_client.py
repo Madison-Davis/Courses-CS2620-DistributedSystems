@@ -72,18 +72,25 @@ class ChatClient:
         request = chat_pb2.GetPasswordRequest(username=username)
         response = self.stub.GetPassword(request)
         return response.password_hash
-    
-    async def receive_messages(self, callback, username):
-        """Listens for incoming messages from the server and updates GUI."""
-        request = chat_pb2.ReceiveMessageRequest(username=username)
 
-        print(f"[CLIENT] Listening for incoming messages for {username}...")
-        
-        while True:  # Keep the stream open indefinitely
-            try:
-                async for message in self.stub.ReceiveMessageStream(request):
-                    print(f"[CLIENT] Received live message from {message.sender}: {message.msg} (Inbox: {message.inbox_count})")
-                    callback(message)  # Call GUI update function
-            except grpc.RpcError as e:
-                print(f"[CLIENT] ERROR: Stream closed unexpectedly. Reconnecting in 3 seconds... ({e})")
-                await asyncio.sleep(3)  # Wait before retrying
+    def receive_messages(self, user, callback):
+        print("Listening for messages...")
+        try:
+            for response in self.stub.ReceiveMessageStream(chat_pb2.ReceiveMessageRequest(username=user)):
+                print(f"[{response.msg_id}] {response.sender} → {response.username}: {response.msg}")
+                print(f"Inbox Count: {response.inbox_count}\n")
+                
+                message = chat_pb2.Message(
+                    msg_id = response.msg_id,
+                    username = response.username,
+                    sender = response.sender,
+                    msg = response.msg,
+                    checked = 0,
+                    inbox = 1
+                )
+
+                callback(message)
+        except grpc.RpcError as e:
+            print(f"[CLIENT] ERROR: Stream closed unexpectedly")
+
+    
