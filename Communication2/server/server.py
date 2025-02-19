@@ -60,6 +60,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         username = request.username
         password_hash = request.password_hash
+
+        self.active_users[username] = context
+        if username not in self.message_queues:
+            self.message_queues[username] = queue.Queue()
         
         try:
             with self.db_connection: # ensures commit or rollback
@@ -290,6 +294,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         username = request.username
 
+        self.active_users.pop(username)
+        self.message_queues.pop(username)
+
         try:
             # Remove messages sent to the username, username's drafts, and user's account information
             with self.db_connection: # ensures commit or rollback
@@ -307,6 +314,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Return: GenericResponse (success, message)
         """
         username = request.username
+
+        self.active_users.pop(username)
+        self.message_queues.pop(username)
 
         try:
             with self.db_connection: # ensures commit or rollback
