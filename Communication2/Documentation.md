@@ -168,7 +168,14 @@ The server works with a SQL database, but the client also deals with local data.
 
 
 -------------------------------------------
-## Testing
+## Robustness: Password Security
+
+To ensure password security, we store all password information as hashed passwords. We use a randomly generated salt using SHA-256 via hashlib to generate hashed passwords and verify hashes against user-inputted passwords.
+
+
+
+-------------------------------------------
+## Robustness: Testing
 
 Manual tests were conducted by simulating 2+ clients and a server on three terminals for a single computer.  These manual tests also replicated on two computers to ensure proper scaling.
 
