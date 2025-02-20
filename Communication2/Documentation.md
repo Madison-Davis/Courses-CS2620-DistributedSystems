@@ -93,21 +93,60 @@ Format: [COLUMN]: [TYPE], [DEFAULT]
 
 Accounts Database
 1. uuid: int, N/A (no default; should not be in DB)
-2: username: str, N/A (no default; should not be in DB)
-3: pwd: str, N/A (no default; should not be in DB)
-4: logged_in: bool, 0
-
+2. username: str, N/A (no default; should not be in DB)
+3. pwd: str, N/A (no default; should not be in DB)
+4. logged_in: bool, 0
+   
 Messages Database
-1: msg_id: int, N/A (no default; should not be in DB)
-2: username: str, N/A (no default; should not be in DB)
-3: sender: str, N/A (no default; should not be in DB)
-4: msg: str, N/A (no default; should not be in DB)
-5: checked: bool, 0
-6: inbox: bool, 1
+1. msg_id: int, N/A (no default; should not be in DB)
+2. username: str, N/A (no default; should not be in DB)
+3. sender: str, N/A (no default; should not be in DB)
+4. msg: str, N/A (no default; should not be in DB)
+5. checked: bool, 0
+6. inbox: bool, 1
 
 Drafts Database
-1: draft_id: int, N/A (no default; should not be in DB)
-2: username: str, N/A (no default; should not be in DB)
-3: recipient: str, ""
-4: msg: str, ""
-5: checked: bool, 0
+1. draft_id: int, N/A (no default; should not be in DB)
+2. username: str, N/A (no default; should not be in DB)
+3. recipient: str, ""
+4. msg: str, ""
+5. checked: bool, 0
+
+
+-------------------------------------------
+## GUI Design
+
+Login Frame: provides entries for username input and password input, as well as a button to submit the information. Initially, only the username entry is displayed. Upon entering a name, the client makes a request to the server to determine if they are a new user or not. This then displays the password input along with a textual message specific to whether the user is new (“Welcome, new user!”) or not (“Welcome back!”). Upon entering the password and clicking enter, the user is brought to the main frame. If the user is returning, additional data about past drafts or messages are displayed.
+
+Main Frame: The top area is reserved for a logout button, delete account button, and greeting message specifying the current username. The rest of the area is split into two main sections: received messages and drafts.
+1. Inbox: a title that states “inbox” with the number of emails currently in the inbox, and an “open inbox” button with a specification for the number of emails desired to be opened (this number can be edited by the user via a dropdown menu). Upon clicking the button, new messages pop up at the top of the “messages” area. Messages are sent to the inbox whenever a user receives a message.
+2. Messages: rows of messages, where each message has a delete button, an unchecked mark/unread, and the message displayed as [Sender: Message]. Messages are sent here if they have already been opened but not deleted before logging out, or if the user is logged in and receives a new message. Messages can also be checked as read, which persist even if the user logs out and logs back in.
+3. Drafts: A list of drafts yet to be sent, along with a “Send” button and “Select All” button. Each draft contains a select button, an entry field to type in the message, edit button, save button, and a dropdown list for accounts.
+
+
+-------------------------------------------
+## Client Data
+
+The server works with a SQL database, but the client also deals with local data. The client deals with (1) caching the results of the SQL database as well as (2) keeping tabs on information that will eventually be sent back to the database to update, insert, or delete items in the database. Specifically, for each client, the following data structures are used:
+
+1. db_user_data: used to hold information from the SQL database.
+    1. inboxCount: the number of items in the inbox
+    2. old_msgs: all database entries of messages that have been downloaded and are shown visibly in the “Messages” section of the GUI.
+    3. inbox_msgs: all database entries of messages that have not been downloaded and are hidden in the “Inbox” section of the GUI.
+    4. drafts: all database entries of drafts that are shown visibly in the “Drafts” section of the GUI.
+2. db_accounts: used to hold account usernames from the SQL database.
+3. drafts_XXX: used for drafts. Drafts are saved to the SQL database upon creation and can be edited when the user explicitly pushes “Save”. We would like a complete list of all the drafts and their information at any given time, even if some are not meant to be sent to the server quite yet. These data structures accomplish this function of holding this information. Values are strings separated by commas, where their index represents the row they show up in in the GUI.
+    1. drafts_msgs: stores draft message content
+    2. drafts_recipients: stores draft message recipients
+    3. drafts_checkmarks: stores all draft messages that are checked to be sent
+
+
+
+
+
+
+
+
+
+
+
