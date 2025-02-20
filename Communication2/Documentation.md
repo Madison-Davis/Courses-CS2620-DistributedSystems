@@ -63,31 +63,66 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 4. We assume the recipient of messages is the one who can specify the number of messages they want delivered. We refer to undelivered messages as “inbox messages” and delivered messages as “downloaded messages.”
 
 
+
 -------------------------------------------
-## Testing
+## GUI Design
 
-Manual tests were conducted by simulating 2+ clients and a server on three terminals for a single computer.  These manual tests also replicated on two computers to ensure proper scaling.
+Login Frame: provides entries for username input and password input, as well as a button to submit the information. Initially, only the username entry is displayed. Upon entering a name, the client makes a request to the server to determine if they are a new user or not. This then displays the password input along with a textual message specific to whether the user is new (“Welcome, new user!”) or not (“Welcome back!”). Upon entering the password and clicking enter, the user is brought to the main frame. If the user is returning, additional data about past drafts or messages are displayed.
 
-Automatic tests were placed in the tests/ directory.  Unit tests were written and conducted to test individual process requests and compare against our expected results. We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections. We wrote a couple tests for each functionality, each accomplishing the following:
-
-1. Successful and unsuccessful account failure (username already exists)
-2. Successful login
-3. Sending a message
-4. Downloading a message
-5. Checking a message (checkmark as read/unread and save that data)
-6. Adding a new draft
-7. Saving all drafts
-8. Successful logout
-9. Successful deletion of an account
-10. Getting the user’s password
-11. Receiving a message successfully and unsuccessfully
-
-To execute the tests, run in tests/ the following terminal command: `python3 tests_rpc.py`
+Main Frame: The top area is reserved for a logout button, delete account button, and greeting message specifying the current username. The rest of the area is split into two main sections: received messages and drafts.
+1. Inbox: a title that states “inbox” with the number of emails currently in the inbox, and an “open inbox” button with a specification for the number of emails desired to be opened (this number can be edited by the user via a dropdown menu). Upon clicking the button, new messages pop up at the top of the “messages” area. Messages are sent to the inbox whenever a user receives a message.
+2. Messages: rows of messages, where each message has a delete button, an unchecked mark/unread, and the message displayed as [Sender: Message]. Messages are sent here if they have already been opened but not deleted before logging out, or if the user is logged in and receives a new message. Messages can also be checked as read, which persist even if the user logs out and logs back in.
+3. Drafts: A list of drafts yet to be sent, along with a “Send” button and “Select All” button. Each draft contains a select button, an entry field to type in the message, edit button, save button, and a dropdown list for accounts.
 
 
 
 -------------------------------------------
-## SQL Database
+## Protocol Design
+
+We utilized gRPC to design how messages were to be sent to/from the client/server.  We encourage you to look into the `chat.proto` file for the complete list of all of our services and messages.  We will highlight the main ones here.
+
+All of our services to adhere to the design requirements are shown here.  Most are unary responses with the exception of receive message.  Because the client will not know when they are receiving a message, we instantiate a thread to request to receive and then constantly listen for any stream of information coming back from the server.  The client, upon receiving a message, will then act accordingly.  The server keeps a list of all logged-in users to know whether to send a message immediately or store in that user's inbox for the time being.
+```
+service ChatService {
+    rpc CreateAccount(CreateAccountRequest) returns (GenericResponse);                          → create account
+    rpc Login(LoginRequest) returns (LoginResponse);                                            → login 
+    rpc GetPassword(GetPasswordRequest) returns (GetPasswordResponse);                          → get password
+    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);                       → list accounts
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);                          → send message
+    rpc AddDraft(AddDraftRequest) returns (AddDraftResponse);                                   → add draft
+    rpc SaveDrafts(SaveDraftsRequest) returns (GenericResponse);                                → save drafts
+    rpc CheckMessage(CheckMessageRequest) returns (GenericResponse);                            → check message
+    rpc DownloadMessage(DownloadMessageRequest) returns (GenericResponse);                      → download message
+    rpc DeleteMessage(DeleteMessageRequest) returns (GenericResponse);                          → delete message
+    rpc DeleteAccount(DeleteAccountRequest) returns (GenericResponse);                          → delete account
+    rpc Logout(LogoutRequest) returns (GenericResponse);                                        → logout
+    rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);    → receive message (instant/logged in)
+}
+```
+
+Our main message types:
+```
+message Message {
+    int32 msg_id = 1;
+    string username = 2;
+    string sender = 3;
+    string msg = 4;
+    bool checked = 5;
+    bool inbox = 6;
+}
+
+message Draft {
+    int32 draft_id = 1;
+    string username = 2;
+    string recipient = 3;
+    string msg = 4;
+    bool checked = 5;
+}
+```
+
+
+-------------------------------------------
+## Server Data: SQL
 
 Format: [COLUMN]: [TYPE], [DEFAULT]
 
@@ -113,19 +148,9 @@ Drafts Database
 5. checked: bool, 0
 
 
--------------------------------------------
-## GUI Design
-
-Login Frame: provides entries for username input and password input, as well as a button to submit the information. Initially, only the username entry is displayed. Upon entering a name, the client makes a request to the server to determine if they are a new user or not. This then displays the password input along with a textual message specific to whether the user is new (“Welcome, new user!”) or not (“Welcome back!”). Upon entering the password and clicking enter, the user is brought to the main frame. If the user is returning, additional data about past drafts or messages are displayed.
-
-Main Frame: The top area is reserved for a logout button, delete account button, and greeting message specifying the current username. The rest of the area is split into two main sections: received messages and drafts.
-1. Inbox: a title that states “inbox” with the number of emails currently in the inbox, and an “open inbox” button with a specification for the number of emails desired to be opened (this number can be edited by the user via a dropdown menu). Upon clicking the button, new messages pop up at the top of the “messages” area. Messages are sent to the inbox whenever a user receives a message.
-2. Messages: rows of messages, where each message has a delete button, an unchecked mark/unread, and the message displayed as [Sender: Message]. Messages are sent here if they have already been opened but not deleted before logging out, or if the user is logged in and receives a new message. Messages can also be checked as read, which persist even if the user logs out and logs back in.
-3. Drafts: A list of drafts yet to be sent, along with a “Send” button and “Select All” button. Each draft contains a select button, an entry field to type in the message, edit button, save button, and a dropdown list for accounts.
-
 
 -------------------------------------------
-## Client Data
+## Client Data: Datastructures
 
 The server works with a SQL database, but the client also deals with local data. The client deals with (1) caching the results of the SQL database as well as (2) keeping tabs on information that will eventually be sent back to the database to update, insert, or delete items in the database. Specifically, for each client, the following data structures are used:
 
@@ -142,7 +167,26 @@ The server works with a SQL database, but the client also deals with local data.
 
 
 
+-------------------------------------------
+## Testing
 
+Manual tests were conducted by simulating 2+ clients and a server on three terminals for a single computer.  These manual tests also replicated on two computers to ensure proper scaling.
+
+Automatic tests were placed in the tests/ directory.  Unit tests were written and conducted to test individual process requests and compare against our expected results. We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections. We wrote a couple tests for each functionality, each accomplishing the following:
+
+1. Successful and unsuccessful account failure (username already exists)
+2. Successful login
+3. Sending a message
+4. Downloading a message
+5. Checking a message (checkmark as read/unread and save that data)
+6. Adding a new draft
+7. Saving all drafts
+8. Successful logout
+9. Successful deletion of an account
+10. Getting the user’s password
+11. Receiving a message successfully and unsuccessfully
+
+To execute the tests, run in tests/ the following terminal command: `python3 tests_rpc.py`
 
 
 
