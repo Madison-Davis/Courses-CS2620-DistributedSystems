@@ -18,6 +18,7 @@ This project requires the construction of a simple client-server chat applicatio
 -------------------------------------------
 ## Setup
 
+Clone the repository.
 Generate Python gRPC files: Navigate to comm/ and run `py -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto`
 Replace `import chat_pb2 as chat__pb2` with `from comm import chat_pb2 as chat__pb2` in `chat_pb2_grpc.py`
 
@@ -36,17 +37,17 @@ Run unit tests:
 
 ```
 ├── client
-│   ├── chat_client.py
-│   ├── gui.py
+│   ├── chat_client.py       → ChatClient class, functions to request/receive from server
+│   ├── gui.py               → creates GUI for client
 ├── comm
-│   ├── chat.proto
-│   ├── chat_pb2.py
-│   ├── chat_pb2_grpc.py
+│   ├── chat.proto           → defines gRPC services and messages for requests/responses
+│   ├── chat_pb2.py          → generated code from compiler: for all .proto service/rpc defs
+│   ├── chat_pb2_grpc.py     → generated code from compiler: for all .proto message defs
 ├── config
-│   ├── config.py
+│   ├── config.py            → defines HOST/PORT and other parameters
 ├── server
-│   ├── server.py
-│   ├── server_security.py
+│   ├── server.py            → ChatService class, functions to use SQL and return results
+│   ├── server_security.py   → for password hashing
 └── Documentation.md
 ```
 
