@@ -13,6 +13,9 @@ Run server:
 Run client GUI:
 `py -m client.gui`
 
+Run unit tests:
+`py -m unittest tests.tests_rpc`
+
 
 -------------------------------------------
 ## Code Structure
