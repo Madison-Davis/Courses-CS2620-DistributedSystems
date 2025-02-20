@@ -57,7 +57,57 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 -------------------------------------------
 ## Assumptions
 
-We assume no requirements for persistent storage, that is, if the server shuts down and reboots, it does not need to keep the information it had prior to the shutdown.
-We assume no grouping of messages. In other words, messages are stand-alone with no history-attached, similar to a Gmail-styled application.
-We assume “undelivered messages” refers to messages that have yet to be delivered by a sender. We will often refer to these as “drafts” which are displayed on the sender’s side.
-We assume the recipient of messages is the one who can specify the number of messages they want delivered. We refer to undelivered messages as “inbox messages” and delivered messages as “downloaded messages.”
+1. We utilize persistent storage, but assume this is not required.  Persistent storage means that if the server shuts down and reboots, it does not need to keep the information it had prior to the shutdown.
+2. We assume no grouping of messages. In other words, messages are stand-alone with no history-attached, similar to a Gmail-styled application.
+3. We assume “undelivered messages” refers to messages that have yet to be delivered by a sender. We will often refer to these as “drafts” which are displayed on the sender’s side.
+4. We assume the recipient of messages is the one who can specify the number of messages they want delivered. We refer to undelivered messages as “inbox messages” and delivered messages as “downloaded messages.”
+
+
+-------------------------------------------
+## Testing
+
+Manual tests were conducted by simulating 2+ clients and a server on three terminals for a single computer.  These manual tests also replicated on two computers to ensure proper scaling.
+
+Automatic tests were placed in the tests/ directory.  Unit tests were written and conducted to test individual process requests and compare against our expected results. We used unittest which is natively built into Python, and we used its patch and MagicMock modules to mock responses from the SQL database and connections. We wrote a couple tests for each functionality, each accomplishing the following:
+
+1. Successful and unsuccessful account failure (username already exists)
+2. Successful login
+3. Sending a message
+4. Downloading a message
+5. Checking a message (checkmark as read/unread and save that data)
+6. Adding a new draft
+7. Saving all drafts
+8. Successful logout
+9. Successful deletion of an account
+10. Getting the user’s password
+11. Receiving a message successfully and unsuccessfully
+
+To execute the tests, run in tests/ the following terminal command: `python3 tests_rpc.py`
+
+
+
+-------------------------------------------
+## SQL Database
+
+Format: [COLUMN]: [TYPE], [DEFAULT]
+
+Accounts Database
+1. uuid: int, N/A (no default; should not be in DB)
+2: username: str, N/A (no default; should not be in DB)
+3: pwd: str, N/A (no default; should not be in DB)
+4: logged_in: bool, 0
+
+Messages Database
+1: msg_id: int, N/A (no default; should not be in DB)
+2: username: str, N/A (no default; should not be in DB)
+3: sender: str, N/A (no default; should not be in DB)
+4: msg: str, N/A (no default; should not be in DB)
+5: checked: bool, 0
+6: inbox: bool, 1
+
+Drafts Database
+1: draft_id: int, N/A (no default; should not be in DB)
+2: username: str, N/A (no default; should not be in DB)
+3: recipient: str, ""
+4: msg: str, ""
+5: checked: bool, 0
