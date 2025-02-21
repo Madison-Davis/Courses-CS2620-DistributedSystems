@@ -201,8 +201,8 @@ To execute the tests, run in tests/ the following terminal command: `python3 tes
 To ensure code cleanliness, we adhered to the code structure as articulated in an earlier section.  We also did the following:
 1. For tests_rpc.py, server.py, and chat_client.py, we instantiated them as classes.
 2. For all functions in tests_rpc.py, server.py, chat_client.py, and gui.py, we put comments under each function header to help readers understand its implementation.
-3. For gui.py, because we did not use a class but rather a set of functions, we made comments more robust beyond just header functions by utilizing sectioning-comments to "divide and sort" the functions based on usage.  For example, we have sections for logging in, logging out or deleting accounts, receiving messages in real time ("event listeners"), GUI loading frames, GUI loading features on existing frames, and GUI frame button-handling (if a button is clicked, for example)
-4. For gui.py, we also did the same for variables.  We have sections for GUI variables and client data variables.
+3. For gui.py, because we did not use a class but rather a set of functions, we made comments more robust beyond just header functions by utilizing sectioning-comments to "divide and sort" the functions based on usage.  For example, we have sections for logging in, logging out or deleting accounts, receiving messages in real time ("event listeners"), GUI loading frames, GUI loading features on existing frames, and GUI frame button-handling (if a button is clicked, for example).
+4. For gui.py, we did the same "divide and sort" sectioning for variables.  We have sections for GUI variables and client data variables.
 
 
 
