@@ -335,9 +335,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         recipient = request.recipient
         sender = request.sender
         content = request.content
-
-        print(f"[SERVER] Received SendMessage request: {sender} -> {recipient} : {content}")
-
         try:
             with self.db_connection:
                 cursor = self.db_connection.cursor()
@@ -360,12 +357,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 # Get the recipient's new inbox count
                 cursor.execute("SELECT COUNT(*) FROM messages WHERE username = ? AND inbox = 1", (recipient,))
                 new_inbox_count = cursor.fetchone()[0]
-
-                print(f"[SERVER] Message stored for {recipient}. New inbox count: {new_inbox_count}")
-
                 # If recipient is online, push message to their queue
                 with self.lock:
-                    print(recipient, self.active_users)
                     if recipient in self.active_users:
                         self.message_queues[recipient].put(chat_pb2.ReceiveMessageResponse(
                             msg_id=msg_id,
@@ -383,7 +376,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def ReceiveMessageStream(self, request, context):
         username = request.username
         print(f"[SERVER] {username} connected to message stream.")
-
         # Ensure the user has a queue
         with self.lock:
             if username not in self.message_queues:

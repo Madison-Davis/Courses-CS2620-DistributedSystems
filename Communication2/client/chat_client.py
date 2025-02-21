@@ -131,8 +131,7 @@ class ChatClient:
         try:
             for response in self.stub.ReceiveMessageStream(chat_pb2.ReceiveMessageRequest(username=user)):
                 print(f"[{response.msg_id}] {response.sender} → {response.username}: {response.msg}")
-                print(f"Inbox Count: {response.inbox_count}\n")
-                
+                print(f"Inbox Count: {response.inbox_count}\n")          
                 message = chat_pb2.Message(
                     msg_id = response.msg_id,
                     username = response.username,

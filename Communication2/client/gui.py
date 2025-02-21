@@ -3,7 +3,6 @@
 import sys
 import os
 import threading
-import asyncio
 import tkinter as tk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tkinter import messagebox, ttk
@@ -92,15 +91,6 @@ sending_cols = [col_sending_checkbox, col_sending_message,
                  col_sending_recipient]
 
 
-#asyncio_loop = asyncio.new_event_loop()
-
-#def start_asyncio_loop():
-#    """Start an asyncio event loop in a separate thread."""
-#    asyncio.set_event_loop(asyncio_loop)
-#    asyncio_loop.run_forever()
-
-# Start the asyncio loop in a separate thread
-#threading.Thread(target=start_asyncio_loop, daemon=True).start()
 
 # ++++++++++ Helper Functions: Login/Logout ++++++++++ #
 
@@ -126,8 +116,6 @@ def login(new_user, pwd_hash):
     """ If new user, create an account.
     If returning user, verify correct username/password.
     Determine if good login, and if so, load main frame. """
-
-    
     global login_username, login_pwd, db_user_data, db_accounts
     user = login_username.get()
     pwd = login_pwd.get()
@@ -136,9 +124,8 @@ def login(new_user, pwd_hash):
                                        args=(user, update_inbox_callback,),
                                        daemon=True)
     listener_thread.start()
-
-
     entered_pwd_hashed = server_security.hash_password(pwd)
+    
     # If new user, create a new account
     if new_user:
         status = client.create_account(user, entered_pwd_hashed)
@@ -157,8 +144,6 @@ def login(new_user, pwd_hash):
         db_user_data[1] = result[1] 
         db_user_data[2] = result[2] 
         db_user_data[3] = result[3] 
-    # Start listening for messages asynchronously
-    
     # Load main GUI frame
     login_frame.pack_forget()
     load_main_frame(db_user_data)
@@ -542,12 +527,5 @@ def load_main_frame_user_info(db_user_data):
 # ++++++++++++++  Main Function  ++++++++++++++ #
 
 if __name__ == "__main__":
-    # listener_thread = threading.Thread(
-    #     target=client.receive_messages, 
-    #     args=(update_inbox_callback, login_username.get()), 
-    #     daemon=True
-    # )
-    # listener_thread.start()
-
     load_login_frame()
     gui.mainloop()
