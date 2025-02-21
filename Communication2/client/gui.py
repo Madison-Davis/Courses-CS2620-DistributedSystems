@@ -192,6 +192,7 @@ def update_inbox_count(count):
 
 def logout():
     """ Default message template and return to login frame. """
+    global db_user_data
     status = client.logout(login_username.get())
     if not status:
        messagebox.showerror("Error", "Unable to log out.")
@@ -268,7 +269,7 @@ def clicked_open_inbox(num):
         # Edge case: user asks for too many
         if i >= inboxCount:
             break
-        create_new_unread_msg(db_user_data[2][0])
+        create_new_msg(db_user_data[2][0])
         status = client.download_message(login_username.get(), inbox_msgs[i].msg_id)
         if not status:
             messagebox.showerror("Error", "Unable to download some messages.")
@@ -284,6 +285,7 @@ def clicked_open_inbox(num):
             break
     lbl_incoming = tk.Label(main_frame, text=f"Incoming: {db_user_data[0]} Items", font=("Arial", 12, "bold"), width=30)
     lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
+    print("OPEN", db_user_data)
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
@@ -423,7 +425,7 @@ def create_existing_draft(row_idx, recipient="", msg="", checked=0):
     save_btn.config(command=lambda r=i: clicked_saved(r, drafts_msgs[i].get(), drafts_recipients[i].get(), drafts_checkmarks[i].get()))
     save_btn.grid(row=i+start_row_drafts+1, column=col_sending_save, padx=5)
 
-def create_new_unread_msg(inbox_msg):
+def create_new_msg(inbox_msg):
     """ Create new unread message when opening inbox, shifting everything else down by 1."""
     # Set up variables
     sender = inbox_msg.sender
@@ -431,6 +433,7 @@ def create_new_unread_msg(inbox_msg):
     content = inbox_msg.msg
     user = inbox_msg.username
     msgId = inbox_msg.msg_id
+    checkbox = inbox_msg.checked
     i = start_row_messages
     last_row = max([int(widget.grid_info()["row"]) for widget in main_frame.grid_slaves()], default=i)
     # Move all widgets **bottom to top** to avoid overwriting
@@ -448,7 +451,7 @@ def create_new_unread_msg(inbox_msg):
     btn_del.grid(row=i+1, column=col_incoming_delete)
     btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, inbox_msg))
     check_var = tk.IntVar()
-    check_btn = tk.Checkbutton(main_frame, text="Unread", variable=check_var)
+    check_btn = tk.Checkbutton(main_frame, text=checkbox_text, variable=check_var)
     check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
     check_btn.grid(row=i+1, column=col_incoming_checkbox)
     check_btn.var = check_var # saves a reference to allow us to immediately check it
@@ -528,27 +531,9 @@ def load_main_frame_user_info(db_user_data):
         if user is None, then wipe data/nothing there"""
     # Customize "Incoming Messages" Column
     # Populate messages
+    print("LOGIN", db_user_data)
     for i, msg in enumerate(db_user_data[1]): 
-        # user, msgId, sender user, msg, checked, inbox
-        # db_user_data[1] are non-inbox messages
-        sender = msg.sender
-        checkbox = msg.checked
-        content = msg.msg
-        user = msg.username
-        msgId = msg.msg_id
-        checkbox_text = "Read" if checkbox else "Unread"
-        i = i + start_row_messages
-        msg_formatted = sender + ": " + content
-        btn_del = tk.Button(main_frame, text="Delete")
-        btn_del.grid(row=i+1, column=col_incoming_delete)
-        btn_del.config(command=lambda widget=btn_del: clicked_delete_msg(widget, msg))
-        check_var = tk.IntVar()
-        check_btn = tk.Checkbutton(main_frame, text=checkbox_text, variable=check_var)
-        check_btn.config(command=lambda var=check_var, btn=check_btn: clicked_msg_checkbox(var, btn, user, msgId))
-        check_btn.grid(row=i+1, column=col_incoming_checkbox)
-        check_btn.var = check_var # saves a reference to allow us to immediately check it
-        check_var.set(checkbox)
-        tk.Label(main_frame, text=msg_formatted, width=20, relief=tk.SUNKEN).grid(row=i+1, column=col_incoming_message, padx=5, pady=5)
+        create_new_msg(msg)
     i = 0
     for draft in db_user_data[3]: 
         create_existing_draft(i, draft.recipient, draft.msg, draft.checked)
