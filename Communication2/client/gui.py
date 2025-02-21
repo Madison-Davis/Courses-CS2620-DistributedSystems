@@ -285,7 +285,6 @@ def clicked_open_inbox(num):
             break
     lbl_incoming = tk.Label(main_frame, text=f"Incoming: {db_user_data[0]} Items", font=("Arial", 12, "bold"), width=30)
     lbl_incoming.grid(row=2, column=col_incoming_message, padx=5, pady=5)
-    print("OPEN", db_user_data)
 
 def clicked_msg_checkbox(check_var, btn, user, msgId):
     """ When we click 'Read/Unread' checkbox, update database and config."""
@@ -531,7 +530,6 @@ def load_main_frame_user_info(db_user_data):
         if user is None, then wipe data/nothing there"""
     # Customize "Incoming Messages" Column
     # Populate messages
-    print("LOGIN", db_user_data)
     for i, msg in enumerate(db_user_data[1]): 
         create_new_msg(msg)
     i = 0
