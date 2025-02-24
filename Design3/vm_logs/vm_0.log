@@ -1,52 +1,37 @@
-[Internal, System Time 1740436263.9119291, Logical Clock Time 0] success
-[Internal, System Time 1740436264.413811, Logical Clock Time 1] success
-[Internal, System Time 1740436264.919265, Logical Clock Time 2] success
-[Internal, System Time 1740436265.422085, Logical Clock Time 3] success
-[Internal, System Time 1740436265.922963, Logical Clock Time 4] success
-[Internal, System Time 1740436266.428633, Logical Clock Time 5] success
-[Internal, System Time 1740436266.930719, Logical Clock Time 6] success
-[Sent Msg To 2, System Time 1740436267.4397361, Logical Clock Time 7] FAILURE
-[Sent Msg To 1, System Time 1740436267.944928, Logical Clock Time 8] FAILURE
-[Sent Msg To 2, System Time 1740436267.945421, Logical Clock Time 9] FAILURE
-[Internal, System Time 1740436268.450648, Logical Clock Time 10] success
-[Internal, System Time 1740436268.952578, Logical Clock Time 11] success
-[Sent Msg To 1, System Time 1740436269.459612, Logical Clock Time 12] FAILURE
-[Sent Msg To 2, System Time 1740436269.4609659, Logical Clock Time 13] FAILURE
-[Internal, System Time 1740436269.9655738, Logical Clock Time 14] success
-[Sent Msg To 1, System Time 1740436270.4708989, Logical Clock Time 15] FAILURE
-[Internal, System Time 1740436270.9744189, Logical Clock Time 16] success
-[Internal, System Time 1740436271.4789681, Logical Clock Time 17] success
-[Sent Msg To 1, System Time 1740436271.985034, Logical Clock Time 18] FAILURE
-[Internal, System Time 1740436272.486274, Logical Clock Time 19] success
-[Sent Msg To 2, System Time 1740436272.988134, Logical Clock Time 20] FAILURE
-[Internal, System Time 1740436273.493519, Logical Clock Time 21] success
-[Internal, System Time 1740436273.999073, Logical Clock Time 22] success
-[Internal, System Time 1740436274.50333, Logical Clock Time 23] success
-[Internal, System Time 1740436275.006801, Logical Clock Time 24] success
-[Internal, System Time 1740436275.511028, Logical Clock Time 25] success
-[Sent Msg To 1, System Time 1740436276.0164402, Logical Clock Time 26] FAILURE
-[Internal, System Time 1740436276.519344, Logical Clock Time 27] success
-[Internal, System Time 1740436277.020759, Logical Clock Time 28] success
-[Internal, System Time 1740436277.523465, Logical Clock Time 29] success
-[Internal, System Time 1740436278.0241401, Logical Clock Time 30] success
-[Sent Msg To 1, System Time 1740436278.530147, Logical Clock Time 31] FAILURE
-[Sent Msg To 2, System Time 1740436279.0360188, Logical Clock Time 32] FAILURE
-[Sent Msg To 1, System Time 1740436279.538786, Logical Clock Time 33] FAILURE
-[Sent Msg To 2, System Time 1740436280.0447848, Logical Clock Time 34] FAILURE
-[Internal, System Time 1740436280.5493069, Logical Clock Time 35] success
-[Internal, System Time 1740436281.052566, Logical Clock Time 36] success
-[Sent Msg To 1, System Time 1740436281.558563, Logical Clock Time 37] FAILURE
-[Sent Msg To 2, System Time 1740436281.559584, Logical Clock Time 38] FAILURE
-[Internal, System Time 1740436282.06198, Logical Clock Time 39] success
-[Sent Msg To 1, System Time 1740436282.567447, Logical Clock Time 40] FAILURE
-[Sent Msg To 2, System Time 1740436282.56823, Logical Clock Time 41] FAILURE
-[Sent Msg To 1, System Time 1740436283.0738099, Logical Clock Time 42] FAILURE
-[Sent Msg To 2, System Time 1740436283.074529, Logical Clock Time 43] FAILURE
-[Internal, System Time 1740436283.575718, Logical Clock Time 44] success
-[Sent Msg To 2, System Time 1740436284.078322, Logical Clock Time 45] FAILURE
-[Sent Msg To 1, System Time 1740436284.585788, Logical Clock Time 46] FAILURE
-[Internal, System Time 1740436285.0871098, Logical Clock Time 47] success
-[Internal, System Time 1740436285.589281, Logical Clock Time 48] success
-[Internal, System Time 1740436286.09432, Logical Clock Time 49] success
-[Sent Msg To 1, System Time 1740436286.6014552, Logical Clock Time 50] FAILURE
-[Sent Msg To 2, System Time 1740436286.603575, Logical Clock Time 51] FAILURE
+[Sent Msg To 1, System Time 1740436970.7553449, Logical Clock Time 0] SUCCESS
+[Sent Msg To 1, System Time 1740436971.094582, Logical Clock Time 1] SUCCESS
+[Sent Msg To 2, System Time 1740436971.096215, Logical Clock Time 2] SUCCESS
+[Internal, System Time 1740436971.432746, Logical Clock Time 3] success
+[Internal, System Time 1740436971.768471, Logical Clock Time 4] success
+[Internal, System Time 1740436972.108055, Logical Clock Time 5] success
+[Internal, System Time 1740436972.446607, Logical Clock Time 6] success
+[Received Msg From 2, System Time 1740436972.781615, New Msg Queue Length -1, Logical Clock Time 7]
+[Received Msg From 2, System Time 1740436973.117944, New Msg Queue Length -2, Logical Clock Time 11]
+[Received Msg From 1, System Time 1740436973.456668, New Msg Queue Length -3, Logical Clock Time 14]
+[Received Msg From 1, System Time 1740436973.795381, New Msg Queue Length -4, Logical Clock Time 16]
+[Received Msg From 1, System Time 1740436974.1298401, New Msg Queue Length -5, Logical Clock Time 20]
+[Internal, System Time 1740436974.464363, Logical Clock Time 21] success
+[Internal, System Time 1740436974.800411, Logical Clock Time 22] success
+[Received Msg From 1, System Time 1740436975.13699, New Msg Queue Length -6, Logical Clock Time 23]
+[Internal, System Time 1740436975.471445, Logical Clock Time 29] success
+[Sent Msg To 2, System Time 1740436975.8107278, Logical Clock Time 30] SUCCESS
+[Received Msg From 1, System Time 1740436976.149504, New Msg Queue Length -7, Logical Clock Time 31]
+[Received Msg From 2, System Time 1740436976.4881861, New Msg Queue Length -8, Logical Clock Time 36]
+[Received Msg From 2, System Time 1740436976.827122, New Msg Queue Length -9, Logical Clock Time 37]
+[Received Msg From 1, System Time 1740436977.163022, New Msg Queue Length -10, Logical Clock Time 38]
+[Received Msg From 1, System Time 1740436977.501973, New Msg Queue Length -11, Logical Clock Time 39]
+[Received Msg From 2, System Time 1740436977.83877, New Msg Queue Length -12, Logical Clock Time 42]
+[Internal, System Time 1740436978.17747, Logical Clock Time 44] success
+[Internal, System Time 1740436978.51572, Logical Clock Time 45] success
+[Sent Msg To 1, System Time 1740436978.855058, Logical Clock Time 46] SUCCESS
+[Sent Msg To 2, System Time 1740436978.855497, Logical Clock Time 47] SUCCESS
+[Sent Msg To 2, System Time 1740436979.194261, Logical Clock Time 48] SUCCESS
+[Received Msg From 2, System Time 1740436979.5331619, New Msg Queue Length -13, Logical Clock Time 49]
+[Internal, System Time 1740436979.871961, Logical Clock Time 54] success
+[Received Msg From 2, System Time 1740436980.210838, New Msg Queue Length -14, Logical Clock Time 55]
+[Received Msg From 1, System Time 1740436980.547315, New Msg Queue Length -15, Logical Clock Time 58]
+[Received Msg From 2, System Time 1740436980.885362, New Msg Queue Length -16, Logical Clock Time 62]
+[Received Msg From 1, System Time 1740436981.222046, New Msg Queue Length -17, Logical Clock Time 63]
+[Internal, System Time 1740436981.560799, Logical Clock Time 65] success
+[Received Msg From 2, System Time 1740436981.895103, New Msg Queue Length -18, Logical Clock Time 66]
+[Received Msg From 2, System Time 1740436982.230722, New Msg Queue Length -19, Logical Clock Time 68]

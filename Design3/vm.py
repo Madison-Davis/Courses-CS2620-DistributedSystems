@@ -33,6 +33,7 @@ class VirtualMachine(multiprocessing.Process):
         self.port = config.PORT + id
         self.peer_ports = [(i, config.PORT + i) for i in range(config.NUM_VIRTUAL_MACHINES) if i != id]
         self.queue = multiprocessing.Queue()
+        self.queue_size = 0 # qsize() does not work on MacOS devices, so keep track separately
         # Create clock
         self.clock_speed = random.randint(1, 6) # randomize number of instructions/second
         self.logical_clock = 0
@@ -85,8 +86,9 @@ class VirtualMachine(multiprocessing.Process):
                     data = conn.recv(1024)
                     if data:
                         sender_id, sender_logical_clock = map(int, data.decode("utf-8").split(","))
-                        # Put tuple (sender_id, sender_logical_clock) in a queue
+                        # Put tuple (sender_id, sender_logical_clock) in our own queue
                         self.queue.put((sender_id, sender_logical_clock))
+                        self.queue_size += 1
 
     def handle_queue(self):
         """ Take one message off queue, update local logical clock, and write to log. """
@@ -94,8 +96,9 @@ class VirtualMachine(multiprocessing.Process):
         # Timeout=1 in case queue becomes empty
         # As an added, safeguard we also check before even calling handle_queue()
         sender_id, sender_logical_clock = self.queue.get(timeout=1) 
+        self.queue_size -= 1
         # Update logical clock and write to log
-        log_msg = f"[Received Msg From {sender_id}, System Time {time.time()}, New Msg Queue Length {self.queue.qsize()}, Logical Clock Time {self.logical_clock}]"
+        log_msg = f"[Received Msg From {sender_id}, System Time {time.time()}, New Msg Queue Length {self.queue_size}, Logical Clock Time {self.logical_clock}]"
         self.update(log_msg, sender_logical_clock)
 
     def run(self):

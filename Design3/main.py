@@ -23,7 +23,8 @@ if __name__ == "__main__":
         print(f"vm {vm.id} created with clock speed {vm.clock_speed}")
 
     # Specify .start() to start up the VM as a process
-    # Specify .join() to keep the process alive
     for vm in vms:
         vm.start() 
-        vm.join()  
+    # Specify .join() to keep the process alive
+    for vm in vms:
+        vm.join() 
