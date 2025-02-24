@@ -1,0 +1,29 @@
+# main.py
+
+
+
+# +++++++++++++++ Imports/Installs +++++++++++++++ #
+import config
+from vm import VirtualMachine
+
+
+
+# +++++++++++++++ Main Function +++++++++++++++ #
+
+if __name__ == "__main__":
+    # Initialization Stage: create VMs as objects from the class 'VirtualMachine'
+        # Within each object...
+        # vm creates a list all other vm ports to connect to
+        # create and open new log file
+        # create logical clock
+    vms = [VirtualMachine(i) for i in range(config.NUM_VIRTUAL_MACHINES)]
+
+    # Print clock speed for knowledge-purposes
+    for vm in vms:  
+        print(f"vm {vm.id} created with clock speed {vm.clock_speed}")
+
+    # Specify .start() to start up the VM as a process
+    # Specify .join() to keep the process alive
+    for vm in vms:
+        vm.start() 
+        vm.join()  
