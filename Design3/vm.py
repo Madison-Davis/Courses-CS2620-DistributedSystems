@@ -81,7 +81,7 @@ class VirtualMachine(multiprocessing.Process):
             # Update personal logical clock
             self.update()
             if status:
-                log_success = f"Sent Msg To {recipient[0]}\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}\tSUCCESS"
+                log_success = f"Sent Msg To {recipient[0]}\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}"
                 self.log(log_success)
             else:
                 log_failure = f"Sent Msg To {recipient[0]}\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}\tFAILURE"
@@ -114,7 +114,7 @@ class VirtualMachine(multiprocessing.Process):
         
         # Update logical clock and write to log
         self.update(sender_logical_clock)
-        log_msg = f"Received Msg From {sender_id}\tSystem Time {time.time()-self.start_time:.3f}\tNew Msg Queue Length {self.queue_size.value}\tLogical Clock Time {self.logical_clock}"
+        log_msg = f"Receive From {sender_id}\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}\tNew Msg Queue Length {self.queue_size.value}"
         self.log(log_msg)
 
     def run(self):
@@ -151,7 +151,7 @@ class VirtualMachine(multiprocessing.Process):
                     # Internal event: simply increment logical clock and log info
                     else:
                         self.update()
-                        log_msg = f"Internal Event\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}\tSUCCESS"
+                        log_msg = f"Internal Event\tSystem Time {time.time()-self.start_time:.3f}\tLogical Clock Time {self.logical_clock}\t"
                         self.log(log_msg)
 
         # Graceful termination
