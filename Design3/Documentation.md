@@ -52,7 +52,7 @@ Run :
 ```
 ├── vm.py          → a class for each vm we make, includes sending/receiving/updating capability
 ├── vm_logs/       → all the log files where each file is named vm_{id}.log
-├── main.py        → starts the program: creates 3 vm objects on different processes and start them up
+├── main.py        → starts the program: creates 3 vm objects on different processes and starts them up
 └── config.py      → specifications like the port number, how many vms we want, and log file
 ```
 
@@ -72,7 +72,7 @@ log                    (msg (sring))                             → log a messa
 send_msg_and_update    (list_of_recipients (int list))           → perform both send_msg, update, and log in one step for a list of recipients who we will send message(s) to
 receive_msg                                                      → listen for incoming/received messages and store them in a queue
 handle_queue                                                     → take one message off queue, update local logical clock, and write to log
-run                                                              → main execution loop
+run                                                              → main execution loop (when we start up the vm object in a process, this is what runs)
 ```
 
 Here are all of its internal variables, defined in `__init__`:
