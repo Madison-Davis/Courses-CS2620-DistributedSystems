@@ -58,7 +58,7 @@ class VirtualMachine(multiprocessing.Process):
                 return False
             
     def update(self, sender_logical_clock=None):
-        """ Update using logical clock rules and log a message. """
+        """ Update using logical clock rules. """
         # Logical clock rules
         if sender_logical_clock is not None:
             self.logical_clock = max(self.logical_clock, sender_logical_clock) + 1
@@ -66,6 +66,7 @@ class VirtualMachine(multiprocessing.Process):
             self.logical_clock += 1
 
     def log(self, msg):
+        """ Log a message. """
         with open(self.log_file, "a") as f:
             f.write(msg + "\n")
     
