@@ -37,7 +37,7 @@ class VirtualMachine(multiprocessing.Process):
         self.queue_size = multiprocessing.Value('i', 0) # qsize() does not work on MacOS devices, so keep track separately, need to use multiprocessing.Value to access from different processes
 
         # Create clock
-        self.clock_speed = random.randint(1, 6) # randomize number of instructions/second
+        self.clock_speed = random.randint(1, config.SPEED_UPPER_BOUND) # randomize number of instructions/second
         self.logical_clock = 0
         self.start_time = time.time()  # to standardize system time
 
@@ -135,7 +135,7 @@ class VirtualMachine(multiprocessing.Process):
 
                 # If queue is empty, generate a random value
                 else:
-                    value = random.randint(1, config.UPPER_BOUND)
+                    value = random.randint(1, config.INTERNAL_UPPER_BOUND)
 
                     # Send message to one machine
                     if value == 1:

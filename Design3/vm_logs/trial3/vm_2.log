@@ -1,0 +1,361 @@
+Internal Event	System Time 0.433	Logical Clock Time 1	
+Internal Event	System Time 0.609	Logical Clock Time 2	
+Internal Event	System Time 0.778	Logical Clock Time 3	
+Internal Event	System Time 0.960	Logical Clock Time 4	
+Internal Event	System Time 1.134	Logical Clock Time 5	
+Receive From 1	System Time 1.303	Logical Clock Time 6	New Msg Queue Length 0
+Sent Msg To 1	System Time 1.498	Logical Clock Time 7
+Internal Event	System Time 1.667	Logical Clock Time 8	
+Internal Event	System Time 1.841	Logical Clock Time 9	
+Receive From 0	System Time 2.023	Logical Clock Time 10	New Msg Queue Length 0
+Internal Event	System Time 2.199	Logical Clock Time 11	
+Sent Msg To 0	System Time 2.376	Logical Clock Time 12
+Sent Msg To 1	System Time 2.379	Logical Clock Time 13
+Internal Event	System Time 2.582	Logical Clock Time 14	
+Internal Event	System Time 2.758	Logical Clock Time 15	
+Internal Event	System Time 2.933	Logical Clock Time 16	
+Receive From 1	System Time 3.113	Logical Clock Time 17	New Msg Queue Length 0
+Internal Event	System Time 3.289	Logical Clock Time 18	
+Internal Event	System Time 3.480	Logical Clock Time 19	
+Internal Event	System Time 3.653	Logical Clock Time 20	
+Sent Msg To 1	System Time 3.829	Logical Clock Time 21
+Internal Event	System Time 4.004	Logical Clock Time 22	
+Receive From 0	System Time 4.181	Logical Clock Time 23	New Msg Queue Length 0
+Sent Msg To 0	System Time 4.357	Logical Clock Time 24
+Internal Event	System Time 4.531	Logical Clock Time 25	
+Receive From 1	System Time 4.705	Logical Clock Time 26	New Msg Queue Length 0
+Sent Msg To 0	System Time 4.880	Logical Clock Time 27
+Receive From 1	System Time 5.055	Logical Clock Time 28	New Msg Queue Length 0
+Internal Event	System Time 5.224	Logical Clock Time 29	
+Receive From 1	System Time 5.398	Logical Clock Time 30	New Msg Queue Length 0
+Internal Event	System Time 5.566	Logical Clock Time 31	
+Sent Msg To 0	System Time 5.741	Logical Clock Time 32
+Sent Msg To 1	System Time 5.743	Logical Clock Time 33
+Internal Event	System Time 5.922	Logical Clock Time 34	
+Internal Event	System Time 6.093	Logical Clock Time 35	
+Internal Event	System Time 6.293	Logical Clock Time 36	
+Internal Event	System Time 6.464	Logical Clock Time 37	
+Receive From 0	System Time 6.645	Logical Clock Time 38	New Msg Queue Length 0
+Sent Msg To 1	System Time 6.823	Logical Clock Time 39
+Internal Event	System Time 6.991	Logical Clock Time 40	
+Internal Event	System Time 7.159	Logical Clock Time 41	
+Internal Event	System Time 7.341	Logical Clock Time 42	
+Receive From 0	System Time 7.514	Logical Clock Time 43	New Msg Queue Length 0
+Sent Msg To 1	System Time 7.685	Logical Clock Time 44
+Receive From 0	System Time 7.862	Logical Clock Time 45	New Msg Queue Length 0
+Receive From 0	System Time 8.043	Logical Clock Time 46	New Msg Queue Length 0
+Sent Msg To 0	System Time 8.226	Logical Clock Time 47
+Sent Msg To 1	System Time 8.226	Logical Clock Time 48
+Receive From 0	System Time 8.412	Logical Clock Time 49	New Msg Queue Length 0
+Receive From 1	System Time 8.593	Logical Clock Time 50	New Msg Queue Length 0
+Internal Event	System Time 8.777	Logical Clock Time 51	
+Internal Event	System Time 8.952	Logical Clock Time 52	
+Internal Event	System Time 9.128	Logical Clock Time 53	
+Internal Event	System Time 9.310	Logical Clock Time 54	
+Internal Event	System Time 9.485	Logical Clock Time 55	
+Sent Msg To 0	System Time 9.660	Logical Clock Time 56
+Sent Msg To 1	System Time 9.664	Logical Clock Time 57
+Internal Event	System Time 9.837	Logical Clock Time 58	
+Receive From 1	System Time 10.011	Logical Clock Time 59	New Msg Queue Length 0
+Receive From 1	System Time 10.185	Logical Clock Time 61	New Msg Queue Length 0
+Receive From 1	System Time 10.360	Logical Clock Time 62	New Msg Queue Length 0
+Receive From 0	System Time 10.534	Logical Clock Time 63	New Msg Queue Length 0
+Internal Event	System Time 10.709	Logical Clock Time 64	
+Receive From 1	System Time 10.892	Logical Clock Time 65	New Msg Queue Length 0
+Sent Msg To 0	System Time 11.070	Logical Clock Time 66
+Internal Event	System Time 11.242	Logical Clock Time 67	
+Receive From 0	System Time 11.410	Logical Clock Time 68	New Msg Queue Length 0
+Sent Msg To 1	System Time 11.587	Logical Clock Time 69
+Internal Event	System Time 11.761	Logical Clock Time 70	
+Internal Event	System Time 11.929	Logical Clock Time 71	
+Receive From 0	System Time 12.108	Logical Clock Time 72	New Msg Queue Length 0
+Receive From 0	System Time 12.283	Logical Clock Time 73	New Msg Queue Length 0
+Sent Msg To 1	System Time 12.457	Logical Clock Time 74
+Internal Event	System Time 12.632	Logical Clock Time 75	
+Internal Event	System Time 12.807	Logical Clock Time 76	
+Internal Event	System Time 12.979	Logical Clock Time 77	
+Receive From 0	System Time 13.154	Logical Clock Time 78	New Msg Queue Length 0
+Internal Event	System Time 13.329	Logical Clock Time 79	
+Sent Msg To 0	System Time 13.499	Logical Clock Time 80
+Sent Msg To 0	System Time 13.673	Logical Clock Time 81
+Internal Event	System Time 13.848	Logical Clock Time 82	
+Sent Msg To 1	System Time 14.028	Logical Clock Time 83
+Receive From 0	System Time 14.198	Logical Clock Time 85	New Msg Queue Length 0
+Internal Event	System Time 14.376	Logical Clock Time 86	
+Internal Event	System Time 14.550	Logical Clock Time 87	
+Internal Event	System Time 14.722	Logical Clock Time 88	
+Internal Event	System Time 14.896	Logical Clock Time 89	
+Receive From 0	System Time 15.077	Logical Clock Time 91	New Msg Queue Length 0
+Receive From 0	System Time 15.258	Logical Clock Time 92	New Msg Queue Length 0
+Internal Event	System Time 15.438	Logical Clock Time 93	
+Internal Event	System Time 15.607	Logical Clock Time 94	
+Receive From 1	System Time 15.793	Logical Clock Time 95	New Msg Queue Length 0
+Internal Event	System Time 15.976	Logical Clock Time 96	
+Internal Event	System Time 16.148	Logical Clock Time 97	
+Receive From 0	System Time 16.327	Logical Clock Time 99	New Msg Queue Length 0
+Receive From 0	System Time 16.502	Logical Clock Time 100	New Msg Queue Length 0
+Internal Event	System Time 16.676	Logical Clock Time 101	
+Internal Event	System Time 16.844	Logical Clock Time 102	
+Internal Event	System Time 17.011	Logical Clock Time 103	
+Internal Event	System Time 17.187	Logical Clock Time 104	
+Sent Msg To 0	System Time 17.357	Logical Clock Time 105
+Receive From 1	System Time 17.529	Logical Clock Time 106	New Msg Queue Length 0
+Internal Event	System Time 17.703	Logical Clock Time 107	
+Receive From 1	System Time 17.888	Logical Clock Time 108	New Msg Queue Length 0
+Internal Event	System Time 18.061	Logical Clock Time 109	
+Sent Msg To 0	System Time 18.244	Logical Clock Time 110
+Internal Event	System Time 18.411	Logical Clock Time 111	
+Internal Event	System Time 18.586	Logical Clock Time 112	
+Internal Event	System Time 18.762	Logical Clock Time 113	
+Internal Event	System Time 18.935	Logical Clock Time 114	
+Internal Event	System Time 19.118	Logical Clock Time 115	
+Internal Event	System Time 19.294	Logical Clock Time 116	
+Internal Event	System Time 19.469	Logical Clock Time 117	
+Internal Event	System Time 19.644	Logical Clock Time 118	
+Sent Msg To 0	System Time 19.824	Logical Clock Time 119
+Sent Msg To 1	System Time 19.828	Logical Clock Time 120
+Internal Event	System Time 20.006	Logical Clock Time 121	
+Receive From 1	System Time 20.181	Logical Clock Time 122	New Msg Queue Length 1
+Receive From 0	System Time 20.354	Logical Clock Time 123	New Msg Queue Length 0
+Sent Msg To 0	System Time 20.524	Logical Clock Time 124
+Internal Event	System Time 20.697	Logical Clock Time 125	
+Internal Event	System Time 20.872	Logical Clock Time 126	
+Internal Event	System Time 21.041	Logical Clock Time 127	
+Internal Event	System Time 21.216	Logical Clock Time 128	
+Internal Event	System Time 21.391	Logical Clock Time 129	
+Internal Event	System Time 21.566	Logical Clock Time 130	
+Receive From 0	System Time 21.741	Logical Clock Time 131	New Msg Queue Length 0
+Internal Event	System Time 21.915	Logical Clock Time 132	
+Receive From 0	System Time 22.089	Logical Clock Time 134	New Msg Queue Length 0
+Internal Event	System Time 22.264	Logical Clock Time 135	
+Internal Event	System Time 22.438	Logical Clock Time 136	
+Internal Event	System Time 22.607	Logical Clock Time 137	
+Internal Event	System Time 22.783	Logical Clock Time 138	
+Internal Event	System Time 22.957	Logical Clock Time 139	
+Internal Event	System Time 23.140	Logical Clock Time 140	
+Receive From 1	System Time 23.312	Logical Clock Time 141	New Msg Queue Length 0
+Internal Event	System Time 23.495	Logical Clock Time 142	
+Sent Msg To 0	System Time 23.664	Logical Clock Time 143
+Internal Event	System Time 23.837	Logical Clock Time 144	
+Internal Event	System Time 24.009	Logical Clock Time 145	
+Internal Event	System Time 24.191	Logical Clock Time 146	
+Internal Event	System Time 24.366	Logical Clock Time 147	
+Sent Msg To 0	System Time 24.547	Logical Clock Time 148
+Sent Msg To 1	System Time 24.550	Logical Clock Time 149
+Receive From 1	System Time 24.727	Logical Clock Time 150	New Msg Queue Length 0
+Sent Msg To 0	System Time 24.907	Logical Clock Time 151
+Sent Msg To 1	System Time 24.909	Logical Clock Time 152
+Internal Event	System Time 25.100	Logical Clock Time 153	
+Sent Msg To 0	System Time 25.275	Logical Clock Time 154
+Sent Msg To 1	System Time 25.275	Logical Clock Time 155
+Internal Event	System Time 25.452	Logical Clock Time 156	
+Internal Event	System Time 25.620	Logical Clock Time 157	
+Sent Msg To 1	System Time 25.797	Logical Clock Time 158
+Internal Event	System Time 25.977	Logical Clock Time 159	
+Internal Event	System Time 26.159	Logical Clock Time 160	
+Internal Event	System Time 26.341	Logical Clock Time 161	
+Receive From 1	System Time 26.508	Logical Clock Time 162	New Msg Queue Length 0
+Internal Event	System Time 26.683	Logical Clock Time 163	
+Internal Event	System Time 26.859	Logical Clock Time 164	
+Receive From 0	System Time 27.033	Logical Clock Time 165	New Msg Queue Length 0
+Sent Msg To 1	System Time 27.212	Logical Clock Time 166
+Receive From 0	System Time 27.387	Logical Clock Time 167	New Msg Queue Length 0
+Internal Event	System Time 27.562	Logical Clock Time 168	
+Receive From 0	System Time 27.737	Logical Clock Time 169	New Msg Queue Length 0
+Sent Msg To 0	System Time 27.914	Logical Clock Time 170
+Internal Event	System Time 28.086	Logical Clock Time 171	
+Internal Event	System Time 28.262	Logical Clock Time 172	
+Internal Event	System Time 28.439	Logical Clock Time 173	
+Internal Event	System Time 28.615	Logical Clock Time 174	
+Sent Msg To 0	System Time 28.793	Logical Clock Time 175
+Internal Event	System Time 28.975	Logical Clock Time 176	
+Internal Event	System Time 29.151	Logical Clock Time 177	
+Internal Event	System Time 29.327	Logical Clock Time 178	
+Receive From 0	System Time 29.510	Logical Clock Time 180	New Msg Queue Length 0
+Sent Msg To 1	System Time 29.687	Logical Clock Time 181
+Internal Event	System Time 29.863	Logical Clock Time 182	
+Internal Event	System Time 30.039	Logical Clock Time 183	
+Receive From 1	System Time 30.213	Logical Clock Time 184	New Msg Queue Length 0
+Receive From 0	System Time 30.389	Logical Clock Time 185	New Msg Queue Length 0
+Internal Event	System Time 30.560	Logical Clock Time 186	
+Internal Event	System Time 30.735	Logical Clock Time 187	
+Internal Event	System Time 30.911	Logical Clock Time 188	
+Internal Event	System Time 31.093	Logical Clock Time 189	
+Internal Event	System Time 31.270	Logical Clock Time 190	
+Sent Msg To 0	System Time 31.444	Logical Clock Time 191
+Sent Msg To 1	System Time 31.444	Logical Clock Time 192
+Internal Event	System Time 31.620	Logical Clock Time 193	
+Internal Event	System Time 31.796	Logical Clock Time 194	
+Internal Event	System Time 31.973	Logical Clock Time 195	
+Sent Msg To 0	System Time 32.143	Logical Clock Time 196
+Sent Msg To 1	System Time 32.149	Logical Clock Time 197
+Sent Msg To 1	System Time 32.319	Logical Clock Time 198
+Internal Event	System Time 32.494	Logical Clock Time 199	
+Sent Msg To 0	System Time 32.679	Logical Clock Time 200
+Internal Event	System Time 32.853	Logical Clock Time 201	
+Receive From 0	System Time 33.031	Logical Clock Time 202	New Msg Queue Length 0
+Receive From 0	System Time 33.208	Logical Clock Time 203	New Msg Queue Length 0
+Sent Msg To 0	System Time 33.386	Logical Clock Time 204
+Sent Msg To 1	System Time 33.388	Logical Clock Time 205
+Internal Event	System Time 33.560	Logical Clock Time 206	
+Internal Event	System Time 33.727	Logical Clock Time 207	
+Receive From 0	System Time 33.912	Logical Clock Time 208	New Msg Queue Length 0
+Receive From 0	System Time 34.083	Logical Clock Time 209	New Msg Queue Length 0
+Internal Event	System Time 34.260	Logical Clock Time 210	
+Internal Event	System Time 34.445	Logical Clock Time 211	
+Internal Event	System Time 34.621	Logical Clock Time 212	
+Internal Event	System Time 34.839	Logical Clock Time 213	
+Sent Msg To 0	System Time 35.016	Logical Clock Time 214
+Sent Msg To 1	System Time 35.018	Logical Clock Time 215
+Sent Msg To 0	System Time 35.188	Logical Clock Time 216
+Internal Event	System Time 35.359	Logical Clock Time 217	
+Internal Event	System Time 35.535	Logical Clock Time 218	
+Internal Event	System Time 35.709	Logical Clock Time 219	
+Sent Msg To 0	System Time 35.896	Logical Clock Time 220
+Internal Event	System Time 36.067	Logical Clock Time 221	
+Internal Event	System Time 36.242	Logical Clock Time 222	
+Internal Event	System Time 36.409	Logical Clock Time 223	
+Receive From 1	System Time 36.585	Logical Clock Time 224	New Msg Queue Length 0
+Internal Event	System Time 36.761	Logical Clock Time 225	
+Receive From 1	System Time 36.936	Logical Clock Time 226	New Msg Queue Length 0
+Internal Event	System Time 37.115	Logical Clock Time 227	
+Internal Event	System Time 37.286	Logical Clock Time 228	
+Receive From 0	System Time 37.460	Logical Clock Time 229	New Msg Queue Length 0
+Internal Event	System Time 37.635	Logical Clock Time 230	
+Sent Msg To 0	System Time 37.812	Logical Clock Time 231
+Internal Event	System Time 37.993	Logical Clock Time 232	
+Internal Event	System Time 38.168	Logical Clock Time 233	
+Internal Event	System Time 38.342	Logical Clock Time 234	
+Internal Event	System Time 38.511	Logical Clock Time 235	
+Internal Event	System Time 38.685	Logical Clock Time 236	
+Sent Msg To 0	System Time 38.861	Logical Clock Time 237
+Sent Msg To 1	System Time 38.861	Logical Clock Time 238
+Internal Event	System Time 39.028	Logical Clock Time 239	
+Internal Event	System Time 39.204	Logical Clock Time 240	
+Receive From 0	System Time 39.378	Logical Clock Time 241	New Msg Queue Length 0
+Internal Event	System Time 39.561	Logical Clock Time 242	
+Receive From 0	System Time 39.745	Logical Clock Time 243	New Msg Queue Length 0
+Receive From 1	System Time 39.916	Logical Clock Time 244	New Msg Queue Length 0
+Receive From 1	System Time 40.094	Logical Clock Time 245	New Msg Queue Length 0
+Internal Event	System Time 40.288	Logical Clock Time 246	
+Receive From 0	System Time 40.463	Logical Clock Time 247	New Msg Queue Length 0
+Receive From 0	System Time 40.640	Logical Clock Time 248	New Msg Queue Length 0
+Sent Msg To 0	System Time 40.841	Logical Clock Time 249
+Sent Msg To 1	System Time 41.032	Logical Clock Time 250
+Sent Msg To 0	System Time 41.220	Logical Clock Time 251
+Internal Event	System Time 41.398	Logical Clock Time 252	
+Internal Event	System Time 41.575	Logical Clock Time 253	
+Internal Event	System Time 41.747	Logical Clock Time 254	
+Internal Event	System Time 41.923	Logical Clock Time 255	
+Internal Event	System Time 42.096	Logical Clock Time 256	
+Receive From 0	System Time 42.268	Logical Clock Time 259	New Msg Queue Length 0
+Sent Msg To 0	System Time 42.444	Logical Clock Time 260
+Internal Event	System Time 42.616	Logical Clock Time 261	
+Sent Msg To 1	System Time 42.792	Logical Clock Time 262
+Internal Event	System Time 42.967	Logical Clock Time 263	
+Internal Event	System Time 43.143	Logical Clock Time 264	
+Internal Event	System Time 43.318	Logical Clock Time 265	
+Receive From 0	System Time 43.493	Logical Clock Time 267	New Msg Queue Length 0
+Receive From 0	System Time 43.667	Logical Clock Time 269	New Msg Queue Length 0
+Internal Event	System Time 43.842	Logical Clock Time 270	
+Sent Msg To 0	System Time 44.022	Logical Clock Time 271
+Sent Msg To 1	System Time 44.022	Logical Clock Time 272
+Internal Event	System Time 44.193	Logical Clock Time 273	
+Internal Event	System Time 44.369	Logical Clock Time 274	
+Sent Msg To 1	System Time 44.545	Logical Clock Time 275
+Internal Event	System Time 44.722	Logical Clock Time 276	
+Receive From 1	System Time 44.898	Logical Clock Time 277	New Msg Queue Length 0
+Receive From 0	System Time 45.074	Logical Clock Time 278	New Msg Queue Length 0
+Internal Event	System Time 45.250	Logical Clock Time 279	
+Internal Event	System Time 45.426	Logical Clock Time 280	
+Sent Msg To 0	System Time 45.601	Logical Clock Time 281
+Internal Event	System Time 45.777	Logical Clock Time 282	
+Receive From 0	System Time 45.953	Logical Clock Time 283	New Msg Queue Length 0
+Internal Event	System Time 46.129	Logical Clock Time 284	
+Sent Msg To 1	System Time 46.306	Logical Clock Time 285
+Internal Event	System Time 46.492	Logical Clock Time 286	
+Sent Msg To 1	System Time 46.667	Logical Clock Time 287
+Internal Event	System Time 46.842	Logical Clock Time 288	
+Internal Event	System Time 47.018	Logical Clock Time 289	
+Internal Event	System Time 47.193	Logical Clock Time 290	
+Receive From 0	System Time 47.367	Logical Clock Time 291	New Msg Queue Length 0
+Internal Event	System Time 47.549	Logical Clock Time 292	
+Sent Msg To 1	System Time 47.728	Logical Clock Time 293
+Receive From 0	System Time 47.901	Logical Clock Time 295	New Msg Queue Length 0
+Internal Event	System Time 48.075	Logical Clock Time 296	
+Internal Event	System Time 48.253	Logical Clock Time 297	
+Sent Msg To 0	System Time 48.461	Logical Clock Time 298
+Sent Msg To 1	System Time 48.463	Logical Clock Time 299
+Internal Event	System Time 48.637	Logical Clock Time 300	
+Internal Event	System Time 48.811	Logical Clock Time 301	
+Receive From 0	System Time 48.988	Logical Clock Time 302	New Msg Queue Length 0
+Sent Msg To 1	System Time 49.159	Logical Clock Time 303
+Internal Event	System Time 49.332	Logical Clock Time 304	
+Internal Event	System Time 49.508	Logical Clock Time 305	
+Receive From 0	System Time 49.691	Logical Clock Time 307	New Msg Queue Length 0
+Receive From 0	System Time 49.868	Logical Clock Time 308	New Msg Queue Length 0
+Sent Msg To 0	System Time 50.046	Logical Clock Time 309
+Sent Msg To 1	System Time 50.046	Logical Clock Time 310
+Internal Event	System Time 50.218	Logical Clock Time 311	
+Receive From 0	System Time 50.394	Logical Clock Time 312	New Msg Queue Length 0
+Receive From 1	System Time 50.570	Logical Clock Time 313	New Msg Queue Length 0
+Receive From 1	System Time 50.751	Logical Clock Time 314	New Msg Queue Length 0
+Internal Event	System Time 50.927	Logical Clock Time 315	
+Receive From 0	System Time 51.101	Logical Clock Time 316	New Msg Queue Length 0
+Receive From 0	System Time 51.281	Logical Clock Time 317	New Msg Queue Length 0
+Sent Msg To 0	System Time 51.457	Logical Clock Time 318
+Sent Msg To 0	System Time 51.635	Logical Clock Time 319
+Internal Event	System Time 51.817	Logical Clock Time 320	
+Internal Event	System Time 51.993	Logical Clock Time 321	
+Sent Msg To 0	System Time 52.172	Logical Clock Time 322
+Internal Event	System Time 52.340	Logical Clock Time 323	
+Internal Event	System Time 52.516	Logical Clock Time 324	
+Internal Event	System Time 52.692	Logical Clock Time 325	
+Receive From 0	System Time 52.874	Logical Clock Time 327	New Msg Queue Length 0
+Internal Event	System Time 53.051	Logical Clock Time 328	
+Sent Msg To 0	System Time 53.228	Logical Clock Time 329
+Internal Event	System Time 53.402	Logical Clock Time 330	
+Sent Msg To 0	System Time 53.579	Logical Clock Time 331
+Internal Event	System Time 53.755	Logical Clock Time 332	
+Sent Msg To 1	System Time 53.926	Logical Clock Time 333
+Sent Msg To 1	System Time 54.101	Logical Clock Time 334
+Internal Event	System Time 54.277	Logical Clock Time 335	
+Receive From 1	System Time 54.453	Logical Clock Time 336	New Msg Queue Length 0
+Internal Event	System Time 54.628	Logical Clock Time 337	
+Internal Event	System Time 54.806	Logical Clock Time 338	
+Internal Event	System Time 54.984	Logical Clock Time 339	
+Internal Event	System Time 55.160	Logical Clock Time 340	
+Internal Event	System Time 55.335	Logical Clock Time 341	
+Internal Event	System Time 55.519	Logical Clock Time 342	
+Sent Msg To 0	System Time 55.694	Logical Clock Time 343
+Sent Msg To 0	System Time 55.871	Logical Clock Time 344
+Sent Msg To 0	System Time 56.042	Logical Clock Time 345
+Sent Msg To 1	System Time 56.047	Logical Clock Time 346
+Internal Event	System Time 56.218	Logical Clock Time 347	
+Sent Msg To 1	System Time 56.395	Logical Clock Time 348
+Receive From 0	System Time 56.569	Logical Clock Time 349	New Msg Queue Length 0
+Sent Msg To 0	System Time 56.744	Logical Clock Time 350
+Internal Event	System Time 56.916	Logical Clock Time 351	
+Sent Msg To 0	System Time 57.087	Logical Clock Time 352
+Sent Msg To 1	System Time 57.091	Logical Clock Time 353
+Internal Event	System Time 57.261	Logical Clock Time 354	
+Internal Event	System Time 57.436	Logical Clock Time 355	
+Internal Event	System Time 57.621	Logical Clock Time 356	
+Receive From 0	System Time 57.797	Logical Clock Time 357	New Msg Queue Length 0
+Receive From 0	System Time 57.987	Logical Clock Time 358	New Msg Queue Length 0
+Sent Msg To 1	System Time 58.160	Logical Clock Time 359
+Internal Event	System Time 58.332	Logical Clock Time 360	
+Sent Msg To 0	System Time 58.509	Logical Clock Time 361
+Sent Msg To 1	System Time 58.511	Logical Clock Time 362
+Internal Event	System Time 58.691	Logical Clock Time 363	
+Sent Msg To 1	System Time 58.865	Logical Clock Time 364
+Sent Msg To 1	System Time 59.041	Logical Clock Time 365
+Internal Event	System Time 59.216	Logical Clock Time 366	
+Internal Event	System Time 59.391	Logical Clock Time 367	
+Receive From 0	System Time 59.567	Logical Clock Time 368	New Msg Queue Length 0
+Internal Event	System Time 59.740	Logical Clock Time 369	
+Receive From 1	System Time 59.915	Logical Clock Time 370	New Msg Queue Length 0
+Internal Event	System Time 60.089	Logical Clock Time 371	
+Receive From 0	System Time 60.259	Logical Clock Time 372	New Msg Queue Length 0
+Receive From 0	System Time 60.435	Logical Clock Time 373	New Msg Queue Length 0
+Internal Event	System Time 60.610	Logical Clock Time 374	
