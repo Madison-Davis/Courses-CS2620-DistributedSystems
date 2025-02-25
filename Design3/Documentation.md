@@ -52,7 +52,7 @@ Run :
 ```
 ├── vm.py          → a class for each vm we make, includes sending/receiving/updating capability
 ├── vm_logs/       → all the log files where each file is named vm_{id}.log
-├── main.py        → start the program from here, creates 3 vms on different processes
+├── main.py        → start the program: creates 3 vm objects on different processes and start them up
 └── config.py      → specifications like the port number, how many vms we want, and log file
 ```
 
