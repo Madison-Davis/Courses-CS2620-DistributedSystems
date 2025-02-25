@@ -52,6 +52,9 @@ Run :
 ```
 ├── vm.py          → a class for each vm we make, includes sending/receiving/updating capability
 ├── vm_logs/       → all the log files where each file is named vm_{id}.log
+│   ├── trial{i}/           → log files for ith trial of control experiments
+│   ├── speed_trial{i}/     → log files for ith trial of reduced speed variation experiments
+│   ├── internal_trial{i}/  → log files for ith trial of reduced internal event probability experiments
 ├── main.py        → starts the program: creates 3 vm objects on different processes and starts them up
 └── config.py      → specifications like the port number, how many vms we want, and log file
 ```
