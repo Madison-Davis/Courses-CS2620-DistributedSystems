@@ -23,15 +23,25 @@ After initialization, the following mechanism should be employed:
 6. If the value is other than 1-3, treat the cycle as an internal event; update the local logical clock, and log the internal event, the system time, and the logical clock value.
 
 
+
+-------------------------------------------
+## Assumptions
+1. When the guidelines say 'Each machine will have a network queue' we assume that that means there is no centralized queue and that each machine will have its own queue.  In otherwords, we assume peer-to-peer connection with no central server.
+2. There are no guidelines for how many times initialization occurs.  We assume initialization happens once for all machines at the beginning.  In other words, for however many machines there are when we start the program, that is the number that will remain, and we will not add machines mid-program.
+3. When the guidelines say 'Each of your virtual machines should connect to each of the other virtual machines during initialization', we do this by listing the values of the other vm's ports during a vm's initialization.  By 'listing', we simply mean that because we know the number of machines we are making (expressed in the config file) and their ports (which are based on their ids, such as 0, 1, 2, etc.), when we initialize a vm with some id, we make a list of other ports for all possible id values up to the max number of vms, excluding this vm's own id.  To understand this further, please visit `vm.py` in the file structure and look at self.peer_ports.
+
+
+
 -------------------------------------------
 ## System Design Decisions
 
 Based on the requirements, here is our system design:
-1. Because vms will only be sending and receiving messages, it makes sense to just make one class of sending/receiving capability, then make objects of this class.
-2. If this project runs on just one computer, then we decided to use processes to run concurrently.
-3. For each process, we’ll assign it one vm, where the vm will pull up its own “server” thread to then handle lookups for any received messages.
-4. For communicating, we employ a simple form of inter-process communication via sockets.
-5. Let the data being sent over the sockets be serialized strings, such as “id,msg”.
+1. To make virtual machines, for simplicity, it makes sense to make a class with sending/receiving capability, then make objects of this class.
+2. Since this project runs on just one computer, we decide to use processes to help things run concurrently.
+3. We’ll assign each vm to one process.
+4. Each vm will instantiate another thread, not constrained by its clock_speed, where that thread simply listens for any updates to its queue.
+5. For communicating, we employ a simple form of inter-process communication via sockets.
+6. Let the data being sent over the sockets be serialized strings, such as “id,msg”.
 
 
 

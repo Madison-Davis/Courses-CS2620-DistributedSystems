@@ -9,6 +9,7 @@ import config
 import socket
 import random
 import config
+import threading
 import multiprocessing
 
 
@@ -78,7 +79,7 @@ class VirtualMachine(multiprocessing.Process):
             recipient_vm_port = recipient[1]
             message = f"{self.id},{self.logical_clock}"
             status = self.send_msg(recipient_vm_port, message)
-
+            print(f"{self.id} s {recipient_vm_port-config.PORT} {time.time()}")
             # Update personal logical clock
             self.update()
             if status:
@@ -101,6 +102,7 @@ class VirtualMachine(multiprocessing.Process):
                         sender_id, sender_logical_clock = map(int, data.decode("utf-8").split(","))
                         # Put tuple (sender_id, sender_logical_clock) in our own queue
                         self.queue.put((sender_id, sender_logical_clock))
+                        print(f"{self.id} r {sender_id} {time.time()}")
                         with self.queue_size.get_lock():
                             self.queue_size.value += 1
 
@@ -121,13 +123,15 @@ class VirtualMachine(multiprocessing.Process):
     def run(self):
         """ Main execution loop. """
         # Run a concurrent server socket to handle receive_msg()
-        receiver_process = multiprocessing.Process(target=self.receive_msg, daemon=True)
-        receiver_process.start()  
+        receiver_thread = threading.Thread(target=self.receive_msg, daemon=True)
+        receiver_thread.start()  
 
         try:
             while True:
                 # Simulate clock speed (every 1/# th of a second, perform an instruction)
+                print(f"{self.id} zzz")
                 time.sleep(1 / self.clock_speed)
+                print(f"{self.id} imup")
 
                 # If queue is not empty, perform the actions required
                 if not self.queue.empty():
