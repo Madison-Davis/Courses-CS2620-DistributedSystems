@@ -33,7 +33,7 @@ After initialization, the following mechanism should be employed:
 
 
 -------------------------------------------
-## System Design Decisions
+## System Design Decisions: How We Constructed Our Model
 
 Based on the requirements, here is our system design:
 1. To make virtual machines, for simplicity, we define one class `VirtualMachine` within `vm.py` with sending/receiving capability.
