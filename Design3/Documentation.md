@@ -36,11 +36,11 @@ After initialization, the following mechanism should be employed:
 ## System Design Decisions
 
 Based on the requirements, here is our system design:
-1. To make virtual machines, for simplicity, it makes sense to make a class with sending/receiving capability, then make objects of this class.
-2. Since this project runs on just one computer, we decide to use processes to help things run concurrently.
-3. We’ll assign each VM to one process.
-4. Each VM will instantiate another thread, not constrained by its clock_speed, where that thread simply listens for any updates to its queue.
-5. For communicating, we employ a simple form of inter-process communication via sockets.
+1. To make virtual machines, for simplicity, we define one class `VirtualMachine` within `vm.py` with sending/receiving capability.
+2. Each vm is an object of this class.  These are instantiated in the `main.py` file.
+3. Each vm runs on its own process to allow for our system to run on one computer.
+4. One of the class functions is called `run`.  In `run`, the vm will first instantiate another thread, not constrained by its clock_speed, where that thread simply listens for any updates to its queue.  After this, the vm enters a while True loop where it sleeps and then performs internal updates and/or messages.
+5. For communicating, we employ a simple form of inter-process communication via sockets.  All vms know their other vm's ports to know how to send.  During a `send_msg` function, the object will connect to its own port via a socket and then send the result over the socket.
 6. Let the data being sent over the sockets be serialized strings, such as “id,msg”.
 
 
