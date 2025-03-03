@@ -66,6 +66,7 @@ Run :
 │   ├── speed_trial{i}/     → log files for ith trial of reduced speed variation experiments
 │   ├── internal_trial{i}/  → log files for ith trial of reduced internal event probability experiments
 ├── main.py        → starts the program: creates 3 VM objects on different processes and starts them up
+├── analyze.py     → does analysis on the vm_logs for us to get numerical results
 └── config.py      → specifications like the port number, how many VMs we want, and log file
 ```
 
