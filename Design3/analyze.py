@@ -51,18 +51,102 @@ def compute_stats(logical_clocks, msg_queue_lengths):
 if __name__ == "__main__":
     # Use filename provided as command line argument or default to "log_file.txt"
     if len(sys.argv) > 1:
-        filename = sys.argv[1]
+        filenames = [sys.argv[1]]
     else:
-        filename = "vm_logs/trial1/vm_0.log"
+
+        """
+        Exp 1, Slowest
+        filenames = [
+            "vm_logs/trial1/vm_2.log",
+            "vm_logs/trial2/vm_0.log",
+            "vm_logs/trial3/vm_1.log",
+            "vm_logs/trial4/vm_0.log",
+            "vm_logs/trial5/vm_1.log",
+            "vm_logs/trial6/vm_1.log",
+            "vm_logs/trial7/vm_0.log",
+            "vm_logs/trial8/vm_0.log",
+            ]
+
+        Exp 1, Fastest
+        filenames = [
+            "vm_logs/trial1/vm_0.log",
+            "vm_logs/trial2/vm_2.log",
+            "vm_logs/trial3/vm_0.log",
+            "vm_logs/trial4/vm_2.log",
+            "vm_logs/trial5/vm_0.log",
+            "vm_logs/trial6/vm_0.log",
+            "vm_logs/trial7/vm_1.log",
+            "vm_logs/trial8/vm_1.log",
+            ]
+
+        Exp 2, Slowest
+        filenames = [
+            "vm_logs/speed_trial1/vm_0.log",
+            "vm_logs/speed_trial2/vm_0.log",
+            "vm_logs/speed_trial3/vm_2.log",
+            "vm_logs/speed_trial4/vm_2.log",
+            "vm_logs/speed_trial5/vm_2.log"
+            ]
+
+        Exp 2, Fastest
+        filenames = [
+            "vm_logs/speed_trial1/vm_1.log",
+            "vm_logs/speed_trial2/vm_1.log",
+            "vm_logs/speed_trial3/vm_0.log",
+            "vm_logs/speed_trial4/vm_1.log",
+            "vm_logs/speed_trial5/vm_0.log"
+            ]
+
+        Exp 3, Slowest
+        filenames = [
+            "vm_logs/internal_trial1/vm_2.log",
+            "vm_logs/internal_trial2/vm_2.log",
+            "vm_logs/internal_trial3/vm_1.log",
+            "vm_logs/internal_trial4/vm_1.log",
+            "vm_logs/internal_trial5/vm_1.log"
+            ]
+
+        Exp 2, Fastest
+        filenames = [
+            "vm_logs/internal_trial1/vm_1.log",
+            "vm_logs/internal_trial2/vm_0.log",
+            "vm_logs/internal_trial3/vm_2.log",
+            "vm_logs/internal_trial4/vm_0.log",
+            "vm_logs/internal_trial5/vm_2.log"
+            ]
+        """
+        
+        filenames = [
+            "vm_logs/internal_trial1/vm_2.log",
+            "vm_logs/internal_trial2/vm_2.log",
+            "vm_logs/internal_trial3/vm_1.log",
+            "vm_logs/internal_trial4/vm_1.log",
+            "vm_logs/internal_trial5/vm_1.log"
+            ]
+        
+        # NOTE: queue lengths for experiment 1
+        # Exp 1: (266-187)+(389-273)+(385-265)+(3)+(378-250)+(4)+(1)+(328-211)
         
     try:
-        logical_clocks, msg_queue_lengths = parse_file(filename)
-        avg_jump, max_jump, avg_queue_length, max_queue_length = compute_stats(logical_clocks, msg_queue_lengths)
-        
-        print("Average Logical Clock Jump:", avg_jump)
-        print("Maximum Logical Clock Jump:", max_jump)
-        print("Average Message Queue Length:", avg_queue_length)
-        print("Maximum Message Queue Length:", max_queue_length)
+        total_avg_jump = 0
+        total_max_jump = 0
+        total_avg_queue = 0
+        total_max_queue_length = 0
+        num_files = len(filenames)
+
+        for filename in filenames:
+            logical_clocks, msg_queue_lengths = parse_file(filename)
+            avg_jump, max_jump, avg_queue_length, max_queue_length = compute_stats(logical_clocks, msg_queue_lengths)
+            
+            total_avg_jump += avg_jump
+            total_max_jump += max_jump
+            total_avg_queue += avg_queue_length
+            total_max_queue_length += max_queue_length
+
+        print("Average Logical Clock Jump:", total_avg_jump/num_files)
+        print("Maximum Logical Clock Jump:", total_max_jump/num_files)
+        print("Average Message Queue Length:", total_avg_queue/num_files)
+        print("Maximum Message Queue Length:", total_max_queue_length/num_files)
         
     except FileNotFoundError:
         print(f"Error: The file '{filename}' was not found.")
