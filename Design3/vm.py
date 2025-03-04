@@ -17,7 +17,7 @@ import multiprocessing
 # ++++++++++++++++++++ Class ++++++++++++++++++++ #
 
 class VirtualMachine(multiprocessing.Process):
-    def __init__(self, id):
+    def __init__(self, id, clock_speed=None):
         """ 
         Initialize Virtual Machine. 
         id              id of this vm (0, 1, 2, etc.)
@@ -38,7 +38,10 @@ class VirtualMachine(multiprocessing.Process):
         self.queue_size = multiprocessing.Value('i', 0) # qsize() does not work on MacOS devices, so keep track separately, need to use multiprocessing.Value to access from different processes
 
         # Create clock
-        self.clock_speed = random.randint(1, config.SPEED_UPPER_BOUND) # randomize number of instructions/second
+        if clock_speed is not None:
+            self.clock_speed = clock_speed
+        else:
+            self.clock_speed = random.randint(1, config.SPEED_UPPER_BOUND) # randomize number of instructions/second
         self.logical_clock = 0
         self.start_time = time.time()  # to standardize system time
 

@@ -33,15 +33,15 @@ After initialization, the following mechanism should be employed:
 
 
 -------------------------------------------
-## System Design Decisions
+## System Design: How We Constructed Our Model
 
-Based on the requirements, here is our system design:
-1. To make virtual machines, for simplicity, it makes sense to make a class with sending/receiving capability, then make objects of this class.
-2. Since this project runs on just one computer, we decide to use processes to help things run concurrently.
-3. We’ll assign each VM to one process.
-4. Each VM will instantiate another thread, not constrained by its clock_speed, where that thread simply listens for any updates to its queue.
-5. For communicating, we employ a simple form of inter-process communication via sockets.
-6. Let the data being sent over the sockets be serialized strings, such as “id,msg”.
+Based on the requirements and assumptions, here is our system design.  To understand the files behind this design, read the next few sections on code.
+1. To make virtual machines, for simplicity, we define one class `VirtualMachine` within `vm.py` with sending/receiving capability.
+2. Each vm is an object of this class.  These are instantiated in the `main.py` file.
+3. The class has an `__init__` function that sets up variables like clock speed, port, other peers' ports, and more.
+5. One of the class functions is called `run`.  In `run`, the vm will first instantiate another thread, not constrained by its clock_speed, where that thread simply listens for any updates to its queue.  It listens within the function `receive_msg`.  Think of this thread as part of initialization/set-up.  After this, the vm enters a while True loop where it periodically sleeps and then performs internal updates and/or messages.  We use threads to save memory space.
+6. For communicating, we employ inter-process communication via sockets.  As talked about earlier, all vms know their other vm's ports so they know where to send.  In the class, during a `send_msg` function, the object will connect to its own port number via a socket and then send the result over the socket to the recipient's port.  Recall the recipient is listening on an unique thread in their object's `receive_msg` function.
+7. The data being sent over the sockets are simple serialized strings, such as “id,msg”.
 
 
 
@@ -66,9 +66,9 @@ Run :
 │   ├── speed_trial{i}/     → log files for ith trial of reduced speed variation experiments
 │   ├── internal_trial{i}/  → log files for ith trial of reduced internal event probability experiments
 ├── main.py        → starts the program: creates 3 VM objects on different processes and starts them up
+├── analyze.py     → does analysis on the vm_logs for us to get numerical results
 └── config.py      → specifications like the port number, how many VMs we want, and log file
 ```
-
 
 
 -------------------------------------------
