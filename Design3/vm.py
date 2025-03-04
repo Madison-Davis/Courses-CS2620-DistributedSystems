@@ -132,9 +132,9 @@ class VirtualMachine(multiprocessing.Process):
         try:
             while True:
                 # Simulate clock speed (every 1/# th of a second, perform an instruction)
-                print(f"{self.id} zzz")
+                print(f"{self.id} going to sleep")
                 time.sleep(1 / self.clock_speed)
-                print(f"{self.id} imup")
+                print(f"{self.id} awakening")
 
                 # If queue is not empty, perform the actions required
                 if not self.queue.empty():

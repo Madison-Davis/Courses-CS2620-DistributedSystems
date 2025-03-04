@@ -1,6 +1,15 @@
+# analyze.py
+
+
+
+# +++++++++++++++ Imports/Installs +++++++++++++++ #
 import csv
 import re
 import sys
+
+
+
+# +++++++++++++++ Helper Functions +++++++++++++++ #
 
 def parse_file(filename):
     """
@@ -48,12 +57,16 @@ def compute_stats(logical_clocks, msg_queue_lengths):
     
     return avg_jump, max_jump, avg_queue_length, max_queue_length
 
+
+
+# +++++++++++++++ Main Function +++++++++++++++ #
+
 if __name__ == "__main__":
     # Use filename provided as command line argument or default to "log_file.txt"
     if len(sys.argv) > 1:
         filenames = [sys.argv[1]]
     else:
-
+        # Define all the files to parse
         """
         Exp 1, Slowest
         filenames = [
@@ -114,18 +127,38 @@ if __name__ == "__main__":
             "vm_logs/internal_trial4/vm_0.log",
             "vm_logs/internal_trial5/vm_2.log"
             ]
+
+        Exp 4, Slowest
+        filenames = [
+            "vm_logs/speed_internal_trial1/vm_0.log",
+            "vm_logs/speed_internal_trial2/vm_0.log",
+            "vm_logs/speed_internal_trial3/vm_1.log",
+            "vm_logs/speed_internal_trial4/vm_1.log",
+            "vm_logs/speed_internal_trial5/vm_1.log"
+            ]
+
+        Exp 4, Fastest
+        filenames = [
+            "vm_logs/speed_internal_trial1/vm_1.log",
+            "vm_logs/speed_internal_trial2/vm_1.log",
+            "vm_logs/speed_internal_trial3/vm_2.log",
+            "vm_logs/speed_internal_trial4/vm_0.log",
+            "vm_logs/speed_internal_trial5/vm_0.log"
+            ]
         """
         
         filenames = [
-            "vm_logs/internal_trial1/vm_2.log",
-            "vm_logs/internal_trial2/vm_2.log",
-            "vm_logs/internal_trial3/vm_1.log",
-            "vm_logs/internal_trial4/vm_1.log",
-            "vm_logs/internal_trial5/vm_1.log"
+            "vm_logs/speed_internal_trial1/vm_1.log",
+            "vm_logs/speed_internal_trial2/vm_1.log",
+            "vm_logs/speed_internal_trial3/vm_2.log",
+            "vm_logs/speed_internal_trial4/vm_0.log",
+            "vm_logs/speed_internal_trial5/vm_0.log"
             ]
         
         # NOTE: queue lengths for experiment 1
         # Exp 1: (266-187)+(389-273)+(385-265)+(3)+(378-250)+(4)+(1)+(328-211)
+        # NOTE: queue lengths for experiment 4
+        # Exp 4: (213-128) + (209-206) + (215-148) + (214-135) + (213-178)
         
     try:
         total_avg_jump = 0

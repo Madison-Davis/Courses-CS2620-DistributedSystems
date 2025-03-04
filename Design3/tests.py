@@ -1,3 +1,8 @@
+# tests.py
+
+
+
+# +++++++++++++++ Imports/Installs +++++++++++++++ #
 import unittest
 import os
 import socket
@@ -8,6 +13,9 @@ import multiprocessing
 import config
 from vm import VirtualMachine
 
+
+
+# +++++++++++++++ Class Definition +++++++++++++++ #
 class TestVirtualMachine(unittest.TestCase):
     def setUp(self):
         # Use a temporary directory for log files so tests do not interfere with production logs
@@ -24,6 +32,9 @@ class TestVirtualMachine(unittest.TestCase):
         self.temp_log_dir.cleanup()
 
     def test_initialization(self):
+        """
+        Verify initialization goes smoothly.
+        """
         # Check that the VM sets its id, port, and peer_ports correctly.
         self.assertEqual(self.vm.id, 0)
         self.assertEqual(self.vm.port, config.PORT + 0)
@@ -37,12 +48,17 @@ class TestVirtualMachine(unittest.TestCase):
             self.assertEqual(f.read(), "")
 
     def test_update_without_sender(self):
-        # Calling update without sender_logical_clock should increment the logical clock by 1.
+        """ 
+        Calling update without sender_logical_clock should increment the logical clock by 1.
+        """
         current_clock = self.vm.logical_clock
         self.vm.update()
         self.assertEqual(self.vm.logical_clock, current_clock + 1)
 
     def test_update_with_sender(self):
+        """
+        Ensure logical clock updates correctly for an incoming message event.
+        """
         # If a message is received, update should set the logical clock to max(current, sender) + 1.
         self.vm.logical_clock = 5
         self.vm.update(sender_logical_clock=7)
@@ -54,7 +70,9 @@ class TestVirtualMachine(unittest.TestCase):
         self.assertEqual(self.vm.logical_clock, 11)
 
     def test_log(self):
-        # Ensure that a log message is correctly appended to the log file.
+        """
+        Ensure that a log message is correctly appended to the log file.
+        """
         test_message = "Test log entry"
         self.vm.log(test_message)
         with open(self.vm.log_file, 'r') as f:
@@ -62,7 +80,9 @@ class TestVirtualMachine(unittest.TestCase):
         self.assertIn(test_message, content)
 
     def test_handle_queue(self):
-        # Simulate a message arriving in the VM's queue.
+        """
+        Simulate a message arriving in the VM's queue.
+        """
         # We add a tuple: (sender_id, sender_logical_clock)
         initial_queue_length = self.vm.queue_size.value
         self.vm.queue.put((1, 10))
@@ -81,7 +101,9 @@ class TestVirtualMachine(unittest.TestCase):
         self.assertIn("Receive From 1", content)
 
     def test_send_msg_success(self):
-        # Set up a dummy server socket that will accept a connection.
+        """
+        Set up a dummy server socket that will accept a connection.
+        """
         dummy_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         dummy_server_socket.bind(("localhost", 0))  # Bind to an ephemeral port.
         dummy_port = dummy_server_socket.getsockname()[1]
@@ -100,13 +122,17 @@ class TestVirtualMachine(unittest.TestCase):
         server_thread.join()
 
     def test_send_msg_failure(self):
-        # Try to send to a port where no server is running; expect failure.
+        """
+        Try to send to a port where no server is running; expect failure.
+        """
         closed_port = 9999  # Assuming this port is not open.
         result = self.vm.send_msg(closed_port, "dummy message")
         self.assertFalse(result)
 
     def test_send_msg_and_update(self):
-        # Override send_msg to always return True (bypassing real socket behavior)
+        """
+        Override send_msg to always return True (bypassing real socket behavior)
+        """
         original_send_msg = self.vm.send_msg
         self.vm.send_msg = lambda recipient_port, msg: True
 
@@ -126,5 +152,8 @@ class TestVirtualMachine(unittest.TestCase):
         # Restore the original send_msg method.
         self.vm.send_msg = original_send_msg
 
+
+
+# +++++++++++++++ Main Function +++++++++++++++ #
 if __name__ == '__main__':
     unittest.main()

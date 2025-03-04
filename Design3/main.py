@@ -17,7 +17,7 @@ if __name__ == "__main__":
         # create and open new log file
         # create logical clock
     # NOTE: feel free to insert manually the clock speeds here for validation; we did it random
-    #vms = [VirtualMachine(0,1),VirtualMachine(1,5),VirtualMachine(2,4)]
+    #vms = [VirtualMachine(0,2),VirtualMachine(1,3),VirtualMachine(2,2)]
     vms = [VirtualMachine(i) for i in range(config.NUM_VIRTUAL_MACHINES)]
 
     # Print clock speed for knowledge-purposes
