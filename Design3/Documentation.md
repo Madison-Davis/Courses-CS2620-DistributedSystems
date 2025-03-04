@@ -62,9 +62,10 @@ Run :
 ```
 ├── vm.py          → a class for each VM we make, includes sending/receiving/updating capability
 ├── vm_logs/       → all the log files where each file is named vm_{id}.log
-│   ├── trial{i}/           → log files for ith trial of control experiments
-│   ├── speed_trial{i}/     → log files for ith trial of reduced speed variation experiments
-│   ├── internal_trial{i}/  → log files for ith trial of reduced internal event probability experiments
+│   ├── trial{i}/                 → log files for ith trial of control experiments
+│   ├── speed_trial{i}/           → log files for ith trial of reduced speed variation experiments
+│   ├── internal_trial{i}/        → log files for ith trial of reduced internal event probability experiments
+│   ├── speed_internal_trial{i}/  → log files for ith trial of reduced internal event probability and speed variation experiments
 ├── main.py        → starts the program: creates 3 VM objects on different processes and starts them up
 ├── analyze.py     → does analysis on the vm_logs for us to get numerical results
 └── config.py      → specifications like the port number, how many VMs we want, and log file
