@@ -7,7 +7,7 @@
 # HOST        = "10.250.184.185"
 HOST        = "127.0.0.1"       
 BASE_PORT   = 12300             
-PID         = 0  # 0 for leader, 1 and 2 for replicas
+PID         = 3
 BUF_SIZE    = 4096
 
 # Addresses of leader (0) and replicas (1,2)

@@ -421,7 +421,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Deserialize request.payload and call the appropriate local update.
         """
         method = request.method
-        print(f"[REPLICA {config.PROCESS_ID}] Received replication request for method {method}")
+        print(f"[SERVER {self.pid}] Received replication request for method {method}")
         # TODO: deserialize request.payload and call appropriate local update
         return chat_pb2.GenericResponse(success=True, message="Replication applied")
     
@@ -446,7 +446,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             # Check heartbeat timestamp (if missing or too old, skip this replica)
             last_hb = self.active_servers.get(replica_id, 0)
             if time.time() - last_hb > config.HEARTBEAT_TIMEOUT:
-                print(f"[LEADER] Replica {replica_id} heartbeat timed out; removing from alive list.")
+                print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
                 self.active_servers.pop(replica_id, None)
                 continue
             try:
@@ -454,11 +454,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     stub = chat_pb2_grpc.ChatServiceStub(channel)
                     rep_response = stub.Replicate(replication_request)
                     if not rep_response.success:
-                        print(f"[LEADER] Replication to replica {replica_id} failed: {rep_response.message}")
+                        print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {rep_response.message}")
             except Exception as e:
-                print(f"[LEADER] Error replicating to replica {replica_id}: {e}")
+                print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}: {e}")
     
     def heartbeat_loop(self):
+        time.sleep(3)
         while True:
             # send heartbeat ping to all active replicas
             for replica_id, address in config.REPLICA_ADDRESSES.items():
@@ -467,18 +468,18 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 try:
                     with grpc.insecure_channel(address) as channel:
                         stub = chat_pb2_grpc.ChatServiceStub(channel)
-                        hb_request = chat_pb2.HeartbeatRequest(process_id=config.PROCESS_ID)
+                        hb_request = chat_pb2.HeartbeatRequest(process_id=replica_id)
                         response = stub.Heartbeat(hb_request)
                         if response.alive:
                             self.active_servers[replica_id] = time.time()
                 except Exception as e:
-                    print(f"[LEADER] Heartbeat failed for replica {replica_id}: {e}")
+                    print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}: {e}")
                     self.active_servers.pop(replica_id, None)
             # check which peers have not responded
             current_time = time.time()
             for replica_id in list(self.active_servers.keys()):
                 if current_time - self.active_servers[replica_id] > config.HEARTBEAT_TIMEOUT:
-                    print(f"Replica {replica_id} is considered dead.")
+                    print(f"[SERVER {self.pid}] Replica {replica_id} is considered dead.")
                     self.active_servers.pop(replica_id, None)
                     if replica_id == self.leader:
                         self.trigger_leader_election()
@@ -494,7 +495,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         active_ids = list(self.active_servers.keys())
         active_ids.append(self.pid)
         new_leader = min(active_ids)
-        print(f"[REPLICA {new_leader}] Becoming the new leader.")
+        print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
         if new_leader == self.pid:
             self.IS_LEADER = True
         # TODO: update state and notify client
