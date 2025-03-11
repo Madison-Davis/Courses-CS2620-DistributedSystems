@@ -492,6 +492,15 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.active_servers[replica_id] = time.time()
         return chat_pb2.HeartbeatResponse(alive=True)
     
+    def GetLeader(self, request, context):
+        """
+        Returns the current leader's address.
+        Assumes a global variable CURRENT_LEADER that is maintained via heartbeats and election.
+        """
+        # Look up the current leader's address from your configuration.
+        leader_address = config.REPLICA_ADDRESSES.get(self.leader, "")
+        return chat_pb2.LeaderResponse(success=True, leader_address=leader_address)
+    
     def replicate_to_replicas(self, method_name, request):
         """
         Called by the leader to replicate a write operation to all alive replicas.
@@ -553,6 +562,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         active_ids = list(self.active_servers.keys())
         active_ids.append(self.pid)
         new_leader = min(active_ids)
+        self.leader = new_leader
         print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
         if new_leader == self.pid:
             self.IS_LEADER = True
