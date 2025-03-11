@@ -16,8 +16,6 @@ service ChatService {
     rpc DeleteAccount(DeleteAccountRequest) returns (GenericResponse);
     rpc Logout(LogoutRequest) returns (GenericResponse);
     rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
-    rpc RegisterServer(ServerInfo) returns (GenericResponse);
-    rpc ListServers(Empty) returns (ServerListResponse);
 }
 
 message CreateAccountRequest {
@@ -143,13 +141,4 @@ message Draft {
 message GenericResponse {
     bool success = 1;
     string message = 2;
-}
-
-message ServerInfo {
-    string address = 1;
-    int32 pid = 2;
-}
-
-message ServerListResponse {
-    repeated ServerInfo servers = 1;
 }

@@ -1,5 +1,4 @@
 import grpc
-import json
 import os
 import sys
 import sqlite3
@@ -15,14 +14,16 @@ from config import config
 
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def __init__(self):
-        self.db_connection = sqlite3.connect('chat_database.db', check_same_thread=False)
+        self.pid = get_pid()   
+        print(self.pid)
+        self.port = config.BASE_PORT + self.pid
+        print(f"[SERVER {self.pid}] Running on port {self.port}")
+        db_name = "chat_database_" + str(self.pid) + ".db"
+        self.db_connection = sqlite3.connect(db_name, check_same_thread=False)
         self.initialize_database()
         self.active_users = {}      # Dictionary to store active user streams
         self.message_queues = {}    # Store queues for active users
-        self.active_servers = {}    # Dictionary to store active servers/replicas (by pid)
-        self.pid = get_pid()   
-        self.port = config.BASE_PORT + self.pid
-        print(f"[SERVER {self.pid}] Running on port {self.port}")
+        self.active_servers = {}    # Dictionary to store active servers/replicas (by pid)        
         self.lock = threading.Lock()
 
     def initialize_database(self):
@@ -403,19 +404,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 del self.active_users[username]  # Mark user as offline when they disconnect
                 del self.message_queues[username]  # Clean up queue
             print(f"[SERVER] {username} disconnected from message stream.")
-
-    def RegisterServer(self, request, context):
-        """Register the server instance with its PID and address"""
-        self.active_servers[request.pid] = request.address
-        print(f"Server registered: {request.address} (PID: {request.pid})")
-        return chat_pb2.GenericResponse(success=True, message="Registered successfully")
-
-    def ListServers(self, request, context):
-        """Return all known active servers"""
-        return chat_pb2.ServerListResponse(servers=[
-            chat_pb2.ServerInfo(address=addr, pid=pid)
-            for pid, addr in self.active_servers.items()
-        ])
     
 def get_pid():
     """Read the current PID from config.py and increment it."""
