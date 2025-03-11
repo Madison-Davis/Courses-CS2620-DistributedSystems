@@ -18,7 +18,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.pid = get_pid()
         self.port = config.BASE_PORT + self.pid
         self.IS_LEADER = (self.pid == 0)
-        self.active_servers = {0: 0, 1: 0, 2: 0}       # Dictionary for active replicas -- pid: last heartbeat timestamp
+        start_time = time.time()
+        self.active_servers = {0: start_time, 1: start_time, 2: start_time}       # Dictionary for active replicas -- pid: last heartbeat timestamp
         self.leader = min(self.active_servers)
         print(f"[SERVER {self.pid}] Running on port {self.port}")
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
