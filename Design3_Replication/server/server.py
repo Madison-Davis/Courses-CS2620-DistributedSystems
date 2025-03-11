@@ -15,15 +15,16 @@ from config import config
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def __init__(self):
         self.pid = get_pid()   
-        print(self.pid)
         self.port = config.BASE_PORT + self.pid
-        print(f"[SERVER {self.pid}] Running on port {self.port}")
         db_name = "chat_database_" + str(self.pid) + ".db"
         self.db_connection = sqlite3.connect(db_name, check_same_thread=False)
         self.initialize_database()
-        self.active_users = {}      # Dictionary to store active user streams
-        self.message_queues = {}    # Store queues for active users
-        self.active_servers = {}    # Dictionary to store active servers/replicas (by pid)        
+        self.active_users = {}              # Dictionary to store active user streams
+        self.message_queues = {}            # Store queues for active users
+        self.active_servers = {1,2,3}       # Dictionary to store active servers/replicas (by pid)    
+        self.leader = min(self.active_servers)
+        print(f"[SERVER {self.pid}] Running on port {self.port}")
+        print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
         self.lock = threading.Lock()
 
     def initialize_database(self):
@@ -411,8 +412,6 @@ def get_pid():
     with open(config_file, "r") as f:
         lines = f.readlines()
     pid_line = next((line for line in lines if line.startswith("PID")), None)
-    # Extract the current PID, otherwise default to 1
-    print(pid_line)
     # Extract the PID, remove extra spaces, comments, and ensure it's an integer
     current_pid = int(pid_line.split('=')[1].split('#')[0].strip()) if pid_line else 1
     # Increment the PID and write it back to the config.py file for the next server
