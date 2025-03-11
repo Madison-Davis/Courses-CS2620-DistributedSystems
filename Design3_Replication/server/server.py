@@ -86,7 +86,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor.execute("INSERT INTO accounts (username, pwd, logged_in) VALUES (?, ?, 1)", (username, password_hash))
                 response = chat_pb2.GenericResponse(success=True, message="Account created successfully")
             # if this server is leader, replicate the operation
-            # TODO: do this for all write operations
             if self.IS_LEADER:
                 self.replicate_to_replicas("CreateAccount", request)
             return response
