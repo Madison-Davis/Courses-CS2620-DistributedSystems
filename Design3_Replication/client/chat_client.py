@@ -13,6 +13,7 @@ class ChatClient:
     def __init__(self, server_address=f'{config.HOST}:{config.BASE_PORT}'):
         """Establish channel and service stub."""
         self.channel = grpc.insecure_channel(server_address)
+        print(f"Connected to address {server_address}")
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
     
     def create_account(self, username, password_hash):
@@ -21,8 +22,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.CreateAccountRequest(username=username, password_hash=password_hash)
-        response = self.stub.CreateAccount(request)
-        return response.success
+        try:
+            response = self.stub.CreateAccount(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.create_account(username, password_hash)
+                    return
+            raise
     
     def login(self, username, password_hash):
         """
@@ -30,8 +39,16 @@ class ChatClient:
         Return: inbox count, list of old messages, list of inbox messages, list of drafts
         """
         request = chat_pb2.LoginRequest(username=username, password_hash=password_hash)
-        response = self.stub.Login(request)
-        return response.inbox_count, response.old_messages, response.inbox_messages, response.drafts
+        try:
+            response = self.stub.Login(request)
+            return response.inbox_count, response.old_messages, response.inbox_messages, response.drafts
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.login(username, password_hash)
+                    return
+            raise
     
     def send_message(self, draft_id, recipient, sender, content):
         """
@@ -39,8 +56,16 @@ class ChatClient:
         Return: newly created message ID
         """
         request = chat_pb2.SendMessageRequest(draft_id=draft_id, recipient=recipient, sender=sender, content=content)
-        response = self.stub.SendMessage(request)
-        return response.msg_id
+        try:
+            response = self.stub.SendMessage(request)
+            return response.msg_id
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.send_message(draft_id, recipient, sender, content)
+                    return
+            raise
     
     def download_message(self, username, msg_id):
         """
@@ -48,8 +73,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.DownloadMessageRequest(username=username, msg_id=msg_id)
-        response = self.stub.DownloadMessage(request)
-        return response.success
+        try:
+            response = self.stub.DownloadMessage(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.download_message(username, msg_id)
+                    return
+            raise
     
     def check_message(self, username, msg_id):
         """
@@ -57,8 +90,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.CheckMessageRequest(username=username, msg_id=msg_id)
-        response = self.stub.CheckMessage(request)
-        return response.success
+        try:
+            response = self.stub.CheckMessage(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.check_message(username, msg_id)
+                    return
+            raise
     
     def delete_message(self, username, msg_id):
         """
@@ -66,8 +107,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.DeleteMessageRequest(username=username, msg_id=msg_id)
-        response = self.stub.DeleteMessage(request)
-        return response.success
+        try:
+            response = self.stub.DeleteMessage(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.delete_message(username, msg_id)
+                    return
+            raise
     
     def add_draft(self, username, recipient, message, checked):
         """
@@ -75,8 +124,16 @@ class ChatClient:
         Return: newly created draft ID
         """
         request = chat_pb2.AddDraftRequest(username=username, recipient=recipient, message=message, checked=checked)
-        response = self.stub.AddDraft(request)
-        return response.draft_id
+        try:
+            response = self.stub.AddDraft(request)
+            return response.draft_id
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.add_draft(username, recipient, message, checked)
+                    return
+            raise
     
     def save_drafts(self, username, drafts):
         """
@@ -84,8 +141,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.SaveDraftsRequest(username=username, drafts=drafts)
-        response = self.stub.SaveDrafts(request)
-        return response.success
+        try:
+            response = self.stub.SaveDrafts(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.save_drafts(username, drafts)
+                    return
+            raise
     
     def logout(self, username):
         """
@@ -93,8 +158,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.LogoutRequest(username=username)
-        response = self.stub.Logout(request)
-        return response.success
+        try:
+            response = self.stub.Logout(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.logout(username)
+                    return
+            raise
     
     def list_accounts(self):
         """
@@ -102,8 +175,16 @@ class ChatClient:
         Return: list of usernames
         """
         request = chat_pb2.ListAccountsRequest()
-        response = self.stub.ListAccounts(request)
-        return response.usernames
+        try:
+            response = self.stub.ListAccounts(request)
+            return response.usernames
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.list_accounts()
+                    return
+            raise
     
     def delete_account(self, username):
         """
@@ -111,8 +192,16 @@ class ChatClient:
         Return: success (T/F)
         """
         request = chat_pb2.DeleteAccountRequest(username=username)
-        response = self.stub.DeleteAccount(request)
-        return response.success
+        try:
+            response = self.stub.DeleteAccount(request)
+            return response.success
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.delete_account(username)
+                    return
+            raise
     
     def get_password(self, username):
         """
@@ -120,8 +209,16 @@ class ChatClient:
         Return: password hash
         """
         request = chat_pb2.GetPasswordRequest(username=username)
-        response = self.stub.GetPassword(request)
-        return response.password_hash
+        try:
+            response = self.stub.GetPassword(request)
+            return response.password_hash
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    self.get_password(username)
+                    return
+            raise
 
     def receive_messages(self, user, callback):
         """
@@ -144,17 +241,25 @@ class ChatClient:
 
                 callback(message)
         except grpc.RpcError as e:
-            print("[CLIENT] ERROR: Stream closed unexpectedly. Attempting to reconnect to new leader...")
-            new_leader = self.get_leader()
-            if new_leader:
-                print(f"[CLIENT] New leader found: {new_leader}. Reconnecting...")
-                # Update channel and stub with the new leader address.
-                self.channel = grpc.insecure_channel(new_leader)
-                self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
-                # Restart the message stream.
-                self.receive_messages(user, callback)
-            else:
-                print("[CLIENT] Could not get the new leader. Please try again later.")
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
+                if self.reconnect():
+                    # Restart message stream
+                    self.receive_messages(user, callback)
+                    return
+            raise
+
+    def reconnect(self):
+        """Fetch the new leader's address and reinitialize the connection."""
+        new_leader = self.get_leader()
+        if new_leader:
+            print(f"[CLIENT] New leader found: {new_leader}. Reconnecting...")
+            # Update channel and stub with the new leader address.
+            self.channel = grpc.insecure_channel(new_leader)
+            print(f"Connecting to address {new_leader}")
+            self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
+        else:
+            print("[CLIENT] Could not get the new leader. Please try again later.")
 
     def get_leader(self):
         """
