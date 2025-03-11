@@ -12,6 +12,8 @@ Clone the repository.
 Generate Python gRPC files: Navigate to comm/ and run `py -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto`
 Replace `import chat_pb2 as chat__pb2` with `from comm import chat_pb2 as chat__pb2` in `chat_pb2_grpc.py`
 
+Set `PID = 0` in `config/config.py`.
+
 Run server:
 `py -m server.server`
 

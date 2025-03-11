@@ -538,12 +538,14 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         response = stub.Heartbeat(hb_request)
                         if response.alive:
                             self.active_servers[replica_id] = time.time()
+                            print(f"Replica {replica_id} is alive! {self.active_servers[replica_id]}")
                 except Exception as e:
-                    print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}: {e}")
-                    self.active_servers.pop(replica_id, None)
+                    print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}")
             # check which peers have not responded
             current_time = time.time()
             for replica_id in list(self.active_servers.keys()):
+                if replica_id == self.pid:
+                    continue
                 if current_time - self.active_servers[replica_id] > config.HEARTBEAT_TIMEOUT:
                     print(f"[SERVER {self.pid}] Replica {replica_id} is considered dead.")
                     self.active_servers.pop(replica_id, None)
@@ -559,7 +561,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Replica with the lowest process ID becomes the new leader.
         """
         active_ids = list(self.active_servers.keys())
-        active_ids.append(self.pid)
         new_leader = min(active_ids)
         self.leader = new_leader
         print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
