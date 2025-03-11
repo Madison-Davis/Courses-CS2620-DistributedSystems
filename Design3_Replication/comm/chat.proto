@@ -16,6 +16,21 @@ service ChatService {
     rpc DeleteAccount(DeleteAccountRequest) returns (GenericResponse);
     rpc Logout(LogoutRequest) returns (GenericResponse);
     rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
+    rpc Replicate(ReplicationRequest) returns (GenericResponse);
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message ReplicationRequest {
+  string method = 1;      // e.g., "CreateAccount", "SendMessage", etc.
+  bytes payload = 2;      // Serialized request payload
+}
+
+message HeartbeatRequest {
+  int32 process_id = 1;
+}
+
+message HeartbeatResponse {
+  bool alive = 1;
 }
 
 message CreateAccountRequest {
