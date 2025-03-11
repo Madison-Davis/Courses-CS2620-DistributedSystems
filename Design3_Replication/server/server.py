@@ -1,4 +1,5 @@
 import grpc
+import json
 import os
 import sys
 import sqlite3
@@ -6,6 +7,7 @@ import logging
 import queue
 import threading
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "config.py"))
 from concurrent import futures
 from comm import chat_pb2
 from comm import chat_pb2_grpc
@@ -15,8 +17,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def __init__(self):
         self.db_connection = sqlite3.connect('chat_database.db', check_same_thread=False)
         self.initialize_database()
-        self.active_users = {}  # Dictionary to store active user streams
-        self.message_queues = {}  # Store queues for active users
+        self.active_users = {}      # Dictionary to store active user streams
+        self.message_queues = {}    # Store queues for active users
+        self.active_servers = {}    # Dictionary to store active servers/replicas (by pid)
+        self.pid = get_pid()   
+        self.port = config.BASE_PORT + self.pid
+        print(f"[SERVER {self.pid}] Running on port {self.port}")
         self.lock = threading.Lock()
 
     def initialize_database(self):
@@ -397,13 +403,46 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 del self.active_users[username]  # Mark user as offline when they disconnect
                 del self.message_queues[username]  # Clean up queue
             print(f"[SERVER] {username} disconnected from message stream.")
+
+    def RegisterServer(self, request, context):
+        """Register the server instance with its PID and address"""
+        self.active_servers[request.pid] = request.address
+        print(f"Server registered: {request.address} (PID: {request.pid})")
+        return chat_pb2.GenericResponse(success=True, message="Registered successfully")
+
+    def ListServers(self, request, context):
+        """Return all known active servers"""
+        return chat_pb2.ServerListResponse(servers=[
+            chat_pb2.ServerInfo(address=addr, pid=pid)
+            for pid, addr in self.active_servers.items()
+        ])
+    
+def get_pid():
+    """Read the current PID from config.py and increment it."""
+    # Read the current PID value from config.py
+    with open(config_file, "r") as f:
+        lines = f.readlines()
+    pid_line = next((line for line in lines if line.startswith("PID")), None)
+    # Extract the current PID, otherwise default to 1
+    print(pid_line)
+    # Extract the PID, remove extra spaces, comments, and ensure it's an integer
+    current_pid = int(pid_line.split('=')[1].split('#')[0].strip()) if pid_line else 1
+    # Increment the PID and write it back to the config.py file for the next server
+    new_pid = current_pid + 1
+    with open(config_file, "w") as f:
+        for line in lines:
+            if line.startswith("PID"):
+                f.write(f"PID         = {new_pid}\n")
+            else:
+                f.write(line)
+    return current_pid
         
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(ChatService(), server)
-    server.add_insecure_port(f'{config.HOST}:{config.PORT}')
+    server_port = config.BASE_PORT + config.PID
+    server.add_insecure_port(f'{config.HOST}:{server_port}')
     server.start()
-    logging.info(f"Server started on port {config.PORT}")
     server.wait_for_termination()
 
 if __name__ == "__main__":

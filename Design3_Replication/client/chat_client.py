@@ -9,7 +9,7 @@ from config import config
 
 
 class ChatClient:
-    def __init__(self, server_address=f'{config.HOST}:{config.PORT}'):
+    def __init__(self, server_address=f'{config.HOST}:{config.BASE_PORT}'):
         """Establish channel and service stub."""
         self.channel = grpc.insecure_channel(server_address)
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
