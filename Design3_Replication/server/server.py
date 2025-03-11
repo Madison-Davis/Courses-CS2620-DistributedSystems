@@ -378,12 +378,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 
                 return chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id)
         except Exception as e:
-            print(f"[SERVER] Error sending message: {e}")
+            print(f"[SERVER {self.pid}] Error sending message: {e}")
             return chat_pb2.SendMessageResponse(success=False, message="Send message error")
 
     def ReceiveMessageStream(self, request, context):
         username = request.username
-        print(f"[SERVER] {username} connected to message stream.")
+        print(f"[SERVER {self.pid}] {username} connected to message stream.")
         # Ensure the user has a queue
         with self.lock:
             if username not in self.message_queues:
@@ -399,12 +399,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 except queue.Empty:
                     continue  # No message yet, keep waiting
         except Exception as e:
-            print(f"[SERVER] Error in message stream for {username}: {e}")
+            print(f"[SERVER {self.pid}] Error in message stream for {username}: {e}")
         finally:
             with self.lock:
                 del self.active_users[username]  # Mark user as offline when they disconnect
                 del self.message_queues[username]  # Clean up queue
-            print(f"[SERVER] {username} disconnected from message stream.")
+            print(f"[SERVER {self.pid}] {username} disconnected from message stream.")
     
 def get_pid():
     """Read the current PID from config.py and increment it."""
