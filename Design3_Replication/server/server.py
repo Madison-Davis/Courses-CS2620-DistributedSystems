@@ -158,7 +158,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     ]
                                      
                     cursor.execute("UPDATE accounts SET logged_in = 1 WHERE username = ?", (username,))
-                    return chat_pb2.LoginResponse(success=True, message="Login successful", inbox_count=len(new_message_list), old_messages=old_message_list, inbox_messages=new_message_list, drafts=draft_list)
+                    response = chat_pb2.LoginResponse(success=True, message="Login successful", inbox_count=len(new_message_list), old_messages=old_message_list, inbox_messages=new_message_list, drafts=draft_list)
+                    if self.IS_LEADER:
+                        self.replicate_to_replicas("Login", request)
+                    return response
                 else:
                     print(f"Login Invalid Credentials")
                     return chat_pb2.LoginResponse(success=False, message="Invalid credentials")
@@ -182,7 +185,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     print(f"GetPassword No User")
                     return chat_pb2.GetPasswordResponse(success=False, message="User does not exist")
                 else:
-                    return chat_pb2.GetPasswordResponse(success=True, message="Password found", password_hash=pwd_hash[0])
+                    response = chat_pb2.GetPasswordResponse(success=True, message="Password found", password_hash=pwd_hash[0])
+                    return response
         except Exception as e:
             print(f"GetPassword Exception:, {e}")
             return chat_pb2.GetPasswordResponse(success=False, message="Get password error")
@@ -197,7 +201,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("SELECT username FROM accounts ORDER BY uuid")
                 usernames = [row[0] for row in cursor.fetchall()]
-                return chat_pb2.ListAccountsResponse(success=True, message="Accounts fetched", usernames=usernames)
+                response = chat_pb2.ListAccountsResponse(success=True, message="Accounts fetched", usernames=usernames)
+                return response
         except Exception as e:
             print(f"ListAccounts Exception:, {e}")
             return chat_pb2.ListAccountsResponse(success=False, message="Could not fetch accounts")
@@ -224,7 +229,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         INSERT INTO drafts (username, recipient, msg, checked)
                         VALUES (?, ?, ?, ?)
                     """, (username, recipient, msg, 0,))
-                return chat_pb2.GenericResponse(success=True, message="Draft saved")
+                response = chat_pb2.GenericResponse(success=True, message="Draft saved")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("SaveDrafts", request)
+                return response
         except Exception as e:
             print(f"SaveDrafts Exception:, {e}")
             return chat_pb2.GenericResponse(success=False, message="Cannot save draft")
@@ -248,7 +256,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     INSERT INTO drafts (username, recipient, msg, checked)
                     VALUES (?, ?, ?, ?) RETURNING draft_id
                 """, (username, recipient, msg, checked,))
-                return chat_pb2.AddDraftResponse(success=True, message="Draft added", draft_id=cursor.fetchone()[0])
+                response = chat_pb2.AddDraftResponse(success=True, message="Draft added", draft_id=cursor.fetchone()[0])
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("AddDraft", request)
+                return response
         except Exception as e:
             print(f"AddDraft Exception:, {e}")
             return chat_pb2.AddDraftResponse(success=False, message="Cannot add draft")
@@ -266,7 +277,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             with self.db_connection: # ensures commit or rollback
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE messages SET checked = 1 WHERE username = ? AND msg_id = ?", (username, msg_id,))
-                return chat_pb2.GenericResponse(success=True, message="Message checked as read")
+                response = chat_pb2.GenericResponse(success=True, message="Message checked as read")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("CheckMessage", request)
+                return response
         except Exception as e:
             return chat_pb2.GenericResponse(success=False, message="Message unable to check as read")
     
@@ -283,7 +297,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             with self.db_connection: # ensures commit or rollback
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE messages SET inbox = 0 WHERE username = ? AND msg_id = ?", (username, msg_id,))
-                return chat_pb2.GenericResponse(success=True, message="Message downloaded from inbox")
+                response = chat_pb2.GenericResponse(success=True, message="Message downloaded from inbox")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("DownloadMessage", request)
+                return response
         except Exception as e:
             return chat_pb2.GenericResponse(success=False, message="Message unable to download from inbox")
     
@@ -300,7 +317,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             with self.db_connection: # ensures commit or rollback
                 cursor = self.db_connection.cursor()
                 cursor.execute("DELETE FROM messages WHERE msg_id = ?", (msg_id,))
-                return chat_pb2.GenericResponse(success=True, message="Message deleted")
+                response = chat_pb2.GenericResponse(success=True, message="Message deleted")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("DeleteMessage", request)
+                return response
         except Exception as e:
             return chat_pb2.GenericResponse(success=False, message="Message unable to delete")
     
@@ -321,7 +341,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor.execute("DELETE FROM messages WHERE username = ?", (username,))
                 cursor.execute("DELETE FROM drafts WHERE username = ?", (username,))
                 cursor.execute("DELETE FROM accounts WHERE username = ?", (username,))
-                return chat_pb2.GenericResponse(success=True, message="Account and all messages deleted")
+                response = chat_pb2.GenericResponse(success=True, message="Account and all messages deleted")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("DeleteAccount", request)
+                return response
         except Exception as e:
             return chat_pb2.GenericResponse(success=False, message="Unable to delete account")
     
@@ -339,7 +362,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             with self.db_connection: # ensures commit or rollback
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE accounts SET logged_in = 0 WHERE username = ?", (username,))
-                return chat_pb2.GenericResponse(success=True, message="Logged out successfully")
+                response = chat_pb2.GenericResponse(success=True, message="Logged out successfully")
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("Logout", request)
+                return response
         except Exception as e:
             print(f"Logout Exception:, {e}")
             return chat_pb2.GenericResponse(success=False, message="Unable to log out")
@@ -385,7 +411,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                             inbox_count=new_inbox_count
                         ))
 
-                return chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id)
+                response = chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id)
+                if self.IS_LEADER:
+                    self.replicate_to_replicas("SendMessage", request)
+                return response
         except Exception as e:
             print(f"[SERVER {self.pid}] Error sending message: {e}")
             return chat_pb2.SendMessageResponse(success=False, message="Send message error")
@@ -422,7 +451,37 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         method = request.method
         print(f"[SERVER {self.pid}] Received replication request for method {method}")
-        # TODO: deserialize request.payload and call appropriate local update
+        # Deserialize request.payload and call appropriate local update
+        if method == "CreateAccount":
+            local_request = chat_pb2.CreateAccountRequest().ParseFromString(request.payload)
+            self.CreateAccount(local_request)
+        elif method == "Login":
+            local_request = chat_pb2.LoginRequest().ParseFromString(request.payload)
+            self.Login(local_request)
+        elif method == "SaveDrafts":
+            local_request = chat_pb2.SaveDraftsRequest().ParseFromString(request.payload)
+            self.SaveDrafts(local_request)
+        elif method == "AddDraft":
+            local_request = chat_pb2.AddDraftRequest().ParseFromString(request.payload)
+            self.AddDraft(local_request)
+        elif method == "CheckMessage":
+            local_request = chat_pb2.CheckMessageRequest().ParseFromString(request.payload)
+            self.CheckMessage(local_request)
+        elif method == "DownloadMessage":
+            local_request = chat_pb2.DownloadMessageRequest().ParseFromString(request.payload)
+            self.DownloadMessage(local_request)
+        elif method == "DeleteMessage":
+            local_request = chat_pb2.DeleteMessageRequest().ParseFromString(request.payload)
+            self.DeleteMessage(local_request)
+        elif method == "DeleteAccount":
+            local_request = chat_pb2.DeleteAccountRequest().ParseFromString(request.payload)
+            self.DeleteAccount(local_request)
+        elif method == "Logout":
+            local_request = chat_pb2.LogoutRequest().ParseFromString(request.payload)
+            self.Logout(local_request)
+        elif method == "SendMessage":
+            local_request = chat_pb2.SendMessageRequest().ParseFromString(request.payload)
+            self.SendMessage(local_request)
         return chat_pb2.GenericResponse(success=True, message="Replication applied")
     
     def Heartbeat(self, request, context):
