@@ -18,6 +18,7 @@ service ChatService {
     rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);
     rpc Replicate(ReplicationRequest) returns (GenericResponse);
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+    rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);
 }
 
 message ReplicationRequest {
@@ -25,12 +26,17 @@ message ReplicationRequest {
   bytes payload = 2;      // Serialized request payload
 }
 
-message HeartbeatRequest {
-  int32 process_id = 1;
-}
+message HeartbeatRequest {}
 
 message HeartbeatResponse {
   bool alive = 1;
+}
+
+message GetLeaderRequest {}
+
+message GetLeaderResponse {
+  bool success = 1;
+  string leader_address = 2;
 }
 
 message CreateAccountRequest {

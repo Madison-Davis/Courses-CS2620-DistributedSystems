@@ -151,7 +151,7 @@ class ChatClient:
                 # Update channel and stub with the new leader address.
                 self.channel = grpc.insecure_channel(new_leader)
                 self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
-                # Optionally, restart the message stream.
+                # Restart the message stream.
                 self.receive_messages(user, callback)
             else:
                 print("[CLIENT] Could not get the new leader. Please try again later.")
@@ -162,10 +162,11 @@ class ChatClient:
         """
         for replica_id, address in config.REPLICA_ADDRESSES.items():
             try:
-                # Connect to a well-known peer; here we try the leader from config as a starting point.
+                # Ask potentially alive server who is the leader
                 with grpc.insecure_channel(address) as channel:
                     stub = chat_pb2_grpc.ChatServiceStub(channel)
-                    response = stub.GetLeader(empty_pb2.Empty(), timeout=2)
+                    request = chat_pb2.GetLeaderRequest()
+                    response = stub.GetLeader(request, timeout=2)
                     if response.success and response.leader_address:
                         print(f"Peer {replica_id} at {address} reported leader: {response.leader_address}")
                         return response.leader_address

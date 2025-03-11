@@ -488,8 +488,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Respond to heartbeat pings.
         For leader: record the heartbeat from the replica.
         """
-        replica_id = request.process_id
-        self.active_servers[replica_id] = time.time()
         return chat_pb2.HeartbeatResponse(alive=True)
     
     def GetLeader(self, request, context):
@@ -497,9 +495,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Returns the current leader's address.
         Assumes a global variable CURRENT_LEADER that is maintained via heartbeats and election.
         """
-        # Look up the current leader's address from your configuration.
+        # Look up the current leader's address
         leader_address = config.REPLICA_ADDRESSES.get(self.leader, "")
-        return chat_pb2.LeaderResponse(success=True, leader_address=leader_address)
+        return chat_pb2.GetLeaderResponse(success=True, leader_address=leader_address)
     
     def replicate_to_replicas(self, method_name, request):
         """
@@ -508,7 +506,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         payload = request.SerializeToString()
         replication_request = chat_pb2.ReplicationRequest(method=method_name, payload=payload)
         for replica_id, address in config.REPLICA_ADDRESSES.items():
-            if replica_id not in self.active_servers:
+            if replica_id not in self.active_servers or replica_id == self.leader:
                 continue
             # Check heartbeat timestamp (if missing or too old, skip this replica)
             last_hb = self.active_servers.get(replica_id, 0)
@@ -516,6 +514,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
                 self.active_servers.pop(replica_id, None)
                 continue
+            # Send replication request to all active servers
             try:
                 with grpc.insecure_channel(address) as channel:
                     stub = chat_pb2_grpc.ChatServiceStub(channel)
@@ -530,12 +529,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         while True:
             # send heartbeat ping to all active replicas
             for replica_id, address in config.REPLICA_ADDRESSES.items():
-                if replica_id not in self.active_servers:
+                if replica_id not in self.active_servers or replica_id == self.pid:
                     continue
                 try:
                     with grpc.insecure_channel(address) as channel:
                         stub = chat_pb2_grpc.ChatServiceStub(channel)
-                        hb_request = chat_pb2.HeartbeatRequest(process_id=replica_id)
+                        hb_request = chat_pb2.HeartbeatRequest()
                         response = stub.Heartbeat(hb_request)
                         if response.alive:
                             self.active_servers[replica_id] = time.time()
@@ -566,7 +565,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
         if new_leader == self.pid:
             self.IS_LEADER = True
-        # TODO: update state and notify client
 
     
 def get_pid():
