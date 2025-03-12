@@ -3,7 +3,11 @@
 -------------------------------------------
 ## Design Requirements
 
+This design exercise requires us to take our previous chat application implementation and re-design and re-implement it so that the system is both persistent (it can be stopped and re-started without losing messages that were sent during the time it was running) and 2-fault tolerant in the face of crash/failstop failures. In other words, replicate the back end of the implementation, and make the message store persistent.
 
+The replication can be done in multiple processes on the same machine, but the replication should also work over multiple machines (at least two). Do not share a persistent store; this would introduce a single point of failure.
+
+Extra Credit: Build your system so that it can add a new server into its set of replicas.
 
 -------------------------------------------
 ## Setup
@@ -14,7 +18,7 @@ Replace `import chat_pb2 as chat__pb2` with `from comm import chat_pb2 as chat__
 
 Set `PID = 0` in `config/config.py`.
 
-Run server:
+Run server (3 separate instances):
 `py -m server.server`
 
 Run client GUI:
@@ -49,6 +53,23 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 -------------------------------------------
 ## Assumptions
 
+1. We assume that each server must keep track of their own copy of active replicas, who the leader currently is, and their own copy of the chat database. However, we assume that all servers upon startup know that the possible replicas are with PIDs 0, 1, and 2, hence the global dictionary of replica IDs and addresses in `config.py`. This part of the file is unchanged, so we are not sharing global information about which replicas are active and which are killed.
+2. We use the leader election mechanism that designates the active replica with the lowest PID as the new leader.
+3. The leader only sends replication instruction to the replicas if they receive a write operation (CreateAccount, Login, SendMessage, AddDraft, SaveDrafts, CheckMessage, DownloadMessage, DeleteMessage, DeleteAccount, Logout, ReceiveMessageStream)
+4. The heartbeat mechanism is assumed to have all replicas communicate with every other replica, including the leader.
+
+
+-------------------------------------------
+## Demo Plan
+
+1. Persistent storage: We will show that old messages from previous server startup are still there after you shut down the server and restart it.
+2. 2-fault tolerance: We will show that chat application can still function after all possible orders of failure.
+- Replica 2 ⇒ Replica 3
+- Replica 3 ⇒ Replica 2
+- Leader ⇒ Replica 2
+- Replica 2 ⇒ Leader
+- Leader ⇒ Replica 3
+- Replica 3 ⇒ Leader
 
 
 -------------------------------------------
@@ -84,6 +105,9 @@ service ChatService {
     rpc DeleteAccount(DeleteAccountRequest) returns (GenericResponse);                          → delete account
     rpc Logout(LogoutRequest) returns (GenericResponse);                                        → logout
     rpc ReceiveMessageStream(ReceiveMessageRequest) returns (stream ReceiveMessageResponse);    → receive message (instant/logged in)
+    rpc Replicate(ReplicationRequest) returns (GenericResponse);                                → tell replica to replicate
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);                                → send heartbeat ping
+    rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);                                → get current leader
 }
 ```
 
@@ -135,6 +159,21 @@ Drafts Database
 5. checked: bool, 0
 
 
+-------------------------------------------
+## Servers: Replication
+
+- How do servers keep track of other replicas?
+    - Global known information about all possible replicas and their addresses are contained in `REPLICA_ADDRESSES`, a dictionary with PID as the key and address as the value.
+    - Each server contains a local copy of `self.active_servers`, which is a dictionary storing all active servers. The key is PID and the value is the most recent heartbeat timestamp.
+- How does the heartbeat mechanism work?
+    - In `config.py`, `HEARTBEAT_INTERVAL` denotes the amount of seconds that pass between every heartbeat ping, and `HEARTBEAT_TIMEOUT` denotes the amount of seconds that pass without a response from a replica until we assume it is dead.
+    - In `server.py`, we run a `heartbeat_loop()` that sends a `HeartbeatRequest` to every active server (including the leader), updates the most recent timestamp for active servers, removes servers that either do not respond to the hartbeat ping or haven't responded in a while, and call `trigger_leader_election()` to elect a new leader in the case that the existing leader has died.
+- How do replicas replicate leader behavior?
+    - In `server.py`, the leader can call `Replicate()` to tell a specific replica to replicate a write operation. The replica parses and deserializes the payload and calls the appropriate local method request, returning True if the replication was successful. 
+    - Note that `replicate_to_replicas()` is a helper function that the leader uses to check which replicas are still alive and call `Replicate()` for each active server.
+- How will the client know to reconnect to the new leader in case the old leader dies?
+    - Every existing client function is now wrapped in a try except block to call `reconnect()` upon catching a gRPC error, which indicates that the existing leader is no longer active.
+    - In `reconnect()`, the client will call `get_leader()` to find the new leader PID and connect to the new leader's address.
 
 -------------------------------------------
 ## Client Data: Datastructures
