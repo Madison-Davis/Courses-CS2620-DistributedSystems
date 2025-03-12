@@ -9,7 +9,7 @@
 # HOST        = "10.250.184.185"
 HOST        = "127.0.0.1"       
 BASE_PORT   = 12300             
-PID         = 4
+PID         = 0
 BUF_SIZE    = 4096
 
 HEARTBEAT_INTERVAL = 5   # How often to send heartbeat messages

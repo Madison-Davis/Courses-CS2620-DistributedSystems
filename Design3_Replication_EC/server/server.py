@@ -48,19 +48,29 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 
     def update_registry(self, pid, delete=False):
         """
-        Update registry from change by replica 'pid'. 
+        Update registry from change by replica 'pid'.
         """
         self.reload_registry()
-        new_registry = server_registry.active_servers
-        # If delete...
-        if delete:
-            new_registry.pop(pid, None)
-        # If update/create new...
-        else:
-            new_registry[pid] = [time.time(), f"{config.HOST}:{config.BASE_PORT + pid}"]
-        # Push changes to the file
+        # Read the current file
+        with open(registry_file, "r") as f:
+            lines = f.readlines()
+        # Find and update the relevant line, while preserving all other lines
+        updated_lines = []
+        for line in lines:
+            if line.startswith("active_servers ="):
+                new_registry = server_registry.active_servers
+                # If delete...
+                if delete:
+                    new_registry.pop(pid, None)
+                # If update/create new...
+                else:
+                    new_registry[pid] = [time.time(), f"{config.HOST}:{config.BASE_PORT + pid}"]
+                # Replace the line with the updated dictionary
+                line = f"active_servers = {repr(new_registry)}\n"
+            updated_lines.append(line)
+        # Write back the modified content
         with open(registry_file, "w") as f:
-            f.write(f"active_servers = {repr(new_registry)}\n")
+            f.writelines(updated_lines)
 
     def reload_registry(self):
         """

@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
 from config import config
+from server import server_registry
 
 
 
@@ -262,7 +263,8 @@ class ChatClient:
         """
         Contact a known peer (or the current leader) to fetch the current leader's address.
         """
-        for replica_id, address in config.REPLICA_ADDRESSES.items():
+        active_servers = server_registry.active_servers
+        for replica_id, address in active_servers.items():
             try:
                 # Ask potentially alive server who is the leader
                 with grpc.insecure_channel(address) as channel:

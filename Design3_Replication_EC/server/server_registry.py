@@ -1,1 +1,7 @@
-active_servers = {2: [1741806597.076097, '127.0.0.1:12302']}
+# server_registry.py
+
+
+
+# +++++++++++++ Tracking Variables +++++++++++++ #
+active_servers = {}
+database_updates = {}
