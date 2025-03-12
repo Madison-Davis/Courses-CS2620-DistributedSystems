@@ -574,7 +574,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         time.sleep(1)
         while True:
             self.reload_registry()
-            print("heartbeat", server_registry.active_servers)
             # send heartbeat ping to all active replicas
             for replica_id, data in server_registry.active_servers.items():
                 address = data[1]
