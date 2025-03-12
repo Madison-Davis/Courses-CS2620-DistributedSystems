@@ -1,17 +1,24 @@
+# chat_client.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import grpc
 import os
 import sys
-import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
 from config import config
-from google.protobuf import empty_pb2
 
 
+
+# ++++++++++++++  Class Definition  ++++++++++++++ #
 class ChatClient:
     def __init__(self, server_address=f'{config.HOST}:{config.BASE_PORT}'):
-        """Establish channel and service stub."""
+        """
+        Establish channel and service stub.
+        """
         self.channel = grpc.insecure_channel(server_address)
         print(f"Connected to address {server_address}")
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)

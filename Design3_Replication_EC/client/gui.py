@@ -1,5 +1,8 @@
-# +++++++++++++ Imports and Installs +++++++++++++ #
+# gui.py
 
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import sys
 import os
 import threading
@@ -11,9 +14,6 @@ from client import chat_client
 from comm import chat_pb2
 
 
-
-# Initialize gRPC Client
-client = chat_client.ChatClient()
 
 # ++++++++++++  Variables: Client Data  ++++++++++++ #
 
@@ -49,6 +49,9 @@ drafts_checkmarks       = {}        # dynamic: all of our drafts' individual che
 drafts_all_checkmarked  = False     # T/F: do we want to send all the drafts?
 login_username          = None
 login_pwd               = None
+
+# Initialize gRPC Client
+client = chat_client.ChatClient()
 
 
 

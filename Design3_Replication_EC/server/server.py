@@ -1,3 +1,8 @@
+# server.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import os
 import sys
 import grpc
@@ -19,15 +24,17 @@ from config import config
 
 
 
+# ++++++++++++++  Class Definition  ++++++++++++++ #
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def __init__(self):
+        """
+        Set up ChatService.
+        """
         self.pid = get_pid()
         self.port = config.BASE_PORT + self.pid
         self.IS_LEADER = (self.pid == 0)
-        
         self.reload_registry()
         self.update_registry(self.pid)
-
         self.leader = min(server_registry.active_servers.keys())
         print(f"[SERVER {self.pid}] Running on port {self.port}")
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
@@ -40,7 +47,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.plock = multiprocessing.Lock()     # Lock for server_registry.py
 
     def update_registry(self, pid, delete=False):
-        """ Update registry from change by replica 'pid'. """
+        """
+        Update registry from change by replica 'pid'. 
+        """
         self.reload_registry()
         new_registry = server_registry.active_servers
         # If delete...
@@ -54,12 +63,16 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             f.write(f"active_servers = {repr(new_registry)}\n")
 
     def reload_registry(self):
-        """ Grab most-updated registry. """
+        """
+        Grab most-updated registry. 
+        """
         # Reload the registry file to get the latest version of active_servers
         importlib.reload(server_registry)  
 
     def initialize_database(self):
-        """Creates necessary tables if they do not exist."""
+        """
+        Creates necessary tables if they do not exist.
+        """
         with self.db_connection: # automatically commit
             cursor = self.db_connection.cursor()
             cursor.execute('''
@@ -448,6 +461,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             return chat_pb2.SendMessageResponse(success=False, message="Send message error")
 
     def ReceiveMessageStream(self, request, context):
+        """
+        Fire when a replica receives a message.
+        """
         username = request.username
         print(f"[SERVER {self.pid}] {username} connected to message stream.")
         # Ensure the user has a queue
@@ -571,6 +587,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}: {e}")
     
     def heartbeat_loop(self):
+        """
+        Create a loop to send and receive heartbeats.
+        """
         time.sleep(1)
         while True:
             self.reload_registry()
@@ -611,6 +630,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             time.sleep(config.HEARTBEAT_INTERVAL)
 
     def start_heartbeat(self):
+        """
+        Start the heartbeat loop.
+        """
         threading.Thread(target=self.heartbeat_loop, daemon=True).start()
 
     def trigger_leader_election(self):
@@ -625,9 +647,13 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         if new_leader == self.pid:
             self.IS_LEADER = True
 
-    
+
+
+# ++++++++++++++  Helper Functions  ++++++++++++++ #
 def get_pid():
-    """Read the current PID from config.py and increment it."""
+    """
+    Read the current PID from config.py and increment it.
+    """
     # Read the current PID value from config.py
     with open(config_file, "r") as f:
         lines = f.readlines()
@@ -645,6 +671,9 @@ def get_pid():
     return current_pid
         
 def serve():
+    """
+    Create a communication point for a server for clients to connect to.
+    """
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_service = ChatService()
     chat_pb2_grpc.add_ChatServiceServicer_to_server(chat_service, server)
@@ -654,6 +683,9 @@ def serve():
     chat_service.start_heartbeat()
     server.wait_for_termination()
 
+
+
+# ++++++++++++++  Main Functions  ++++++++++++++ #
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     serve()
