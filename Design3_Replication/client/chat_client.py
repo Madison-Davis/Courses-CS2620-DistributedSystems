@@ -29,8 +29,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.create_account(username, password_hash)
-                    return
+                    return self.create_account(username, password_hash)
             raise
     
     def login(self, username, password_hash):
@@ -46,8 +45,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.login(username, password_hash)
-                    return
+                    return self.login(username, password_hash)
             raise
     
     def send_message(self, draft_id, recipient, sender, content):
@@ -63,8 +61,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.send_message(draft_id, recipient, sender, content)
-                    return
+                    return self.send_message(draft_id, recipient, sender, content)
             raise
     
     def download_message(self, username, msg_id):
@@ -80,8 +77,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.download_message(username, msg_id)
-                    return
+                    return self.download_message(username, msg_id)
             raise
     
     def check_message(self, username, msg_id):
@@ -97,8 +93,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.check_message(username, msg_id)
-                    return
+                    return self.check_message(username, msg_id)
             raise
     
     def delete_message(self, username, msg_id):
@@ -114,8 +109,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.delete_message(username, msg_id)
-                    return
+                    return self.delete_message(username, msg_id)
             raise
     
     def add_draft(self, username, recipient, message, checked):
@@ -131,8 +125,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.add_draft(username, recipient, message, checked)
-                    return
+                    return self.add_draft(username, recipient, message, checked)
             raise
     
     def save_drafts(self, username, drafts):
@@ -148,8 +141,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.save_drafts(username, drafts)
-                    return
+                    return self.save_drafts(username, drafts)
             raise
     
     def logout(self, username):
@@ -165,8 +157,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.logout(username)
-                    return
+                    return self.logout(username)
             raise
     
     def list_accounts(self):
@@ -182,8 +173,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.list_accounts()
-                    return
+                    return self.list_accounts()
             raise
     
     def delete_account(self, username):
@@ -199,8 +189,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.delete_account(username)
-                    return
+                    return self.delete_account(username)
             raise
     
     def get_password(self, username):
@@ -216,8 +205,7 @@ class ChatClient:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
-                    self.get_password(username)
-                    return
+                    return self.get_password(username)
             raise
 
     def receive_messages(self, user, callback):
@@ -258,8 +246,10 @@ class ChatClient:
             self.channel = grpc.insecure_channel(new_leader)
             print(f"Connecting to address {new_leader}")
             self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
+            return True
         else:
             print("[CLIENT] Could not get the new leader. Please try again later.")
+            return False
 
     def get_leader(self):
         """
