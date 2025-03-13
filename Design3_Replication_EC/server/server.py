@@ -7,6 +7,7 @@ import os
 import sys
 import grpc
 import time
+import shutil
 import sqlite3
 import logging
 import queue
@@ -17,6 +18,7 @@ import multiprocessing
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "config.py"))
 registry_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "server_registry.py"))
+database_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "database"))
 from concurrent import futures
 from comm import chat_pb2
 from comm import chat_pb2_grpc
@@ -38,9 +40,13 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.leader = min(server_registry.active_servers.keys())
         print(f"[SERVER {self.pid}] Running on port {self.port}")
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
-        db_name = f"chat_database_{self.pid}.db"
-        self.db_connection = sqlite3.connect(db_name, check_same_thread=False)
-        self.initialize_database()
+        os.makedirs(database_folder, exist_ok=True)  
+        self.db_name = os.path.join(database_folder, f"chat_database_{self.pid}.db")
+        self.db_connection = sqlite3.connect(self.db_name, check_same_thread=False)
+        if not self.IS_LEADER:
+            self.copy_leader_database(self.leader)
+        else:
+            self.initialize_database()
         self.active_users = {}                  # Dictionary to store active user streams
         self.message_queues = {}                # Store queues for active users
         self.lock = threading.Lock()            # Lock for receive message threads
@@ -114,6 +120,20 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 checked INTEGER NOT NULL CHECK (checked IN (0, 1))
             )
             ''')
+
+    def copy_leader_database(self, pid):
+        """
+        Copies the database from replica 'pid' to this replica
+        """
+        try:
+            os.makedirs(database_folder, exist_ok=True)  
+            pid_db_name = os.path.join(database_folder, f"chat_database_{pid}.db")
+            shutil.copy(pid_db_name, self.db_name)
+            print(f"[SERVER {self.pid}] Copied database from {pid} to {self.pid}")
+        except FileNotFoundError:
+            print(f"[SERVER {self.pid}] No previous leader database found. Starting fresh.")
+        except Exception as e:
+            print(f"[SERVER {self.pid}] Error copying database: {e}")
 
     def CreateAccount(self, request, context):
         """

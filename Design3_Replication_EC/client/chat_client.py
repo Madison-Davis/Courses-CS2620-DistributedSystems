@@ -264,7 +264,8 @@ class ChatClient:
         Contact a known peer (or the current leader) to fetch the current leader's address.
         """
         active_servers = server_registry.active_servers
-        for replica_id, address in active_servers.items():
+        for replica_id, data in active_servers.items():
+            address = data[1]
             try:
                 # Ask potentially alive server who is the leader
                 with grpc.insecure_channel(address) as channel:
