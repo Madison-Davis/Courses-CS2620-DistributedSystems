@@ -57,6 +57,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Update registry from change by replica 'pid'.
         """
         self.reload_registry()
+        print(server_registry.active_servers)
         # Read the current file
         with open(registry_file, "r") as f:
             lines = f.readlines()
@@ -67,6 +68,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 new_registry = server_registry.active_servers
                 # If delete...
                 if delete:
+                    print("DELETING...")
                     new_registry.pop(pid, None)
                 # If update/create new...
                 else:
@@ -603,6 +605,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             if time.time() - last_hb > config.HEARTBEAT_TIMEOUT:
                 print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
                 with self.plock:
+                    self.reload_registry()
                     self.update_registry(replica_id, delete=True)
                 self.reload_registry()
                 continue
@@ -635,6 +638,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         response = stub.Heartbeat(hb_request)
                         if response.alive:
                             with self.plock:
+                                self.reload_registry()
                                 self.update_registry(replica_id)
                             self.reload_registry()
                             print(f"[SERVER {self.pid}] Replica {replica_id} is alive! {server_registry.active_servers[replica_id][0]}")
@@ -642,7 +646,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}")
             # check which peers have not responded
             current_time = time.time()
-            self.reload_registry() # NOTE: not necessary but put in here for robustness
+            # self.reload_registry() # NOTE: not necessary but put in here for robustness
             for replica_id in list(server_registry.active_servers.keys()):
                 if replica_id == self.pid:
                     continue
@@ -653,8 +657,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     # If dead and in the list, remove it
                     if replica_id in server_registry.active_servers.keys():
                         with self.plock:
+                            self.reload_registry()
                             self.update_registry(replica_id, delete=True)
-                            self.reload_registry()    
+                        self.reload_registry()    
                     if replica_id == self.leader:
                         self.trigger_leader_election()
             time.sleep(config.HEARTBEAT_INTERVAL)

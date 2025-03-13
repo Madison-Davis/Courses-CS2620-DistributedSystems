@@ -3,5 +3,5 @@
 
 
 # +++++++++++++ Tracking Variables +++++++++++++ #
-active_servers = {2: [1741881353.478486, '127.0.0.1:12302']}
+active_servers = {}
 database_updates = {}
