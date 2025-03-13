@@ -72,8 +72,11 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     new_registry.pop(pid, None)
                 # If update/create new...
                 else:
-                    time = max(time.time(), new_registry[pid][0])
-                    new_registry[pid] = [time, f"{config.HOST}:{config.BASE_PORT + pid}"]
+                    if pid in new_registry.keys():
+                        t = max(time.time(), new_registry[pid][0])
+                    else:
+                        t = time.time()
+                    new_registry[pid] = [t, f"{config.HOST}:{config.BASE_PORT + pid}"]
                 # Replace the line with the updated dictionary
                 line = f"active_servers = {repr(new_registry)}\n"
             updated_lines.append(line)
