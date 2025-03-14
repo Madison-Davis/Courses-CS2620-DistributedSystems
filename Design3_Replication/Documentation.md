@@ -25,7 +25,7 @@ Run client GUI:
 `py -m client.gui`
 
 Run unit tests:
-`py -m unittest tests.tests_rpc`
+`py -m unittest tests.tests_replication`
 
 
 -------------------------------------------
