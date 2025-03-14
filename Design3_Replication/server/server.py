@@ -609,7 +609,13 @@ def serve():
     server.add_insecure_port(f'{config.HOST}:{server_port}')
     server.start()
     chat_service.start_heartbeat()
-    server.wait_for_termination()
+    try:
+        # Use a long sleep loop to keep the main thread alive
+        while True:
+            time.sleep(86400)  # sleep for 1 day
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt received, stopping server gracefully...")
+        server.stop(0)  # Gracefully shutdown the server
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

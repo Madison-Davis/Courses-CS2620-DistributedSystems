@@ -266,7 +266,7 @@ class ChatClient:
                         print(f"Peer {replica_id} at {address} reported leader: {response.leader_address}")
                         return response.leader_address
             except Exception as e:
-                print(f"Error contacting peer {replica_id} at {address}: {e}")
+                print(f"Error contacting peer {replica_id} at {address}")
         print("Could not determine leader from any peer.")
         return None
 
