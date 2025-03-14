@@ -1,4 +1,5 @@
 # config.py
+import multiprocessing
 
 # NOTES:
 # all servers share same host
@@ -8,12 +9,13 @@
 
 # HOST        = "10.250.184.185"
 HOST        = "127.0.0.1"       
-BASE_PORT   = 12300             
-PID         = 4
+BASE_PORT   = 12300            
+PID         = 3
 BUF_SIZE    = 4096
 
 HEARTBEAT_INTERVAL = 5   # How often to send heartbeat messages
 HEARTBEAT_TIMEOUT  = 10  # How long to wait before declaring a peer dead
+PLOCK = multiprocessing.Lock()  # Allows different objects to use the same lock
 
 REPLICA_ADDRESSES = {
     0: f"{HOST}:{BASE_PORT + 0}",

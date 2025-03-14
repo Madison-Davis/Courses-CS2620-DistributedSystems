@@ -3,6 +3,7 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
+import re
 import os
 import sys
 import grpc
@@ -32,6 +33,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         Set up ChatService.
         """
+        self.active_users = {}                  # Dictionary to store active user streams
+        self.message_queues = {}                # Store queues for active users
+        self.lock = threading.Lock()            # Lock for receive message threads
+        self.plock = config.PLOCK               # Lock for server_registry.py
         self.pid = get_pid()
         self.port = config.BASE_PORT + self.pid
         self.IS_LEADER = (self.pid == 0)
@@ -42,22 +47,32 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
         os.makedirs(database_folder, exist_ok=True)  
         self.db_name = os.path.join(database_folder, f"chat_database_{self.pid}.db")
+        db_already_exists = os.path.exists(self.db_name)
         self.db_connection = sqlite3.connect(self.db_name, check_same_thread=False)
-        if not self.IS_LEADER:
-            self.copy_leader_database(self.leader)
+        # If leader (aka pid=0 through config file, no other subsequent leader will trigger this)...
+        if self.IS_LEADER:
+            # Check for config-starting error (pid starts at value other than 0)
+            if self.pid != 0:
+                print(f"[SERVER {self.pid}] ERROR, tried to start config leader other than pid=0")
+                return
+            # If pid=0 and its database already exists, sync with any others
+            elif self.pid == 0 and db_already_exists:
+                print(f"[SERVER {self.pid}] Syncing with other replicas")
+                self.sync_leader_with_latest_database()
+            # If pid=0 and its database does not exist, make a new one
+            else:
+                print(f"[SERVER {self.pid}] Making new database")
+                self.initialize_database()
+        # If not leader, sync with leader
         else:
-            self.initialize_database()
-        self.active_users = {}                  # Dictionary to store active user streams
-        self.message_queues = {}                # Store queues for active users
-        self.lock = threading.Lock()            # Lock for receive message threads
-        self.plock = multiprocessing.Lock()     # Lock for server_registry.py
+            print(f"[SERVER {self.pid}] Copying database from {self.leader}")
+            self.copy_leader_database(self.leader)
 
     def update_registry(self, pid, delete=False):
         """
         Update registry from change by replica 'pid'.
         """
         self.reload_registry()
-        print(server_registry.active_servers)
         # Read the current file
         with open(registry_file, "r") as f:
             lines = f.readlines()
@@ -68,7 +83,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 new_registry = server_registry.active_servers
                 # If delete...
                 if delete:
-                    print("DELETING...")
+                    print(f"[Server {self.pid}] Deleting {pid}")
                     new_registry.pop(pid, None)
                 # If update/create new...
                 else:
@@ -83,6 +98,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         # Write back the modified content
         with open(registry_file, "w") as f:
             f.writelines(updated_lines)
+        print(server_registry.active_servers)
 
     def reload_registry(self):
         """
@@ -140,6 +156,26 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             print(f"[SERVER {self.pid}] No previous leader database found. Starting fresh.")
         except Exception as e:
             print(f"[SERVER {self.pid}] Error copying database: {e}")
+
+    def sync_leader_with_latest_database(self):
+        """
+        If pid=0 is starting and there are existing databases, sync with the latest modified one.
+        All other pids will proceed as normal, copying their database over from pid=0
+        """
+        # List all existing databases, excluding the db with pid 0
+        db_files = [os.path.join(database_folder, f) for f in os.listdir(database_folder)]
+        db_files = [f for f in db_files if f != self.db_name]
+        if len(db_files) > 0:
+            # Find the most recently modified database
+            latest_db = max(db_files, key=os.path.getmtime)
+            match = re.search(r"chat_database_(\d+)\.db", latest_db)
+            db_number = int(match.group(1))
+            # Sync leader database with the latest one
+            shutil.copy(latest_db, self.db_name)
+            print(f"[SERVER {self.pid}] Synced database from latest modified {db_number}")
+        else:
+            print(f"[SERVER {self.pid}] No other database to sync with, keeping database as is")
+
 
     def CreateAccount(self, request, context):
         """
@@ -589,39 +625,38 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Assumes a global variable CURRENT_LEADER that is maintained via heartbeats and election.
         """
         # Look up the current leader's address
-        self.reload_registry()
-        leader_address = server_registry.active_servers.get(self.leader, "")[1]
-        return chat_pb2.GetLeaderResponse(success=True, leader_address=leader_address)
+        with self.plock:
+            self.reload_registry()
+            leader_address = server_registry.active_servers.get(self.leader, "")[1]
+            return chat_pb2.GetLeaderResponse(success=True, leader_address=leader_address)
     
     def replicate_to_replicas(self, method_name, request):
         """
         Called by the leader to replicate a write operation to all alive replicas.
         """
         payload = request.SerializeToString()
-        self.reload_registry()
-        replication_request = chat_pb2.ReplicationRequest(method=method_name, payload=payload)
-        for replica_id, data in server_registry.active_servers.items():
-            address = data[1]
-            if replica_id == self.leader:
-                continue
-            # Check heartbeat timestamp (if missing or too old, skip this replica)
-            last_hb = server_registry.active_servers.get(replica_id, 0)[0]
-            if time.time() - last_hb > config.HEARTBEAT_TIMEOUT:
-                print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
-                with self.plock:
-                    self.reload_registry()
+        with self.plock:
+            self.reload_registry()
+            replication_request = chat_pb2.ReplicationRequest(method=method_name, payload=payload)
+            for replica_id, data in server_registry.active_servers.items():
+                address = data[1]
+                if replica_id == self.leader:
+                    continue
+                # Check heartbeat timestamp (if missing or too old, skip this replica)
+                last_hb = server_registry.active_servers.get(replica_id, 0)[0]
+                if time.time() - last_hb > config.HEARTBEAT_TIMEOUT:
+                    print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
                     self.update_registry(replica_id, delete=True)
-                self.reload_registry()
-                continue
-            # Send replication request to all active servers
-            try:
-                with grpc.insecure_channel(address) as channel:
-                    stub = chat_pb2_grpc.ChatServiceStub(channel)
-                    rep_response = stub.Replicate(replication_request)
-                    if not rep_response.success:
-                        print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {rep_response.message}")
-            except Exception as e:
-                print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}: {e}")
+                    continue
+                # Send replication request to all active servers
+                try:
+                    with grpc.insecure_channel(address) as channel:
+                        stub = chat_pb2_grpc.ChatServiceStub(channel)
+                        rep_response = stub.Replicate(replication_request)
+                        if not rep_response.success:
+                            print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {rep_response.message}")
+                except Exception as e:
+                    print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}: {e}")
     
     def heartbeat_loop(self):
         """
@@ -629,44 +664,37 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         time.sleep(1)
         while True:
-            self.reload_registry()
-            # send heartbeat ping to all active replicas
-            for replica_id, data in server_registry.active_servers.items():
-                address = data[1]
-                if replica_id == self.pid:
-                    continue
-                try:
-                    with grpc.insecure_channel(address) as channel:
-                        stub = chat_pb2_grpc.ChatServiceStub(channel)
-                        hb_request = chat_pb2.HeartbeatRequest()
-                        response = stub.Heartbeat(hb_request)
-                        if response.alive:
-                            with self.plock:
-                                self.reload_registry()
+            with self.plock:
+                self.reload_registry()
+                # send heartbeat ping to all active replicas
+                for replica_id, data in server_registry.active_servers.items():
+                    address = data[1]
+                    if replica_id == self.pid:
+                        continue
+                    try:
+                        with grpc.insecure_channel(address) as channel:
+                            stub = chat_pb2_grpc.ChatServiceStub(channel)
+                            hb_request = chat_pb2.HeartbeatRequest()
+                            response = stub.Heartbeat(hb_request)
+                            if response.alive:
                                 self.update_registry(replica_id)
-                            self.reload_registry()
-                            print(f"[SERVER {self.pid}] Replica {replica_id} is alive! {server_registry.active_servers[replica_id][0]}")
-                except Exception as e:
-                    print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}")
-            # check which peers have not responded
-            current_time = time.time()
-            # self.reload_registry() # NOTE: not necessary but put in here for robustness
-            for replica_id in list(server_registry.active_servers.keys()):
-                if replica_id == self.pid:
-                    continue
-                if current_time - server_registry.active_servers[replica_id][0] > config.HEARTBEAT_TIMEOUT:
-                    print(f"[SERVER {self.pid}] Replica {replica_id} is considered dead. {current_time} {server_registry.active_servers[replica_id][0], {current_time-server_registry.active_servers[replica_id][0]}}")
-                    # let replicas remove the registry (if already deleted, ignore)
-                    self.reload_registry()    
-                    # If dead and in the list, remove it
-                    if replica_id in server_registry.active_servers.keys():
-                        with self.plock:
-                            self.reload_registry()
-                            self.update_registry(replica_id, delete=True)
-                        self.reload_registry()    
-                    if replica_id == self.leader:
-                        self.trigger_leader_election()
-            time.sleep(config.HEARTBEAT_INTERVAL)
+                                print(f"[SERVER {self.pid}] Replica {replica_id} is alive! {server_registry.active_servers[replica_id][0]}")
+                    except Exception as e:
+                        print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}")
+                # check which peers have not responded
+                current_time = time.time()
+                for replica_id in list(server_registry.active_servers.keys()):
+                    if replica_id == self.pid:
+                        continue
+                    if current_time - server_registry.active_servers[replica_id][0] > config.HEARTBEAT_TIMEOUT:
+                        print(f"[SERVER {self.pid}] Replica {replica_id} is considered dead. {current_time} {server_registry.active_servers[replica_id][0], {current_time-server_registry.active_servers[replica_id][0]}}")
+                        # let replicas remove the registry (if already deleted, ignore)
+                        # If dead and in the list, remove it
+                        if replica_id in server_registry.active_servers.keys():
+                            self.update_registry(replica_id, delete=True) 
+                        if replica_id == self.leader:
+                            self.trigger_leader_election()
+                time.sleep(config.HEARTBEAT_INTERVAL)
 
     def start_heartbeat(self):
         """
@@ -678,13 +706,14 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         Replica with the lowest process ID becomes the new leader.
         """
-        self.reload_registry()
-        active_ids = list(server_registry.active_servers.keys())
-        new_leader = min(active_ids)
-        self.leader = new_leader
-        print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
-        if new_leader == self.pid:
-            self.IS_LEADER = True
+        with self.plock:
+            self.reload_registry()
+            active_ids = list(server_registry.active_servers.keys())
+            new_leader = min(active_ids)
+            self.leader = new_leader
+            print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
+            if new_leader == self.pid:
+                self.IS_LEADER = True
 
 
 
