@@ -13,8 +13,8 @@ BASE_PORT   = 12300
 PID         = 4
 BUF_SIZE    = 4096
 
-HEARTBEAT_INTERVAL = 5   # How often to send heartbeat messages
-HEARTBEAT_TIMEOUT  = 10  # How long to wait before declaring a peer dead
+HEARTBEAT_INTERVAL = 2   # How often to send heartbeat messages
+HEARTBEAT_TIMEOUT  = 4  # How long to wait before declaring a peer dead
 PLOCK = multiprocessing.Lock()  # Allows different objects to use the same lock
 
 REPLICA_ADDRESSES = {
