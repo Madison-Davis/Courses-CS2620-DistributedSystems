@@ -1,17 +1,24 @@
+# chat_client.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import grpc
 import os
 import sys
-import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
 from config import config
-from google.protobuf import empty_pb2
 
 
+
+# ++++++++++++++  Class Definition  ++++++++++++++ #
 class ChatClient:
-    def __init__(self, server_address=f'{config.HOST}:{config.BASE_PORT}'):
-        """Establish channel and service stub."""
+    def __init__(self, server_address=config.STARTING_ADDRESSES[0]):
+        """
+        Establish channel and service stub.
+        """
         self.channel = grpc.insecure_channel(server_address)
         print(f"Connected to address {server_address}")
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
@@ -255,7 +262,8 @@ class ChatClient:
         """
         Contact a known peer (or the current leader) to fetch the current leader's address.
         """
-        for replica_id, address in config.REPLICA_ADDRESSES.items():
+        active_servers = config.STARTING_ADDRESSES.items()
+        for replica_id, address in active_servers:
             try:
                 # Ask potentially alive server who is the leader
                 with grpc.insecure_channel(address) as channel:
@@ -266,7 +274,7 @@ class ChatClient:
                         print(f"Peer {replica_id} at {address} reported leader: {response.leader_address}")
                         return response.leader_address
             except Exception as e:
-                print(f"Error contacting peer {replica_id} at {address}")
+                print(f"Error contacting peer {replica_id} at {address}: {e}")
         print("Could not determine leader from any peer.")
         return None
 

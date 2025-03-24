@@ -114,6 +114,16 @@ class ChatServiceStub(object):
                 request_serializer=chat__pb2.GetLeaderRequest.SerializeToString,
                 response_deserializer=chat__pb2.GetLeaderResponse.FromString,
                 _registered_method=True)
+        self.UpdateRegistry = channel.unary_unary(
+                '/chat.ChatService/UpdateRegistry',
+                request_serializer=chat__pb2.UpdateRegistryRequest.SerializeToString,
+                response_deserializer=chat__pb2.GenericResponse.FromString,
+                _registered_method=True)
+        self.UpdateRegistryReplica = channel.unary_unary(
+                '/chat.ChatService/UpdateRegistryReplica',
+                request_serializer=chat__pb2.UpdateRegistryRequest.SerializeToString,
+                response_deserializer=chat__pb2.GenericResponse.FromString,
+                _registered_method=True)
 
 
 class ChatServiceServicer(object):
@@ -215,6 +225,18 @@ class ChatServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdateRegistry(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateRegistryReplica(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ChatServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -297,6 +319,16 @@ def add_ChatServiceServicer_to_server(servicer, server):
                     servicer.GetLeader,
                     request_deserializer=chat__pb2.GetLeaderRequest.FromString,
                     response_serializer=chat__pb2.GetLeaderResponse.SerializeToString,
+            ),
+            'UpdateRegistry': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateRegistry,
+                    request_deserializer=chat__pb2.UpdateRegistryRequest.FromString,
+                    response_serializer=chat__pb2.GenericResponse.SerializeToString,
+            ),
+            'UpdateRegistryReplica': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateRegistryReplica,
+                    request_deserializer=chat__pb2.UpdateRegistryRequest.FromString,
+                    response_serializer=chat__pb2.GenericResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -731,6 +763,60 @@ class ChatService(object):
             '/chat.ChatService/GetLeader',
             chat__pb2.GetLeaderRequest.SerializeToString,
             chat__pb2.GetLeaderResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateRegistry(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/chat.ChatService/UpdateRegistry',
+            chat__pb2.UpdateRegistryRequest.SerializeToString,
+            chat__pb2.GenericResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateRegistryReplica(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/chat.ChatService/UpdateRegistryReplica',
+            chat__pb2.UpdateRegistryRequest.SerializeToString,
+            chat__pb2.GenericResponse.FromString,
             options,
             channel_credentials,
             insecure,

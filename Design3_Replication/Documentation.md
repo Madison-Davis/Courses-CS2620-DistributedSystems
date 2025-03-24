@@ -19,7 +19,9 @@ Replace `import chat_pb2 as chat__pb2` with `from comm import chat_pb2 as chat__
 Set `PID = 0` in `config/config.py`.
 
 Run server (3 separate instances):
-`py -m server.server`
+`py -m server.server --pid=PID --host=HOST`
+- PID: nonnegative integer, e.g. 0
+- HOST: valid host, e.g. 127.0.0.1
 
 Run client GUI:
 `py -m client.gui`
@@ -108,6 +110,8 @@ service ChatService {
     rpc Replicate(ReplicationRequest) returns (GenericResponse);                                → tell replica to replicate
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);                                → send heartbeat ping
     rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);                                → get current leader
+    rpc UpdateRegistry(UpdateRegistryRequest) returns (GenericResponse);                        → leader tells replicas to update their registries
+    rpc UpdateRegistryReplica(UpdateRegistryRequest) returns (GenericResponse);                 → replica updates their registry
 }
 ```
 
@@ -158,6 +162,11 @@ Drafts Database
 4. msg: str, ""
 5. checked: bool, 0
 
+Registry Database
+1. pid: int, N/A (no default; should not be in DB)
+2. timestamp: real time value, N/A (no default; should not be in DB)
+3. addr: text, N/A (no default; should not be in DB)
+
 
 -------------------------------------------
 ## Servers: Replication
@@ -202,6 +211,11 @@ To ensure password security, we store all password information as hashed passwor
 
 -------------------------------------------
 ## Robustness: Testing
+
+Our unit tests test for functionalities including the following:
+1. Creating an account and ensuring the replication requests are successfully completed by replicas
+2. Electing the correct new leader when the existing leader dies
+3. Sending client requests during replication and ensuring that all write requests are queued up correctly
 
 
 
