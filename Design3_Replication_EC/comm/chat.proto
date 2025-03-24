@@ -19,8 +19,8 @@ service ChatService {
     rpc Replicate(ReplicationRequest) returns (GenericResponse);
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
     rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);
-    rpc UpdateRegistry(UpdateRegistryRequest) returns (GenericResponse);
-    rpc UpdateRegistryReplica(UpdateRegistryRequest) returns (GenericResponse);
+    rpc UpdateRegistry(UpdateRegistryRequest) returns (UpdateRegistryFullSQLRequest);
+    rpc UpdateRegistryReplica(UpdateRegistryFullSQLRequest) returns (GenericResponse);
 }
 
 message ReplicationRequest {
@@ -167,7 +167,12 @@ message GenericResponse {
 }
 
 message UpdateRegistryRequest {
-    int32 pid = 1;             
-    float timestamp = 2;      
-    string addr = 3;          
+    int32 pid = 1;
+    float timestamp = 2;
+    string addr = 3;
+}
+
+message UpdateRegistryFullSQLRequest {
+    bool success = 1;
+    string sql_registry = 2;  
 }

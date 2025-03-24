@@ -117,11 +117,11 @@ class ChatServiceStub(object):
         self.UpdateRegistry = channel.unary_unary(
                 '/chat.ChatService/UpdateRegistry',
                 request_serializer=chat__pb2.UpdateRegistryRequest.SerializeToString,
-                response_deserializer=chat__pb2.GenericResponse.FromString,
+                response_deserializer=chat__pb2.UpdateRegistryFullSQLRequest.FromString,
                 _registered_method=True)
         self.UpdateRegistryReplica = channel.unary_unary(
                 '/chat.ChatService/UpdateRegistryReplica',
-                request_serializer=chat__pb2.UpdateRegistryRequest.SerializeToString,
+                request_serializer=chat__pb2.UpdateRegistryFullSQLRequest.SerializeToString,
                 response_deserializer=chat__pb2.GenericResponse.FromString,
                 _registered_method=True)
 
@@ -323,11 +323,11 @@ def add_ChatServiceServicer_to_server(servicer, server):
             'UpdateRegistry': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateRegistry,
                     request_deserializer=chat__pb2.UpdateRegistryRequest.FromString,
-                    response_serializer=chat__pb2.GenericResponse.SerializeToString,
+                    response_serializer=chat__pb2.UpdateRegistryFullSQLRequest.SerializeToString,
             ),
             'UpdateRegistryReplica': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateRegistryReplica,
-                    request_deserializer=chat__pb2.UpdateRegistryRequest.FromString,
+                    request_deserializer=chat__pb2.UpdateRegistryFullSQLRequest.FromString,
                     response_serializer=chat__pb2.GenericResponse.SerializeToString,
             ),
     }
@@ -789,7 +789,7 @@ class ChatService(object):
             target,
             '/chat.ChatService/UpdateRegistry',
             chat__pb2.UpdateRegistryRequest.SerializeToString,
-            chat__pb2.GenericResponse.FromString,
+            chat__pb2.UpdateRegistryFullSQLRequest.FromString,
             options,
             channel_credentials,
             insecure,
@@ -815,7 +815,7 @@ class ChatService(object):
             request,
             target,
             '/chat.ChatService/UpdateRegistryReplica',
-            chat__pb2.UpdateRegistryRequest.SerializeToString,
+            chat__pb2.UpdateRegistryFullSQLRequest.SerializeToString,
             chat__pb2.GenericResponse.FromString,
             options,
             channel_credentials,

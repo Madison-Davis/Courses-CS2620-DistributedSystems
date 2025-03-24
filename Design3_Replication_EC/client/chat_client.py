@@ -10,18 +10,20 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from comm import chat_pb2
 from comm import chat_pb2_grpc
 from config import config
-from server import server_registry
 
 
 
 # ++++++++++++++  Class Definition  ++++++++++++++ #
 class ChatClient:
-    def __init__(self, server_address=f'{config.HOST}:{config.BASE_PORT}'):
+    def __init__(self):
         """
         Establish channel and service stub.
         """
-        self.channel = grpc.insecure_channel(server_address)
-        print(f"Connected to address {server_address}")
+        # leader_pid will help when needing to find a new leader via incrementing
+        self.leader_pid = None
+        leader_address = self.get_leader()
+        self.channel = grpc.insecure_channel(leader_address)
+        print(f"Connected to address {leader_address}")
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
     
     def create_account(self, username, password_hash):
@@ -249,7 +251,7 @@ class ChatClient:
         """Fetch the new leader's address and reinitialize the connection."""
         new_leader = self.get_leader()
         if new_leader:
-            print(f"[CLIENT] New leader found: {new_leader}. Reconnecting...")
+            print(f"[CLIENT] New leader found: {new_leader}.  Reconnecting...")
             # Update channel and stub with the new leader address.
             self.channel = grpc.insecure_channel(new_leader)
             print(f"Connecting to address {new_leader}")
@@ -263,21 +265,31 @@ class ChatClient:
         """
         Contact a known peer (or the current leader) to fetch the current leader's address.
         """
-        active_servers = server_registry.active_servers
-        for replica_id, data in active_servers.items():
-            address = data[1]
-            try:
+        # Determine where to begin looking for range of leaders
+        # If first-time, start at 0
+        # If new leader, it will be > old leader's pid
+        p = 0
+        if self.leader_pid is not None:
+            p = self.leader_pid
+        while p < config.MAX_PID:
+            print(f"[CLIENT] Contacting With PID: {p}")
+            for host in config.ALL_HOSTS:
+                addr = f"{host}:{config.BASE_PORT+p}"
+                print(f"[CLIENT] Contacting Addr: {addr}")
                 # Ask potentially alive server who is the leader
-                with grpc.insecure_channel(address) as channel:
-                    stub = chat_pb2_grpc.ChatServiceStub(channel)
-                    request = chat_pb2.GetLeaderRequest()
-                    response = stub.GetLeader(request, timeout=2)
-                    if response.success and response.leader_address:
-                        print(f"Peer {replica_id} at {address} reported leader: {response.leader_address}")
-                        return response.leader_address
-            except Exception as e:
-                print(f"Error contacting peer {replica_id} at {address}: {e}")
-        print("Could not determine leader from any peer.")
+                try:
+                    with grpc.insecure_channel(addr) as channel:
+                        stub = chat_pb2_grpc.ChatServiceStub(channel)
+                        request = chat_pb2.GetLeaderRequest()
+                        response = stub.GetLeader(request, timeout=2)
+                        if response.success and response.leader_address:
+                            print(f"[CLIENT] Reported leader: {response.leader_address}")
+                            self.leader_pid = p
+                            return response.leader_address
+                # If they do not respond, likely not alive, continue
+                except Exception as e:
+                    continue
+            p += 1
         return None
 
 

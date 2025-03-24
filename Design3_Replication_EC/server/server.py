@@ -6,6 +6,7 @@
 import re
 import os
 import sys
+import json
 import grpc
 import time
 import shutil
@@ -34,23 +35,35 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         Set up ChatService.
         """
+        # +++++ Create Recollection Sets +++++ #
         self.active_users = {}                  # Dictionary to store active user streams
         self.message_queues = {}                # Store queues for active users
         self.lock = threading.Lock()            # Lock for receive message threads
         self.plock = config.PLOCK               # Lock for server_registry.py
+        # ++++ Determine Personal Address ++++ #
         self.pid = pid
         self.port = config.BASE_PORT + self.pid
         self.addr = str(host) + ":" + str(self.port)
+        # ++++++++ Determine Leader ++++++++ #
         self.IS_LEADER = (self.pid == 0)
-        self.leader = min(config.STARTING_ADDRESSES.keys())
+        self.leader = 0 if self.pid == 0 else self.find_leader()[1]
+        self.leader_addr = f"{host}:{config.BASE_PORT+pid}" if self.pid == 0 else self.find_leader()[0]
+        print("LEADER", self.leader_addr)
         print(f"[SERVER {self.pid}] Running on port {self.port}")
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
+        # ++++++++ Create Database ++++++++ #
+            # Initialization: make new accounts, msgs, draft DBs if they do not already exist
+            # Delete any old registry of databases, and insert leader's registry into theirs
         os.makedirs(database_folder, exist_ok=True)  
         self.db_name = os.path.join(database_folder, f"chat_database_{self.pid}.db")
         self.db_connection = sqlite3.connect(self.db_name, check_same_thread=False)
         self.initialize_database()
+        if not self.IS_LEADER:
+            self.notify_leader_new_database()
         self.print_SQL()
 
+
+    # ++++++++++++++  Functions: Database Syncs  ++++++++++++++ #
     def print_SQL(self):
         with self.db_connection:
             cursor = self.db_connection.cursor()
@@ -109,105 +122,108 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             ''')
 
             # Clear only the registry table
+            # Insert leader into DB
             cursor.execute("DELETE FROM registry")
-            # Insert into registry table
-            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", (0, time.time(), config.STARTING_ADDRESSES[0]))
-            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", (1, time.time(), config.STARTING_ADDRESSES[1]))
-            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", (2, time.time(), config.STARTING_ADDRESSES[2]))
-
-    def update_all_registries(self):
-        """
-        Notify the leader about the new database creation.
-        This can be done via gRPC or another form of communication.
-        """
-        # Get the leader's address
-        with self.db_connection:
-            cursor = self.db_connection.cursor()
-            cursor.execute("SELECT addr FROM registry WHERE pid = ?", (self.leader,))
-            leader_addr = cursor.fetchone()
-            print(leader_addr)
-        # Send a message to the leader
-        with grpc.insecure_channel(f"{config.HOST}:{config.BASE_PORT + self.leader}") as channel:
-            stub = chat_pb2_grpc.ChatServiceStub(channel)
-            request = chat_pb2.UpdateRegistryRequest(
-                pid=self.pid,
-                timestamp=time.time(),
-                addr=self.addr
-            )
-            response = stub.UpdateRegistry(request)
-            if response.success:
-                print(f"[SERVER {self.pid}] Leader notified and successful change.")
-            else:
-                print(f"[SERVER {self.pid}] Leader notified and NOT successful change. {response.message}")
+            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", (self.leader, time.time(), self.leader_addr))
 
     def UpdateRegistry(self, request, context):
         """
-        Leader is notified of the registry change and tells all replicas to update.
+        Called by the leader when notified of a new server.
+        Leader tells all replicas to update their registries with new server.
         """
         try:
             with self.db_connection:
+                # Insert new server into database
                 cursor = self.db_connection.cursor()
-                # Printing the request object fields for debugging
-                print(f"Received request: PID={request.pid}, Timestamp={request.timestamp}, Addr={request.addr}")
-                # Inserting into the database
+                print(f"[SERVER {self.pid}] Received request new server: PID={request.pid}, Timestamp={request.timestamp}, Addr={request.addr}")
                 cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
                             (request.pid, request.timestamp, request.addr))
-                # Replicating to other replicas
+                # Fetch all records (list of tuples) once server has been added
+                cursor.execute("SELECT * FROM registry")  
+                rows = cursor.fetchall()  
+                sql_registry = json.dumps([{"pid": row[0], "timestamp": row[1], "addr": row[2]} for row in rows])
+                replica_request = chat_pb2.UpdateRegistryFullSQLRequest(
+                    success=True,
+                    sql_registry=sql_registry)
                 self.print_SQL()
-                self.replicate_to_replicas("UpdateRegistry", request)
-            return chat_pb2.GenericResponse(success=True, message="success")
+                # Send the updated registry to all replicas asynchronously
+                with self.db_connection:
+                    cursor = self.db_connection.cursor()
+                    cursor.execute("SELECT pid, addr FROM registry")
+                    for replica_id, addr in cursor.fetchall():
+                        # do NOT do the request.pid, they'll update themselves later
+                        if replica_id == self.leader or replica_id == request.pid:
+                            continue
+                        # For each addres, send them the update
+                        with grpc.insecure_channel(addr) as channel:
+                            stub = chat_pb2_grpc.ChatServiceStub(channel)
+                            response = stub.UpdateRegistryReplica(replica_request)
+                            if not response.success:
+                                print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {response.message}")
         except Exception as e:
             print(f"Error in UpdateRegistry: {e}")
-            return chat_pb2.GenericResponse(success=False, message=f"UpdateRegistry error: {e}")
+        return replica_request
 
     def UpdateRegistryReplica(self, request, context):
         """
         Replica is notified of the registry change and updates itself.
         """
+        print(f"[SERVER {self.pid}] Replicating registry from leader")
         try:
-            with self.db_connection:  # automatically commit
+            with self.db_connection: 
+                # Delete old registry and replace it with new data
+                # To replace data, deserialize JSON from the leader's response
                 cursor = self.db_connection.cursor()
-                print(f"Received request for Replica: PID={request.pid}, Timestamp={request.timestamp}, Addr={request.addr}")
-                cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
-                            (request.pid, request.timestamp, request.addr))
+                cursor.execute("DELETE FROM registry")  
+                registry_data = json.loads(request.sql_registry)
+                # Insert new data
+                for entry in registry_data:
+                    cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
+                                (entry["pid"], entry["timestamp"], entry["addr"]))
+                self.db_connection.commit()
             return chat_pb2.GenericResponse(success=True, message="success")
         except Exception as e:
             print(f"Error in UpdateRegistryReplica: {e}")
             return chat_pb2.GenericResponse(success=False, message=f"UpdateRegistryReplica {e}")
 
-    def copy_leader_database(self, pid):
+    def notify_leader_new_database(self):
         """
-        Copies the database from replica 'pid' to this replica
+        Notify the leader about the new database creation.
+        This can be done via gRPC or another form of communication.
         """
-        try:
-            os.makedirs(database_folder, exist_ok=True)  
-            pid_db_name = os.path.join(database_folder, f"chat_database_{pid}.db")
-            shutil.copy(pid_db_name, self.db_name)
-            print(f"[SERVER {self.pid}] Copied database from {pid} to {self.pid}")
-        except FileNotFoundError:
-            print(f"[SERVER {self.pid}] No previous leader database found. Starting fresh.")
-        except Exception as e:
-            print(f"[SERVER {self.pid}] Error copying database: {e}")
+        # Get the leader's address
+        leader_addr = self.find_leader()[0]
+        # Send a message to the leader
+        with grpc.insecure_channel(leader_addr) as channel:
+            # Make a request
+            stub = chat_pb2_grpc.ChatServiceStub(channel)
+            request = chat_pb2.UpdateRegistryRequest(
+                pid=self.pid,
+                timestamp=time.time(),
+                addr=self.addr)
+            # Send the request without waiting for a response
+            try:
+                response = stub.UpdateRegistry(request)
+                if response.success:
+                    with self.db_connection: 
+                        cursor = self.db_connection.cursor()
+                        # Delete old registry and replace it with new data
+                        cursor.execute("DELETE FROM registry")  
+                        # Deserialize JSON from the leader's response
+                        registry_data = json.loads(response.sql_registry)
+                        # Insert new data
+                        for entry in registry_data:
+                            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
+                                        (entry["pid"], entry["timestamp"], entry["addr"]))
+                        self.db_connection.commit()
+                    print(f"[SERVER {self.pid}] Leader notified successfully (ignoring response).")
+                else:
+                    print(f"[SERVER {self.pid}] Leader notified but NOT successful.")
+            except grpc.RpcError as e:
+                print(f"[SERVER {self.pid}] Error notifying leader: {e}")
 
-    def sync_leader_with_latest_database(self):
-        """
-        If pid=0 is starting and there are existing databases, sync with the latest modified one.
-        All other pids will proceed as normal, copying their database over from pid=0
-        """
-        # List all existing databases, excluding the db with pid 0
-        db_files = [os.path.join(database_folder, f) for f in os.listdir(database_folder)]
-        db_files = [f for f in db_files if f != self.db_name]
-        if len(db_files) > 0:
-            # Find the most recently modified database
-            latest_db = max(db_files, key=os.path.getmtime)
-            match = re.search(r"chat_database_(\d+)\.db", latest_db)
-            db_number = int(match.group(1))
-            # Sync leader database with the latest one
-            shutil.copy(latest_db, self.db_name)
-            print(f"[SERVER {self.pid}] Synced database from latest modified {db_number}")
-        else:
-            print(f"[SERVER {self.pid}] No other database to sync with, keeping database as is")
 
+    # ++++++++++++++  Functions: Replication Sub-Functions  ++++++++++++++ #
     def CreateAccount(self, request, context):
         """
         Creates account for new username.
@@ -593,6 +609,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 self.message_queues.pop(username, None)  # Clean up queue
             print(f"[SERVER {self.pid}] {username} disconnected from message stream.")
 
+
+    # ++++++++++++++  Functions: Replication  ++++++++++++++ #
     def Replicate(self, request, context):
         """
         Called by the leader on a replica to replicate a write operation.
@@ -642,26 +660,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             local_request.ParseFromString(request.payload)
             self.SendMessage(local_request, context)
         elif method == "UpdateRegistry":
+            print("Z")
             local_request = chat_pb2.UpdateRegistryRequest()
             local_request.ParseFromString(request.payload)
+            print("LOCAL REQUEST", local_request)
             self.UpdateRegistryReplica(local_request, context)
-        return chat_pb2.GenericResponse(success=True, message="Replication applied")
-    
-    def Heartbeat(self, request, context):
-        """
-        Respond to heartbeat pings.
-        For leader: record the heartbeat from the replica.
-        """
-        return chat_pb2.HeartbeatResponse(alive=True)
-    
-    def GetLeader(self, request, context):
-        """
-        Returns the current leader's address.
-        Assumes a global variable CURRENT_LEADER that is maintained via heartbeats and election.
-        """
-        # Look up the current leader's address
-        leader_address = config.STARTING_ADDRESSES.get(self.leader, "")
-        return chat_pb2.GetLeaderResponse(success=True, leader_address=leader_address)
+        return chat_pb2.GenericResponse(success=True, message="Replication applied")   
     
     def replicate_to_replicas(self, method_name, request):
         """
@@ -683,13 +687,73 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     continue
                 # Send replication request to all active servers
                 try:
+                    print("REPLICATING...", addr)
                     with grpc.insecure_channel(addr) as channel:
                         stub = chat_pb2_grpc.ChatServiceStub(channel)
                         rep_response = stub.Replicate(replication_request)
                         if not rep_response.success:
                             print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {rep_response.message}")
                 except Exception as e:
-                    print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}: {e}")
+                    print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}. {e}")
+    
+
+    # ++++++++++++++  Functions: Leader  ++++++++++++++ #        
+    def GetLeader(self, request, context):
+        """
+        Returns the current leader's address.
+        Assumes a global variable CURRENT_LEADER that is maintained via heartbeats and election.
+        """
+        # Look up the current leader's address
+        with self.db_connection:
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT addr FROM registry WHERE pid = ?", (self.leader,))
+            addr = cursor.fetchone()[0]
+        return chat_pb2.GetLeaderResponse(success=True, leader_address=addr)
+    
+    def find_leader(self):
+        # Try all possible combinations of machines
+        for host in config.ALL_HOSTS:
+            for p in range(self.pid-1, -1, -1):
+                addr = f"{host}:{config.BASE_PORT+p}"
+                print("Trying...", addr)
+                try:
+                    with grpc.insecure_channel(addr) as channel:
+                        stub = chat_pb2_grpc.ChatServiceStub(channel)
+                        request = chat_pb2.GetLeaderRequest()
+                        response = stub.GetLeader(request)
+                        if response.leader_address:
+                            p = int(response.leader_address[-5:]) - config.BASE_PORT
+                            print(f"Leader found: {response.leader_address} with PID: {p}")
+                            return response.leader_address, p
+                # If channel does not respond, that's not an active machine, continue
+                except grpc.RpcError:
+                    print("Addr does not work, move on...", addr)
+                    continue
+        # If no combination of machine is available, return -1 
+        return "", -1
+    
+    def trigger_leader_election(self):
+        """
+        Replica with the lowest process ID becomes the new leader.
+        """
+        with self.db_connection:
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT pid FROM registry")
+            pids = cursor.fetchall()
+        new_leader = min(pids)[0]
+        self.leader = new_leader
+        print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
+        if new_leader == self.pid:
+            self.IS_LEADER = True
+
+
+    # ++++++++++++++  Functions: Heartbeat  ++++++++++++++ #
+    def Heartbeat(self, request, context):
+        """
+        Respond to heartbeat pings.
+        For leader: record the heartbeat from the replica.
+        """
+        return chat_pb2.HeartbeatResponse(alive=True)
     
     def heartbeat_loop(self):
         """
@@ -704,6 +768,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 for replica_id, addr in cursor.fetchall():
                     # don't send to yourself
                     if replica_id == self.pid:
+                        cursor.execute("UPDATE registry SET timestamp = ? WHERE pid = ?", (time.time(), self.pid,))
                         continue
                     # try sending to other channel
                     try:
@@ -749,21 +814,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Start the heartbeat loop.
         """
         threading.Thread(target=self.heartbeat_loop, daemon=True).start()
-
-    def trigger_leader_election(self):
-        """
-        Replica with the lowest process ID becomes the new leader.
-        """
-        with self.db_connection:
-            cursor = self.db_connection.cursor()
-            cursor.execute("SELECT pid FROM registry")
-            pids = cursor.fetchall()
-        new_leader = min(pids)
-        self.leader = new_leader
-        print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
-        if new_leader == self.pid:
-            self.IS_LEADER = True
-
 
 
 # ++++++++++++++  Serve Functions  ++++++++++++++ #
