@@ -19,6 +19,8 @@ service ChatService {
     rpc Replicate(ReplicationRequest) returns (GenericResponse);
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
     rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);
+    rpc UpdateRegistry(UpdateRegistryRequest) returns (GenericResponse);
+    rpc UpdateRegistryReplica(UpdateRegistryRequest) returns (GenericResponse);
 }
 
 message ReplicationRequest {
@@ -162,4 +164,10 @@ message Draft {
 message GenericResponse {
     bool success = 1;
     string message = 2;
+}
+
+message UpdateRegistryRequest {
+    int32 pid = 1;             
+    float timestamp = 2;      
+    string addr = 3;          
 }
