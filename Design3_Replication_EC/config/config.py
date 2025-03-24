@@ -10,11 +10,8 @@ import multiprocessing
 # ALL_HOSTS: All known hosts, as a simple guide
 # HOST: This computer's host ("10.250.239.251") or local host
 
-# Hosts
-    # 127.0.0.1
-ALL_HOSTS = ["127.0.0.1"] #["10.250.239.251", "10.250.184.185"]    
-HOST1        = "127.0.0.1"           
-HOST2        = "10.250.239.251"   
+HOST1        = "10.250.239.251"    
+HOST2        = "10.250.62.219"    
 BASE_PORT   = 12300            
 BUF_SIZE    = 4096
 

@@ -717,6 +717,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                                     cursor = self.db_connection.cursor()
                                     cursor.execute("UPDATE registry SET timestamp = ? WHERE pid = ?", (time.time(), replica_id,))
                                 print(f"[SERVER {self.pid}] Replica {replica_id} is alive!")
+                                self.print_SQL()
                     except Exception as e:
                         print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}.  Trying again...")
             # check which peers have not responded
@@ -776,7 +777,7 @@ def serve(pid, host):
     server_port = config.BASE_PORT + chat_service.pid
     server.add_insecure_port(f'{host}:{server_port}')
     server.start()
-    print(f"[SERVER {chat_service.pid}]: Started!")
+    print(f"[SERVER {chat_service.pid}] Started!")
     chat_service.start_heartbeat()
     try:
         # Use a long sleep loop to keep the main thread alive
