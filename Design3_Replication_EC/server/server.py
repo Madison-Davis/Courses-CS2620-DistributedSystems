@@ -3,24 +3,18 @@
 
 
 # +++++++++++++ Imports and Installs +++++++++++++ #
-import re
 import os
 import sys
 import json
 import grpc
 import time
-import shutil
 import sqlite3
 import logging
 import queue
 import threading
-import importlib
 import argparse
-import server_registry
-import multiprocessing
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config", "config.py"))
-registry_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "server_registry.py"))
 database_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "database"))
 from concurrent import futures
 from comm import chat_pb2
@@ -39,7 +33,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.active_users = {}                  # Dictionary to store active user streams
         self.message_queues = {}                # Store queues for active users
         self.lock = threading.Lock()            # Lock for receive message threads
-        self.plock = config.PLOCK               # Lock for server_registry.py
         # ++++ Determine Personal Address ++++ #
         self.pid = pid
         self.port = config.BASE_PORT + self.pid
