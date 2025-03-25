@@ -42,6 +42,7 @@ class ChatClient:
             response = self.stub.CreateAccount(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -58,6 +59,7 @@ class ChatClient:
             response = self.stub.Login(request)
             return response.inbox_count, response.old_messages, response.inbox_messages, response.drafts
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -74,6 +76,7 @@ class ChatClient:
             response = self.stub.SendMessage(request)
             return response.msg_id
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -90,6 +93,7 @@ class ChatClient:
             response = self.stub.DownloadMessage(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -106,6 +110,7 @@ class ChatClient:
             response = self.stub.CheckMessage(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -122,6 +127,7 @@ class ChatClient:
             response = self.stub.DeleteMessage(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -138,6 +144,7 @@ class ChatClient:
             response = self.stub.AddDraft(request)
             return response.draft_id
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -154,6 +161,7 @@ class ChatClient:
             response = self.stub.SaveDrafts(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -170,6 +178,7 @@ class ChatClient:
             response = self.stub.Logout(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -186,6 +195,7 @@ class ChatClient:
             response = self.stub.ListAccounts(request)
             return response.usernames
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -202,6 +212,7 @@ class ChatClient:
             response = self.stub.DeleteAccount(request)
             return response.success
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -218,6 +229,7 @@ class ChatClient:
             response = self.stub.GetPassword(request)
             return response.password_hash
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -245,6 +257,7 @@ class ChatClient:
 
                 callback(message)
         except grpc.RpcError as e:
+            # Try again if disconnected from server
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 print("[CLIENT] Connection failed. Attempting to reconnect to new leader...")
                 if self.reconnect():
@@ -282,6 +295,7 @@ class ChatClient:
             for host in config.ALL_HOSTS:
                 addr = f"{host}:{config.BASE_PORT+p}"
                 print(f"[CLIENT] Contacting Addr: {addr}")
+                
                 # Ask potentially alive server who is the leader
                 try:
                     with grpc.insecure_channel(addr) as channel:
@@ -292,6 +306,7 @@ class ChatClient:
                             print(f"[CLIENT] Reported leader: {response.leader_address}")
                             self.leader_pid = p
                             return response.leader_address
+                
                 # If they do not respond, likely not alive, continue
                 except Exception as e:
                     continue

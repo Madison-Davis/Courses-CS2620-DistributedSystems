@@ -1,14 +1,8 @@
 # config.py
 import multiprocessing
 
-# NOTES:
-# all servers share same host
-# each server has unique port = base port + pid
-# PID automatically increments when you start new server on new terminal
-# need to reset PID to 1 if you want to manually start over
-
-# ALL_HOSTS: All known hosts, as a simple guide
-# MAX_PID: max_pid that client will try before stopping
+# ALL_HOSTS: All globally known hosts upon startup
+# MAX_PID: max_pid that client will try before stopping search
 # For testing, simply set 'ALL_HOSTS' to 127.0.0.1
 ALL_HOSTS    = ["127.0.0.1"]  #  "10.250.239.251", "10.250.62.219",
 BASE_PORT   = 12300            

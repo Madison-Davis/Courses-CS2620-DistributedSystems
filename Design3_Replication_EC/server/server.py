@@ -33,10 +33,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         self.active_users = {}                  # Dictionary to store active user streams
         self.message_queues = {}                # Store queues for active users
         self.lock = threading.Lock()            # Lock for receive message threads
+
         # ++++ Determine Personal Address ++++ #
         self.pid = pid
         self.port = config.BASE_PORT + self.pid
         self.addr = str(host) + ":" + str(self.port)
+
         # ++++++++ Determine Leader ++++++++ #
         self.IS_LEADER = (self.pid == 0)
         self.leader = 0 if self.pid == 0 else self.find_leader()[1]
@@ -44,6 +46,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         print("LEADER", self.leader_addr)
         print(f"[SERVER {self.pid}] Running on port {self.port}")
         print(f"[SERVER {self.pid}] Identifies leader {self.leader}")
+
         # ++++++++ Create Database ++++++++ #
             # Initialization: make new accounts, msgs, draft DBs if they do not already exist
             # Delete any old registry of databases, and insert leader's registry into theirs
@@ -58,6 +61,9 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 
     # ++++++++++++++  Functions: Database Syncs  ++++++++++++++ #
     def print_SQL(self):
+        """
+        Print all data in the registry table.
+        """
         with self.db_connection:
             cursor = self.db_connection.cursor()
             cursor.execute("SELECT pid, timestamp, addr FROM registry")
@@ -74,7 +80,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         Creates necessary tables if they do not exist.
         """
-        with self.db_connection: # automatically commit
+        with self.db_connection:
             cursor = self.db_connection.cursor()
             cursor.execute('''
             CREATE TABLE IF NOT EXISTS accounts (
@@ -122,7 +128,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def UpdateRegistry(self, request, context):
         """
         Called by the leader when notified of a new server.
-        Leader tells all replicas to update their registries with new server.
+        Leader tells all replicas to update their registries.
+        Return a full historical dump of the database (accounts, messages, drafts, registry).
         """
         try:
             with self.db_connection:
@@ -130,14 +137,33 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 print(f"[SERVER {self.pid}] Received request new server: PID={request.pid}, Timestamp={request.timestamp}, Addr={request.addr}")
                 cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
-                            (request.pid, request.timestamp, request.addr))
-                # Fetch all records (list of tuples) once server has been added
-                cursor.execute("SELECT * FROM registry")  
-                rows = cursor.fetchall()  
-                sql_registry = json.dumps([{"pid": row[0], "timestamp": row[1], "addr": row[2]} for row in rows])
+                            (request.pid, time.time(), request.addr))
+                
+                # Get full state from leader's database:
+                cursor.execute("SELECT * FROM accounts")
+                accounts = cursor.fetchall()
+                cursor.execute("SELECT * FROM messages")
+                messages = cursor.fetchall()
+                cursor.execute("SELECT * FROM drafts")
+                drafts = cursor.fetchall()
+                cursor.execute("SELECT * FROM registry")
+                registry_rows = cursor.fetchall()
+                
+                # Prepare a full state dictionary and serialize.
+                full_state = {
+                    "accounts": accounts,
+                    "messages": messages,
+                    "drafts": drafts,
+                    "registry": registry_rows
+                }
+                sql_state = json.dumps(full_state)
+
+                # Replicate updated registry to all replicas
+                sql_registry = json.dumps([{"pid": row[0], "timestamp": row[1], "addr": row[2]} for row in registry_rows])
                 replica_request = chat_pb2.UpdateRegistryFullSQLRequest(
                     success=True,
                     sql_registry=sql_registry)
+                
                 # Send the updated registry to all replicas asynchronously
                 with self.db_connection:
                     cursor = self.db_connection.cursor()
@@ -152,9 +178,18 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                             response = stub.UpdateRegistryReplica(replica_request)
                             if not response.success:
                                 print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {response.message}")
+                
+                # Build the response message and send full state.
+                replica_response = chat_pb2.UpdateRegistryFullSQLRequest(
+                    success=True,
+                    sql_registry=sql_state)
+                
+                return replica_response
+        
         except Exception as e:
             print(f"Error in UpdateRegistry: {e}")
-        return replica_request
+            return chat_pb2.UpdateRegistryFullSQLRequest(success=False, sql_registry=str(e))
+
 
     def UpdateRegistryReplica(self, request, context):
         """
@@ -168,7 +203,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("DELETE FROM registry")  
                 registry_data = json.loads(request.sql_registry)
-                # Insert new data
                 for entry in registry_data:
                     cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
                                 (entry["pid"], entry["timestamp"], entry["addr"]))
@@ -181,10 +215,11 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
     def notify_leader_new_database(self):
         """
         Notify the leader about the new database creation.
-        This can be done via gRPC or another form of communication.
+        Receive a full historical dump from the leader and update local tables.
         """
         # Get the leader's address
         leader_addr = self.find_leader()[0]
+        
         # Send a message to the leader
         with grpc.insecure_channel(leader_addr) as channel:
             # Make a request
@@ -193,24 +228,33 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 pid=self.pid,
                 timestamp=time.time(),
                 addr=self.addr)
+            
             # Send the request without waiting for a response
             try:
                 response = stub.UpdateRegistry(request)
                 if response.success:
-                    with self.db_connection: 
+                    full_state = json.loads(response.sql_registry)
+                    with self.db_connection:
                         cursor = self.db_connection.cursor()
-                        # Delete old registry and replace it with new data
-                        cursor.execute("DELETE FROM registry")  
-                        # Deserialize JSON from the leader's response
-                        registry_data = json.loads(response.sql_registry)
-                        # Insert new data
-                        for entry in registry_data:
-                            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", 
-                                        (entry["pid"], entry["timestamp"], entry["addr"]))
+                        # Clear local tables.
+                        cursor.execute("DELETE FROM accounts")
+                        cursor.execute("DELETE FROM messages")
+                        cursor.execute("DELETE FROM drafts")
+                        cursor.execute("DELETE FROM registry")
+                        
+                        # Insert historical accounts, messages, drafts, registry.
+                        for row in full_state.get("accounts", []):
+                            cursor.execute("INSERT INTO accounts (uuid, username, pwd, logged_in) VALUES (?, ?, ?, ?)", row)
+                        for row in full_state.get("messages", []):
+                            cursor.execute("INSERT INTO messages (msg_id, username, sender, msg, checked, inbox) VALUES (?, ?, ?, ?, ?, ?)", row)
+                        for row in full_state.get("drafts", []):
+                            cursor.execute("INSERT INTO drafts (draft_id, username, recipient, msg, checked) VALUES (?, ?, ?, ?, ?)", row)
+                        for row in full_state.get("registry", []):
+                            cursor.execute("INSERT INTO registry (pid, timestamp, addr) VALUES (?, ?, ?)", row)
                         self.db_connection.commit()
-                    print(f"[SERVER {self.pid}] Leader notified successfully (ignoring response).")
+                    print(f"[SERVER {self.pid}] Full historical state replicated successfully from leader.")
                 else:
-                    print(f"[SERVER {self.pid}] Leader notified but NOT successful.")
+                    print(f"[SERVER {self.pid}] Leader notified but response unsuccessful: {response.sql_registry}")
             except grpc.RpcError as e:
                 print(f"[SERVER {self.pid}] Error notifying leader: {e}")
 
@@ -239,6 +283,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     return chat_pb2.GenericResponse(success=False, message="Username already exists")
                 cursor.execute("INSERT INTO accounts (username, pwd, logged_in) VALUES (?, ?, 1)", (username, password_hash))
                 response = chat_pb2.GenericResponse(success=True, message="Account created successfully")
+            
             # if this server is leader, replicate the operation
             if self.IS_LEADER:
                 self.replicate_to_replicas("CreateAccount", request)
@@ -312,6 +357,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                                      
                     cursor.execute("UPDATE accounts SET logged_in = 1 WHERE username = ?", (username,))
                     response = chat_pb2.LoginResponse(success=True, message="Login successful", inbox_count=len(new_message_list), old_messages=old_message_list, inbox_messages=new_message_list, drafts=draft_list)
+                    
+                    # if this server is leader, replicate the operation
                     if self.IS_LEADER:
                         self.replicate_to_replicas("Login", request)
                     return response
@@ -371,6 +418,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 # Reset drafts
                 cursor.execute("DELETE FROM drafts WHERE username = ?", (username,))
+                
                 # Add draft to drafts table
                 # Note: `username` is the sender
                 # Assumes that drafts is a list of dictionaries
@@ -382,6 +430,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         VALUES (?, ?, ?, ?)
                     """, (username, recipient, msg, 0,))
                 response = chat_pb2.GenericResponse(success=True, message="Draft saved")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("SaveDrafts", request)
                 return response
@@ -409,6 +459,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     VALUES (?, ?, ?, ?) RETURNING draft_id
                 """, (username, recipient, msg, checked,))
                 response = chat_pb2.AddDraftResponse(success=True, message="Draft added", draft_id=cursor.fetchone()[0])
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("AddDraft", request)
                 return response
@@ -430,6 +482,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE messages SET checked = 1 WHERE username = ? AND msg_id = ?", (username, msg_id,))
                 response = chat_pb2.GenericResponse(success=True, message="Message checked as read")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("CheckMessage", request)
                 return response
@@ -450,6 +504,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE messages SET inbox = 0 WHERE username = ? AND msg_id = ?", (username, msg_id,))
                 response = chat_pb2.GenericResponse(success=True, message="Message downloaded from inbox")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("DownloadMessage", request)
                 return response
@@ -461,7 +517,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         Delete message from database
         Return: GenericResponse (success, message)
         """
-        username = request.username
         msg_id = request.msg_id
 
         try:
@@ -470,6 +525,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("DELETE FROM messages WHERE msg_id = ?", (msg_id,))
                 response = chat_pb2.GenericResponse(success=True, message="Message deleted")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("DeleteMessage", request)
                 return response
@@ -494,6 +551,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor.execute("DELETE FROM drafts WHERE username = ?", (username,))
                 cursor.execute("DELETE FROM accounts WHERE username = ?", (username,))
                 response = chat_pb2.GenericResponse(success=True, message="Account and all messages deleted")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("DeleteAccount", request)
                 return response
@@ -515,6 +574,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 cursor = self.db_connection.cursor()
                 cursor.execute("UPDATE accounts SET logged_in = 0 WHERE username = ?", (username,))
                 response = chat_pb2.GenericResponse(success=True, message="Logged out successfully")
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("Logout", request)
                 return response
@@ -530,6 +591,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         recipient = request.recipient
         sender = request.sender
         content = request.content
+        
         try:
             with self.db_connection:
                 cursor = self.db_connection.cursor()
@@ -564,6 +626,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         ))
 
                 response = chat_pb2.SendMessageResponse(success=True, message="Message sent", msg_id=msg_id)
+                
+                # if this server is leader, replicate the operation
                 if self.IS_LEADER:
                     self.replicate_to_replicas("SendMessage", request)
                 return response
@@ -577,6 +641,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         username = request.username
         print(f"[SERVER {self.pid}] {username} connected to message stream.")
+        
         # Ensure the user has a queue
         with self.lock:
             if username not in self.message_queues:
@@ -610,6 +675,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         method = request.method
         print(f"[SERVER {self.pid}] Received replication request for method {method}")
+        
         # Deserialize request.payload and call appropriate local update
         if method == "CreateAccount":
             local_request = chat_pb2.CreateAccountRequest()
@@ -652,11 +718,10 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             local_request.ParseFromString(request.payload)
             self.SendMessage(local_request, context)
         elif method == "UpdateRegistry":
-            print("Z")
             local_request = chat_pb2.UpdateRegistryRequest()
             local_request.ParseFromString(request.payload)
-            print("LOCAL REQUEST", local_request)
             self.UpdateRegistryReplica(local_request, context)
+        
         return chat_pb2.GenericResponse(success=True, message="Replication applied")   
     
     def replicate_to_replicas(self, method_name, request):
@@ -665,18 +730,22 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         """
         payload = request.SerializeToString()
         replication_request = chat_pb2.ReplicationRequest(method=method_name, payload=payload)
+        
         with self.db_connection:
             cursor = self.db_connection.cursor()
             cursor.execute("SELECT pid, addr FROM registry")
             for replica_id, addr in cursor.fetchall():
+                # Don't need to replicate to leader
                 if replica_id == self.leader:
                     continue
+                
                 # Check heartbeat timestamp (if missing or too old, skip this replica)
                 cursor.execute("SELECT timestamp FROM registry WHERE pid = ? AND addr = ?", (replica_id, addr))
                 last_hb = cursor.fetchone()[0]  # Fetch the result (single row)
                 if time.time() - last_hb > config.HEARTBEAT_TIMEOUT:
                     print(f"[SERVER {self.pid}] Replica {replica_id} heartbeat timed out; removing from alive list.")
                     continue
+                
                 # Send replication request to all active servers
                 try:
                     print("REPLICATING...", addr)
@@ -709,6 +778,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 addr = f"{host}:{config.BASE_PORT+p}"
                 print("Trying...", addr)
                 try:
+                    # Query host for leader
                     with grpc.insecure_channel(addr) as channel:
                         stub = chat_pb2_grpc.ChatServiceStub(channel)
                         request = chat_pb2.GetLeaderRequest()
@@ -717,10 +787,12 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                             p = int(response.leader_address[-5:]) - config.BASE_PORT
                             print(f"Leader found: {response.leader_address} with PID: {p}")
                             return response.leader_address, p
+                
                 # If channel does not respond, that's not an active machine, continue
                 except grpc.RpcError:
                     print("Addr does not work, move on...", addr)
                     continue
+        
         # If no combination of machine is available, return -1 
         return "", -1
     
@@ -732,6 +804,8 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
             cursor = self.db_connection.cursor()
             cursor.execute("SELECT pid FROM registry")
             pids = cursor.fetchall()
+        
+        # Set new leader as minimum PID
         new_leader = min(pids)[0]
         self.leader = new_leader
         print(f"[SERVER {self.pid}] Replica {new_leader} becoming the new leader.")
@@ -762,12 +836,14 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                     if replica_id == self.pid:
                         cursor.execute("UPDATE registry SET timestamp = ? WHERE pid = ?", (time.time(), self.pid,))
                         continue
+                    
                     # try sending to other channel
                     try:
                         with grpc.insecure_channel(addr) as channel:
                             stub = chat_pb2_grpc.ChatServiceStub(channel)
                             hb_request = chat_pb2.HeartbeatRequest()
                             response = stub.Heartbeat(hb_request)
+                            
                             # if alive, update DB
                             if response.alive:
                                 with self.db_connection:
@@ -776,6 +852,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                                 print(f"[SERVER {self.pid}] Replica {replica_id} is alive!")
                     except Exception as e:
                         print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}.  Trying again...")
+            
             # check which peers have not responded
             current_time = time.time()
             with self.db_connection:

@@ -1,191 +1,335 @@
-# tests.py
-
-
-
-# +++++++++++++ Imports and Installs +++++++++++++ #
 import unittest
-import threading
+import subprocess
 import time
 import os
-import sqlite3
-from concurrent import futures
-import grpc
+import shutil
 import sys
+
+# Ensure the parent directory is in sys.path to import our modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from client.chat_client import ChatClient
+from server.server_security import hash_password
 from config import config
-from server import server
-from comm import chat_pb2, chat_pb2_grpc
-from client import chat_client
 
+BASE_HOST = "127.0.0.1"
+BASE_PORT = config.BASE_PORT  # typically 12300
+SERVER_SCRIPT = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "server", "server.py")
+DATABASE_DIR = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")), "database")
 
-# +++++++++++++ Start Test Server +++++++++++++ #
-def start_test_server(fixed_pid):
+def start_server(pid):
     """
-    Monkey-patches server.get_pid so that the ChatService instance
-    uses a fixed PID (and therefore a fixed port, per config.BASE_PORT + pid).
-    Starts a gRPC server running the ChatService, and starts its heartbeat loop.
-    Returns the (grpc.Server, ChatService) tuple.
+    Starts a server process with a given PID.
+    The server listens on BASE_PORT + pid.
+    Redirects stdout/stderr to DEVNULL to avoid resource warnings.
     """
-    chat_service = server.ChatService(fixed_pid, "127.0.0.1")
-    grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    chat_pb2_grpc.add_ChatServiceServicer_to_server(chat_service, grpc_server)
-    port = config.BASE_PORT + fixed_pid
-    grpc_server.add_insecure_port(f'127.0.0.1:{port}')
-    grpc_server.start()
-    chat_service.start_heartbeat()
-    return grpc_server, chat_service
+    proc = subprocess.Popen(
+        ["python", SERVER_SCRIPT, "--pid", str(pid), "--host", BASE_HOST],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    return proc
+
+def kill_server(proc):
+    """
+    Terminates the server process gracefully.
+    """
+    if proc.poll() is None:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 class TestReplication(unittest.TestCase):
+
     def setUp(self):
-        # Save original heartbeat settings.
-        self.original_interval = config.HEARTBEAT_INTERVAL
-        self.original_timeout = config.HEARTBEAT_TIMEOUT
-        # Use a faster heartbeat interval but increase timeout so that
-        # replicas are not dropped too aggressively.
-        config.HEARTBEAT_INTERVAL = 0.5
-        config.HEARTBEAT_TIMEOUT = 3.0
-
-        # Start three servers with fixed pids: 0, 1, 2.
-        self.servers = {}       # pid -> grpc.Server
-        self.chat_services = {} # pid -> ChatService instance
-        for pid in [0, 1, 2]:
-            srv, cs = start_test_server(pid)
-            self.servers[pid] = srv
-            self.chat_services[pid] = cs
-
-        # Allow time for the heartbeat loops to initialize.
-        time.sleep(2)
+        """
+        Clean up the database folder before each test.
+        """
+        if os.path.exists(DATABASE_DIR):
+            shutil.rmtree(DATABASE_DIR)
+        os.makedirs(DATABASE_DIR, exist_ok=True)
+        self.servers = []
 
     def tearDown(self):
-        # Stop all running servers and wait for termination.
-        for srv in self.servers.values():
-            srv.stop(0).wait()
-        # Close all database connections to release file locks.
-        for cs in self.chat_services.values():
+        """
+        Terminate all server processes that are still running.
+        """
+        for proc in self.servers:
             try:
-                cs.db_connection.close()
-            except Exception as e:
-                print("Error closing DB connection:", e)
-        # Wait briefly to let the OS release file locks.
-        time.sleep(1)
-        # Remove SQLite database files (retry if necessary).
-        for pid in [0, 1, 2]:
-            db_file = f"chat_database_{pid}.db"
-            if os.path.exists(db_file):
-                for _ in range(10):
-                    try:
-                        os.remove(db_file)
-                        break
-                    except PermissionError:
-                        time.sleep(0.2)
-        # Restore heartbeat settings.
-        config.HEARTBEAT_INTERVAL = self.original_interval
-        config.HEARTBEAT_TIMEOUT = self.original_timeout
+                kill_server(proc)
+            except Exception:
+                pass
+        self.servers = []
 
-    def get_cluster_leader(self):
+    def start_servers(self, pids):
         """
-        Returns the leader PID as seen by the running ChatService instances.
-        All surviving servers should agree on the leader.
+        Helper function to start multiple servers.
         """
-        leaders = {cs.leader for cs in self.chat_services.values()}
-        self.assertEqual(len(leaders), 1, "Surviving servers do not agree on a leader.")
-        return leaders.pop()
+        procs = []
+        for pid in pids:
+            proc = start_server(pid)
+            procs.append(proc)
+            self.servers.append(proc)
+        # Allow servers some time to start up
+        time.sleep(2)
+        return procs
 
-    def test_replication_create_account(self):
-        #Verify that a CreateAccount request from the leader is replicated to all servers.
-        leader = self.get_cluster_leader()
-        self.assertEqual(leader, 0)
-
-        leader_address = f"127.0.0.1:{config.BASE_PORT + leader}"
-        client_instance = chat_client.ChatClient(server_address=leader_address)
-        username = "testuser"
-        password_hash = "dummyhash"
-        result = client_instance.create_account(username, password_hash)
-        self.assertTrue(result)
-
-        # Wait to allow replication to complete.
+    def test_persistent_storage(self):
+        """
+        Test persistent storage:
+        - Start 3 servers.
+        - Create an account via the client.
+        - Kill all servers.
+        - Restart the 3 servers.
+        - Verify that the account still exists.
+        """
+        # Start servers with PIDs 0, 1, and 2.
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "persistent_user"
+        password = "password123"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        # Allow replication to complete.
         time.sleep(2)
 
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        db_dir = os.path.join(os.path.dirname(script_dir), "database")
-        
-        for pid in [0, 1, 2]: 
-            db_file = os.path.join(db_dir, f"chat_database_{pid}.db")
-            conn = sqlite3.connect(db_file, check_same_thread=False)
-            cursor = conn.cursor()
-            cursor.execute("SELECT username FROM accounts WHERE username = ?", (username,))
-            row = cursor.fetchone()
-            self.assertIsNotNone(row, f"Account not found in server with pid {pid}")
-            self.assertEqual(row[0], username)
+        # Kill all servers.
+        for proc in list(self.servers):
+            kill_server(proc)
+            self.servers.remove(proc)
+        time.sleep(2)
 
-    def test_leader_election(self):
-        #Verify that when the current leader is killed, the remaining servers elect a new leader.
-        leader = self.get_cluster_leader()
-        self.assertEqual(leader, 0)
+        # Restart the 3 servers.
+        self.start_servers([0, 1, 2])
+        time.sleep(2)
 
-        # Kill leader (pid 0) and remove it.
-        self.servers[0].stop(0).wait()
-        del self.servers[0]
-        del self.chat_services[0]
+        # Create a new client to check persistent state.
+        client2 = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        accounts = client2.list_accounts()
+        self.assertIn(username, accounts, "Account did not persist after server restart")
 
-        # Wait for heartbeat timeouts and leader election.
-        time.sleep(6)
+    def test_two_fault_tolerance_1(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 1,2.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
 
-        new_leader = self.get_cluster_leader()
-        self.assertEqual(new_leader, 1)
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
 
-        # Kill server with pid 1.
-        self.servers[1].stop(0).wait()
-        del self.servers[1]
-        del self.chat_services[1]
+        # Kill 2 servers (e.g., those with PID 1 and PID 2).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[1])
+            kill_server(self.servers[2])
+            # Retain only the first server (leader).
+            self.servers = [self.servers[0]]
+        time.sleep(2)
 
-        time.sleep(6)
-        final_leader = self.get_cluster_leader()
-        self.assertEqual(final_leader, 2)
-    
-    def test_client_requests_during_replication(self):
-        #Verify that while a client issues multiple CreateAccount requests,
-        #replication continues correctly even when one replica is killed."
-        leader = self.get_cluster_leader()
-        leader_address = f"127.0.0.1:{config.BASE_PORT + leader}"
-        client_instance = chat_client.ChatClient(server_address=leader_address)
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
 
-        def create_accounts():
-            # Create 5 accounts with a 0.5-second delay between each.
-            for i in range(5):
-                username = f"user_{i}"
-                password_hash = f"hash_{i}"
-                client_instance.create_account(username, password_hash)
-                time.sleep(0.5)
+    def test_two_fault_tolerance_2(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 0,2.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
 
-        account_thread = threading.Thread(target=create_accounts)
-        account_thread.start()
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
 
-        # Wait 1 second before killing replica 2.
-        time.sleep(1)
-        # Kill replica with pid 2 if it exists and if it is not the leader.
-        if 2 in self.servers and self.get_cluster_leader() != 2:
-            self.servers[2].stop(0).wait()
-            del self.servers[2]
-            del self.chat_services[2]
+        # Kill 2 servers (e.g., those with PID 0 and PID 2).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[0])
+            kill_server(self.servers[2])
+            # Retain only server 1.
+            self.servers = [self.servers[1]]
+        time.sleep(2)
 
-        account_thread.join()
-        # Wait enough time for all replication to complete.
-        time.sleep(7)
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
 
-        surviving_pids = list(self.servers.keys())
-        for pid in surviving_pids:
-            script_dir = os.path.dirname(os.path.realpath(__file__))
-            db_dir = os.path.join(os.path.dirname(script_dir), "database")
-            db_file = os.path.join(db_dir, f"chat_database_{pid}.db")
-            conn = sqlite3.connect(db_file, check_same_thread=False)
-            cursor = conn.cursor()
-            for i in range(5):
-                username = f"user_{i}"
-                cursor.execute("SELECT username FROM accounts WHERE username = ?", (username,))
-                row = cursor.fetchone()
-                self.assertIsNotNone(row, f"Account {username} not found in server with pid {pid}")
-                self.assertEqual(row[0], username)
+    def test_two_fault_tolerance_3(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 0,1.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
 
-if __name__ == "__main__":
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
+
+        # Kill 2 servers (e.g., those with PID 0 and PID 1).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[0])
+            kill_server(self.servers[1])
+            # Retain only server 2.
+            self.servers = [self.servers[2]]
+        time.sleep(2)
+
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
+
+    def test_two_fault_tolerance_4(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 1,0.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
+
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
+
+        # Kill 2 servers (e.g., those with PID 1 and PID 0).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[1])
+            kill_server(self.servers[0])
+            # Retain only server 2.
+            self.servers = [self.servers[2]]
+        time.sleep(2)
+
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
+
+    def test_two_fault_tolerance_5(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 2,0.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
+
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
+
+        # Kill 2 servers (e.g., those with PID 2 and PID 0).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[2])
+            kill_server(self.servers[0])
+            # Retain only server 2.
+            self.servers = [self.servers[1]]
+        time.sleep(2)
+
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
+
+    def test_two_fault_tolerance_6(self):
+        """
+        Test 2-fault tolerance:
+        - Start 3 servers.
+        - Create an account and record state.
+        - Kill servers 2,1.
+        - Verify that the client still sees the same state.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "fault_tolerance_user"
+        password = "password456"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
+
+        accounts_before = client.list_accounts()
+        self.assertIn(username, accounts_before, "Account not found before fault injection")
+
+        # Kill 2 servers (e.g., those with PID 2 and PID 1).
+        if len(self.servers) >= 3:
+            kill_server(self.servers[2])
+            kill_server(self.servers[1])
+            # Retain only server 2.
+            self.servers = [self.servers[0]]
+        time.sleep(2)
+
+        # Verify that the state is unchanged.
+        accounts_after = client.list_accounts()
+        self.assertEqual(accounts_before, accounts_after, "State changed after two servers were killed")
+
+    def test_adding_new_server(self):
+        """
+        Test adding a new server:
+        - Start 3 servers.
+        - Create an account.
+        - Start a new server (PID 3).
+        - Verify that the new server replicates the account data.
+        """
+        self.start_servers([0, 1, 2])
+        client = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+0}")
+        username = "new_server_user"
+        password = "password789"
+        password_hash_value = hash_password(password)
+        success = client.create_account(username, password_hash_value)
+        self.assertTrue(success, "Account creation failed")
+        time.sleep(2)
+
+        # Add a new server with PID 3.
+        new_server = start_server(3)
+        self.servers.append(new_server)
+        # Allow some extra time for the new server to replicate data.
+        time.sleep(3)
+
+        # Create a client directed to the new server.
+        client_new = ChatClient(server_address=f"{BASE_HOST}:{BASE_PORT+3}")
+        accounts_new = client_new.list_accounts()
+        self.assertIn(username, accounts_new, "New server did not replicate account data")
+
+if __name__ == '__main__':
     unittest.main()
