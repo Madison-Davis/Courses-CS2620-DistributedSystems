@@ -138,7 +138,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                 replica_request = chat_pb2.UpdateRegistryFullSQLRequest(
                     success=True,
                     sql_registry=sql_registry)
-                self.print_SQL()
                 # Send the updated registry to all replicas asynchronously
                 with self.db_connection:
                     cursor = self.db_connection.cursor()
@@ -687,7 +686,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                         if not rep_response.success:
                             print(f"[SERVER {self.pid}] Replication to replica {replica_id} failed: {rep_response.message}")
                 except Exception as e:
-                    print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}. {e}")
+                    print(f"[SERVER {self.pid}] Error replicating to replica {replica_id}.")
     
 
     # ++++++++++++++  Functions: Leader  ++++++++++++++ #        
@@ -775,7 +774,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                                     cursor = self.db_connection.cursor()
                                     cursor.execute("UPDATE registry SET timestamp = ? WHERE pid = ?", (time.time(), replica_id,))
                                 print(f"[SERVER {self.pid}] Replica {replica_id} is alive!")
-                                self.print_SQL()
                     except Exception as e:
                         print(f"[SERVER {self.pid}] Heartbeat failed for replica {replica_id}.  Trying again...")
             # check which peers have not responded
@@ -799,7 +797,6 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
                             cursor.execute("DELETE FROM registry WHERE pid = ?", (replica_id,))
                         if replica_id == self.leader:
                             self.trigger_leader_election()
-                        self.print_SQL()
             time.sleep(config.HEARTBEAT_INTERVAL)
 
     def start_heartbeat(self):

@@ -1,3 +1,8 @@
+# tests.py
+
+
+
+# +++++++++++++ Imports and Installs +++++++++++++ #
 import unittest
 import threading
 import time
@@ -5,13 +10,15 @@ import os
 import sqlite3
 from concurrent import futures
 import grpc
-
-# Import the server code and configuration.
-from server import server
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from config import config
+from server import server
 from comm import chat_pb2, chat_pb2_grpc
 from client import chat_client
 
+
+# +++++++++++++ Start Test Server +++++++++++++ #
 def start_test_server(fixed_pid):
     """
     Monkey-patches server.get_pid so that the ChatService instance
@@ -19,16 +26,13 @@ def start_test_server(fixed_pid):
     Starts a gRPC server running the ChatService, and starts its heartbeat loop.
     Returns the (grpc.Server, ChatService) tuple.
     """
-    original_get_pid = server.get_pid
-    server.get_pid = lambda: fixed_pid
-    chat_service = server.ChatService()
+    chat_service = server.ChatService(fixed_pid, "127.0.0.1")
     grpc_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     chat_pb2_grpc.add_ChatServiceServicer_to_server(chat_service, grpc_server)
     port = config.BASE_PORT + fixed_pid
-    grpc_server.add_insecure_port(f'{config.HOST}:{port}')
+    grpc_server.add_insecure_port(f'127.0.0.1:{port}')
     grpc_server.start()
     chat_service.start_heartbeat()
-    server.get_pid = original_get_pid
     return grpc_server, chat_service
 
 class TestReplication(unittest.TestCase):
@@ -88,13 +92,11 @@ class TestReplication(unittest.TestCase):
         return leaders.pop()
 
     def test_replication_create_account(self):
-        """
-        Verify that a CreateAccount request from the leader is replicated to all servers.
-        """
+        #Verify that a CreateAccount request from the leader is replicated to all servers.
         leader = self.get_cluster_leader()
         self.assertEqual(leader, 0)
 
-        leader_address = f"{config.HOST}:{config.BASE_PORT + leader}"
+        leader_address = f"127.0.0.1:{config.BASE_PORT + leader}"
         client_instance = chat_client.ChatClient(server_address=leader_address)
         username = "testuser"
         password_hash = "dummyhash"
@@ -104,20 +106,20 @@ class TestReplication(unittest.TestCase):
         # Wait to allow replication to complete.
         time.sleep(2)
 
-        for pid in [0, 1, 2]:
-            db_file = f"chat_database_{pid}.db"
-            conn = sqlite3.connect(db_file)
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        db_dir = os.path.join(os.path.dirname(script_dir), "database")
+        
+        for pid in [0, 1, 2]: 
+            db_file = os.path.join(db_dir, f"chat_database_{pid}.db")
+            conn = sqlite3.connect(db_file, check_same_thread=False)
             cursor = conn.cursor()
             cursor.execute("SELECT username FROM accounts WHERE username = ?", (username,))
             row = cursor.fetchone()
             self.assertIsNotNone(row, f"Account not found in server with pid {pid}")
             self.assertEqual(row[0], username)
-            conn.close()
 
     def test_leader_election(self):
-        """
-        Verify that when the current leader is killed, the remaining servers elect a new leader.
-        """
+        #Verify that when the current leader is killed, the remaining servers elect a new leader.
         leader = self.get_cluster_leader()
         self.assertEqual(leader, 0)
 
@@ -140,14 +142,12 @@ class TestReplication(unittest.TestCase):
         time.sleep(6)
         final_leader = self.get_cluster_leader()
         self.assertEqual(final_leader, 2)
-
+    
     def test_client_requests_during_replication(self):
-        """
-        Verify that while a client issues multiple CreateAccount requests,
-        replication continues correctly even when one replica is killed.
-        """
+        #Verify that while a client issues multiple CreateAccount requests,
+        #replication continues correctly even when one replica is killed."
         leader = self.get_cluster_leader()
-        leader_address = f"{config.HOST}:{config.BASE_PORT + leader}"
+        leader_address = f"127.0.0.1:{config.BASE_PORT + leader}"
         client_instance = chat_client.ChatClient(server_address=leader_address)
 
         def create_accounts():
@@ -175,8 +175,10 @@ class TestReplication(unittest.TestCase):
 
         surviving_pids = list(self.servers.keys())
         for pid in surviving_pids:
-            db_file = f"chat_database_{pid}.db"
-            conn = sqlite3.connect(db_file)
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+            db_dir = os.path.join(os.path.dirname(script_dir), "database")
+            db_file = os.path.join(db_dir, f"chat_database_{pid}.db")
+            conn = sqlite3.connect(db_file, check_same_thread=False)
             cursor = conn.cursor()
             for i in range(5):
                 username = f"user_{i}"
@@ -184,7 +186,6 @@ class TestReplication(unittest.TestCase):
                 row = cursor.fetchone()
                 self.assertIsNotNone(row, f"Account {username} not found in server with pid {pid}")
                 self.assertEqual(row[0], username)
-            conn.close()
 
 if __name__ == "__main__":
     unittest.main()

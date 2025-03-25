@@ -15,13 +15,19 @@ from config import config
 
 # ++++++++++++++  Class Definition  ++++++++++++++ #
 class ChatClient:
-    def __init__(self):
+    def __init__(self, server_address=None):
         """
         Establish channel and service stub.
         """
+        # for testing purposes, one can set arbitrarily the server address
+        # otherwise, simply find the leader by calling get_leader
         # leader_pid will help when needing to find a new leader via incrementing
-        self.leader_pid = None
-        leader_address = self.get_leader()
+        if server_address is not None:
+            self.leader_pid = int(server_address[-5:])-config.BASE_PORT
+            leader_address = server_address
+        else:
+            self.leader_pid = None
+            leader_address = self.get_leader()
         self.channel = grpc.insecure_channel(leader_address)
         print(f"Connected to address {leader_address}")
         self.stub = chat_pb2_grpc.ChatServiceStub(self.channel)
