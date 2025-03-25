@@ -263,7 +263,7 @@ class TestReplication(unittest.TestCase):
         if len(self.servers) >= 3:
             kill_server(self.servers[2])
             kill_server(self.servers[0])
-            # Retain only server 2.
+            # Retain only server 1.
             self.servers = [self.servers[1]]
         time.sleep(2)
 
@@ -295,7 +295,7 @@ class TestReplication(unittest.TestCase):
         if len(self.servers) >= 3:
             kill_server(self.servers[2])
             kill_server(self.servers[1])
-            # Retain only server 2.
+            # Retain only server 0.
             self.servers = [self.servers[0]]
         time.sleep(2)
 
