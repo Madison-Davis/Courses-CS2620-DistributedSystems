@@ -16,16 +16,16 @@ Clone the repository.
 Generate Python gRPC files: Navigate to comm/ and run `py -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat.proto`
 Replace `import chat_pb2 as chat__pb2` with `from comm import chat_pb2 as chat__pb2` in `chat_pb2_grpc.py`
 
-Set `PID = 0` in `config/config.py`.
-
 Run server (3 separate instances):
-`py -m server.server`
+`py -m server.server --pid=PID --host=HOST`
+- PID: nonnegative integer, e.g. 0
+- HOST: valid host, e.g. 127.0.0.1
 
 Run client GUI:
 `py -m client.gui`
 
 Run unit tests:
-`py -m unittest tests.tests_rpc`
+`py -m unittest tests.tests_replication`
 
 
 -------------------------------------------
@@ -33,17 +33,19 @@ Run unit tests:
 
 ```
 ├── client
-│   ├── chat_client.py       → ChatClient class, functions to request/receive from server
-│   ├── gui.py               → creates GUI for client
+│   ├── chat_client.py          → ChatClient class, functions to request/receive from server
+│   ├── gui.py                  → creates GUI for client
 ├── comm
-│   ├── chat.proto           → defines gRPC services and messages for requests/responses
-│   ├── chat_pb2.py          → generated code from compiler: for all .proto service/rpc defs
-│   ├── chat_pb2_grpc.py     → generated code from compiler: for all .proto message defs
+│   ├── chat.proto              → defines gRPC services and messages for requests/responses
+│   ├── chat_pb2.py             → generated code from compiler: for all .proto service/rpc defs
+│   ├── chat_pb2_grpc.py        → generated code from compiler: for all .proto message defs
 ├── config
-│   ├── config.py            → defines HOST/PORT and other parameters
+│   ├── config.py               → defines HOST/PORT and other parameters
 ├── server
-│   ├── server.py            → ChatService class, functions to use SQL and return results
-│   ├── server_security.py   → for password hashing
+│   ├── server.py               → ChatService class, functions to use SQL and return results
+│   ├── server_security.py      → for password hashing
+├── tests
+│   ├── tests_replication.py    → unit tests
 └── Documentation.md
 ```
 
@@ -53,7 +55,7 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 -------------------------------------------
 ## Assumptions
 
-1. We assume that each server must keep track of their own copy of active replicas, who the leader currently is, and their own copy of the chat database. However, we assume that all servers upon startup know that the possible replicas are with PIDs 0, 1, and 2, hence the global dictionary of replica IDs and addresses in `config.py`. This part of the file is unchanged, so we are not sharing global information about which replicas are active and which are killed.
+1. We assume that each server must keep track of their own copy of active replicas, who the leader currently is, and their own copy of the chat database. However, we assume that all servers upon startup know that the possible replicas are with hosts in `ALL_HOSTS` and PIDs less than `MAX_PID` as defined in `config.py`. This part of the file is unchanged, so we are not sharing global information about which replicas are active and which are killed.
 2. We use the leader election mechanism that designates the active replica with the lowest PID as the new leader.
 3. The leader only sends replication instruction to the replicas if they receive a write operation (CreateAccount, Login, SendMessage, AddDraft, SaveDrafts, CheckMessage, DownloadMessage, DeleteMessage, DeleteAccount, Logout, ReceiveMessageStream)
 4. The heartbeat mechanism is assumed to have all replicas communicate with every other replica, including the leader.
@@ -70,6 +72,7 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 - Replica 2 ⇒ Leader
 - Leader ⇒ Replica 3
 - Replica 3 ⇒ Leader
+3. Extra credit: We will show that a new server (distinct from the initial 3 upon startup) can be added to the system and replicate all tables in the databases of the initial servers.
 
 
 -------------------------------------------
@@ -108,6 +111,8 @@ service ChatService {
     rpc Replicate(ReplicationRequest) returns (GenericResponse);                                → tell replica to replicate
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);                                → send heartbeat ping
     rpc GetLeader(GetLeaderRequest) returns (GetLeaderResponse);                                → get current leader
+    rpc UpdateRegistry(UpdateRegistryRequest) returns (GenericResponse);                        → leader tells replicas to update their registries
+    rpc UpdateRegistryReplica(UpdateRegistryRequest) returns (GenericResponse);                 → replica updates their registry
 }
 ```
 
@@ -158,13 +163,18 @@ Drafts Database
 4. msg: str, ""
 5. checked: bool, 0
 
+Registry Database
+1. pid: int, N/A (no default; should not be in DB)
+2. timestamp: real time value, N/A (no default; should not be in DB)
+3. addr: text, N/A (no default; should not be in DB)
+
 
 -------------------------------------------
 ## Servers: Replication
 
 - How do servers keep track of other replicas?
-    - Global known information about all possible replicas and their addresses are contained in `REPLICA_ADDRESSES`, a dictionary with PID as the key and address as the value.
-    - Each server contains a local copy of `self.active_servers`, which is a dictionary storing all active servers. The key is PID and the value is the most recent heartbeat timestamp.
+    - Global known information about all possible replicas and their addresses are contained in `ALL_HOSTS` and `MAX_PID`, a list of possible hosts and integer denoting the maximum possible PID in `config.py`. 
+    - Each server contains a local copy of a `registry` table in their SQL database, which stores the PID, address, and latest heartbeat timestamp for every active server.
 - How does the heartbeat mechanism work?
     - In `config.py`, `HEARTBEAT_INTERVAL` denotes the amount of seconds that pass between every heartbeat ping, and `HEARTBEAT_TIMEOUT` denotes the amount of seconds that pass without a response from a replica until we assume it is dead.
     - In `server.py`, we run a `heartbeat_loop()` that sends a `HeartbeatRequest` to every active server (including the leader), updates the most recent timestamp for active servers, removes servers that either do not respond to the hartbeat ping or haven't responded in a while, and call `trigger_leader_election()` to elect a new leader in the case that the existing leader has died.
@@ -174,6 +184,8 @@ Drafts Database
 - How will the client know to reconnect to the new leader in case the old leader dies?
     - Every existing client function is now wrapped in a try except block to call `reconnect()` upon catching a gRPC error, which indicates that the existing leader is no longer active.
     - In `reconnect()`, the client will call `get_leader()` to find the new leader PID and connect to the new leader's address.
+- Extra credit: How is a newly instantiated server added to the system?
+    - When a new server is started, it searches through all possible hosts and port numbers to find a channel that is hosting an active server. Then, it queries that server to identify who the current leader is. We then call `notify_leader_new_database()` which sends an `UpdateRegistryRequest` to the leader. Upon receiving this request, the leader serializes its current database state as a JSON and sends it to both the new server and all existing replicas for replication.
 
 -------------------------------------------
 ## Client Data: Datastructures
@@ -203,14 +215,19 @@ To ensure password security, we store all password information as hashed passwor
 -------------------------------------------
 ## Robustness: Testing
 
+Our unit tests test for functionalities including the following:
+1. Creating an account and ensuring the replication requests are successfully completed by replicas
+2. Electing the correct new leader when the existing leader dies
+3. Sending client requests during replication and ensuring that all write requests are queued up correctly
+
 
 
 -------------------------------------------
 ## Code Cleanliness
 
 To ensure code cleanliness, we adhered to the code structure as articulated in an earlier section.  We also did the following:
-1. For tests_rpc.py, server.py, and chat_client.py, we instantiated them as classes.
-2. For all functions in tests_rpc.py, server.py, chat_client.py, and gui.py, we put comments under each function header to help readers understand its implementation.
+1. For tests_replication.py, server.py, and chat_client.py, we instantiated them as classes.
+2. For all functions in tests_replication.py, server.py, chat_client.py, and gui.py, we put comments under each function header to help readers understand its implementation.
 3. For gui.py, because we did not use a class but rather a set of functions, we made comments more robust beyond just header functions by utilizing sectioning-comments to "divide and sort" the functions based on usage.  For example, we have sections for logging in, logging out or deleting accounts, receiving messages in real time ("event listeners"), GUI loading frames, GUI loading features on existing frames, and GUI frame button-handling (if a button is clicked, for example).
 4. For gui.py, we did the same "divide and sort" sectioning for variables.  We have sections for GUI variables and client data variables.
 
