@@ -21,6 +21,8 @@ Run server (3 separate instances):
 - PID: nonnegative integer, e.g. 0
 - HOST: valid host, e.g. 127.0.0.1
 
+If you want to add your own custom host, please add it to the config.py file in the list-variable `ALL_HOSTS`.
+
 Run client GUI:
 `py -m client.gui`
 
@@ -55,10 +57,11 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 -------------------------------------------
 ## Assumptions
 
-1. We assume that each server must keep track of their own copy of active replicas, who the leader currently is, and their own copy of the chat database. However, we assume that all servers upon startup know that the possible replicas are with hosts in `ALL_HOSTS` and PIDs less than `MAX_PID` as defined in `config.py`. This part of the file is unchanged, so we are not sharing global information about which replicas are active and which are killed.
-2. We use the leader election mechanism that designates the active replica with the lowest PID as the new leader.
-3. The leader only sends replication instruction to the replicas if they receive a write operation (CreateAccount, Login, SendMessage, AddDraft, SaveDrafts, CheckMessage, DownloadMessage, DeleteMessage, DeleteAccount, Logout, ReceiveMessageStream)
-4. The heartbeat mechanism is assumed to have all replicas communicate with every other replica, including the leader.
+1. We assume that each server must keep track of their own copy of active replicas, who the leader currently is, and their own copy of the chat database. We use a SQL database for this.
+2. We assume that all servers upon startup know that the possible replicas are with hosts in `ALL_HOSTS` and PIDs less than `MAX_PID` as defined in `config.py`. This part of the file is unchanged, so we are not sharing global information about which replicas are active and which are killed.
+3. We use the leader election mechanism that designates the active replica with the lowest PID as the new leader.
+4. The leader only sends replication instruction to the replicas if they receive a write operation (CreateAccount, Login, SendMessage, AddDraft, SaveDrafts, CheckMessage, DownloadMessage, DeleteMessage, DeleteAccount, Logout, ReceiveMessageStream)
+5. The heartbeat mechanism is assumed to have all replicas communicate with every other replica, including the leader.
 
 
 -------------------------------------------
