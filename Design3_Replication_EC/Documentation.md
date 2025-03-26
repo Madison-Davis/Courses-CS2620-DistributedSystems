@@ -62,7 +62,7 @@ The user interface is run on `gui.py`, which instantiates a `ChatClient` and mak
 3. We use the leader election mechanism that designates the active replica with the lowest PID as the new leader.
 4. The leader only sends replication instruction to the replicas if they receive a write operation (CreateAccount, Login, SendMessage, AddDraft, SaveDrafts, CheckMessage, DownloadMessage, DeleteMessage, DeleteAccount, Logout, ReceiveMessageStream)
 5. The heartbeat mechanism is assumed to have all replicas communicate with every other replica, including the leader.
-6. Our tests have operated under the assumption that each machine has its unique pid, though we can easily distinguish between machines of the same pid by looking at their hosts.
+6. For the extra credit, when it says 'create a new server', we assume the pids are unique and will increment for each new server, for simplicity in implementation.
 
 
 -------------------------------------------
