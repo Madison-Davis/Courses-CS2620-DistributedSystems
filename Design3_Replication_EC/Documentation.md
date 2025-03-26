@@ -188,7 +188,7 @@ Registry Database
     - Every existing client function is now wrapped in a try except block to call `reconnect()` upon catching a gRPC error, which indicates that the existing leader is no longer active.
     - In `reconnect()`, the client will call `get_leader()` to find the new leader PID and connect to the new leader's address.
 - Extra credit: How is a newly instantiated server added to the system?
-    - When a new server is started, it searches through all possible hosts and port numbers to find a channel that is hosting an active server. Then, it queries that server to identify who the current leader is. We then call `notify_leader_new_database()` which sends an `UpdateRegistryRequest` to the leader. Upon receiving this request, the leader serializes its current database state as a JSON and sends it to both the new server and all existing replicas for replication.
+    - When a new server is started, it searches through all possible hosts and port numbers to find a channel that is hosting an active server. Recall that the address of each server is HOST:BASE_PORT + PID, where hosts can be found in `ALL_HOSTS`, the base port config.BASE_PORT, and pids are greater than or equal to 0.  When it finds any active server, it queries that server to identify who the current leader is. We then call `notify_leader_new_database()` which sends an `UpdateRegistryRequest` to the leader. Upon receiving this request, the leader serializes its current database state as a JSON and sends it to both the new server and all existing replicas for replication.
 
 -------------------------------------------
 ## Client Data: Datastructures
